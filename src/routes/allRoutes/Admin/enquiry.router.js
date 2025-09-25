@@ -24,3 +24,5 @@ router.get('/get-all-enquiries-by-hospital/:hospitalId', EnquiryController.getAl
 router.get('/get-by-enquiryId-hospitalId/:enquiryId/:hospitalId', EnquiryController.getByHospitalIdEnquiryId)//--7-done need testing
 
 export default router
+
+//demo push
