@@ -8,6 +8,5 @@ router.patch('/update/:id', ClientController.updateById)
 router.get('/get-by-id/:id', ClientController.getById)
 router.delete('/delete-all', ClientController.deleteAll)
 
-
-
 export default router
+//dummy push
