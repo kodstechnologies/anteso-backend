@@ -20,5 +20,5 @@ router.post(
 router.post('/share-quotation/:hospitalId/:enquiryId/:quotationId', quotationController.shareQuotation)
 router.get('/get-quotation-pdf/:hospitalId/:enquiryId', quotationController.getQuotationPdfUrl)
 //mobile api
-// router.get('/get-quotation-pdf/:hospitalId/:enquiryId/:quotationId') 
+// router.get('/get-quotation-pdf/:hospitalId/:enquiryId/:quotationId')
 export default router
