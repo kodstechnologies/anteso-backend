@@ -2562,7 +2562,7 @@ const getByHospitalIdEnquiryId = async (req, res) => {
 const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
     try {
         const { hospitalId } = req.params;
-        console.log("inside 🚀 ~ getAllEnquiriesByHospitalId:");
+        console.log("🚀 ~ hospitalId:", hospitalId);
 
         if (!hospitalId) {
             throw new ApiError(400, "Hospital ID is required");
@@ -2574,7 +2574,9 @@ const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
             .populate("additionalServices", "name")
             .populate("customer", "name email contactNumber"); // <-- populate customer
 
-        console.log("🚀 ~ enquiries:", enquiries);
+         
+
+        console.log("🚀 ~ enquiries:", enquiries)
 
         if (!enquiries || enquiries.length === 0) {
             throw new ApiError(404, "No enquiries found for this hospital");
@@ -2587,7 +2589,6 @@ const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
         throw new ApiError(500, error?.message || "Internal Server Error");
     }
 });
-console.log("🚀 ~ getAllEnquiriesByHospitalId:", getAllEnquiriesByHospitalId)
 
 
 const getAllStates = asyncHandler(async (req, res) => {
