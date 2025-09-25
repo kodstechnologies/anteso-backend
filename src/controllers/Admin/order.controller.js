@@ -1577,12 +1577,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 
 const completedStatusAndReport = asyncHandler(async (req, res) => {
     const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
-    console.log("🚀 ~ reportType:", reportType)
-    console.log("🚀 ~ status:", status)
-    console.log("🚀 ~ workType:", workType)
-    console.log("🚀 ~ serviceId:", serviceId)
-    console.log("🚀 ~ orderId:", orderId)
-    console.log("🚀 ~ staffId:", staffId)
+
 
     console.log("HELLO ");
 
