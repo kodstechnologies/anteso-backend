@@ -17,6 +17,8 @@ const adminLogin = asyncHandler(async (req, res) => {
         throw new ApiError(400, error.details[0].message);
     }
     const { email, password } = value;
+    console.log("🚀 ~ password:", password)
+    console.log("🚀 ~ email:", email)
     // 2. Find admin by email
     const admin = await Admin.findOne({ email });
     if (!admin) {
