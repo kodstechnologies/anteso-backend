@@ -2562,7 +2562,7 @@ const getByHospitalIdEnquiryId = async (req, res) => {
 const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
     try {
         const { hospitalId } = req.params;
-        console.log("🚀 ~ hospitalId:", hospitalId);
+        console.log("inside 🚀 ~ getAllEnquiriesByHospitalId:");
 
         if (!hospitalId) {
             throw new ApiError(400, "Hospital ID is required");
@@ -2587,6 +2587,7 @@ const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
         throw new ApiError(500, error?.message || "Internal Server Error");
     }
 });
+console.log("🚀 ~ getAllEnquiriesByHospitalId:", getAllEnquiriesByHospitalId)
 
 
 const getAllStates = asyncHandler(async (req, res) => {
