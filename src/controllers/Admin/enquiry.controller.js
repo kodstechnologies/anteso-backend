@@ -479,10 +479,10 @@ const add = asyncHandler(async (req, res) => {
             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
 
             let existingCustomer = null;
-            if (emailAddress) {
-                existingCustomer = await User.findOne({ email: emailAddress });
-            }
-            if (!existingCustomer && contactNumber) {
+            // if (emailAddress) {
+            //     existingCustomer = await User.findOne({ email: emailAddress });
+            // }
+            if (contactNumber) {
                 existingCustomer = await User.findOne({ phone: contactNumber });
             }
 
@@ -2574,7 +2574,7 @@ const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
             .populate("additionalServices", "name")
             .populate("customer", "name email contactNumber"); // <-- populate customer
 
-         
+
 
         console.log("🚀 ~ enquiries:", enquiries)
 

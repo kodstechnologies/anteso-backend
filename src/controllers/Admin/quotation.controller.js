@@ -1115,7 +1115,8 @@ const getQuotationPdfUrl = asyncHandler(async (req, res) => {
         const quotation = await Quotation.findOne({
             from: hospitalId,
             enquiry: enquiryId,
-        }).select("pdfUrl"); // Only select the pdfUrl field
+        }).select("pdfUrl quotationStatus"); // Only select the pdfUrl field
+        console.log("🚀 ~ quotation:", quotation)
 
         if (!quotation || !quotation.pdfUrl) {
             return res.status(404).json({
@@ -1126,7 +1127,8 @@ const getQuotationPdfUrl = asyncHandler(async (req, res) => {
         res.status(200).json({
             success: true,
             pdfUrl: quotation.pdfUrl,
-            id:quotation._id
+            id: quotation._id,
+            quotationStatus: quotation.quotationStatus
         });
     } catch (error) {
         console.error("Error fetching quotation PDF URL:", error);
