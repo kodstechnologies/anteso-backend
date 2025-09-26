@@ -78,7 +78,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     if (!existingUser) {
         throw new ApiError(
             404,
-            "Mobile number not registered as Customer or Active Engineer! Please contact admin."
+            "Mobile number not registered!"
         );
     }
 

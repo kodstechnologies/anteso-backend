@@ -59,7 +59,7 @@ const enquirySchema = new mongoose.Schema({
     
     quotationStatus: {
         type: String,
-        enum: ['Create', 'Created', 'Accepted', 'Rejected'],
+        enum: ['Create', 'Created', 'Accepted', 'Rejected','Pending'],
         default: 'Create'
     },
     // Customer Reference (from User base model)

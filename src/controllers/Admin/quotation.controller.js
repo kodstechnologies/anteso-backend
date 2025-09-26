@@ -1078,7 +1078,17 @@ const shareQuotation = asyncHandler(async (req, res) => {
             });
         }
 
-        // Return the existing PDF URL
+        // Update quotation status to 'Pending' (or whatever status you want)
+        quotation.quotationStatus = 'Created'; // or 'Pending' if you prefer
+        await quotation.save();
+
+        // Optionally, update the enquiry status as well
+        await Enquiry.findByIdAndUpdate(enquiryId, {
+            enquiryStatus: 'Quotation Sent',
+            'enquiryStatusDates.quotationSentOn': new Date(),
+        });
+
+        // Return the existing PDF URL and updated status
         res.status(200).json({
             success: true,
             message: "Quotation PDF shared successfully",
@@ -1086,7 +1096,8 @@ const shareQuotation = asyncHandler(async (req, res) => {
                 hospitalId,
                 enquiryId,
                 quotationId,
-                pdfUrl: quotation.pdfUrl, // ✅ fetched from the quotation itself
+                pdfUrl: quotation.pdfUrl,
+                quotationStatus: quotation.quotationStatus, // ✅ include updated status
             },
         });
     } catch (error) {
@@ -1098,6 +1109,7 @@ const shareQuotation = asyncHandler(async (req, res) => {
         });
     }
 });
+
 
 //mobile
 const getQuotationPdfUrl = asyncHandler(async (req, res) => {
