@@ -21,7 +21,7 @@ router.post('/create-institute-by-hospitalId/:hospitalId', instituteController.c
 router.get('/get-institute-by-hospitalId-instituteId/:hospitalId/:instituteId', instituteController.getInstituteByHospitalIdAndInstituteId)
 router.put('/update-institute-by-hospitalId-instituteId/:hospitalId/:instituteId', instituteController.updateInstituteByHospitalIdAndInstituteId)
 router.get('/get-all-institutes-by-hospitalId/:hospitalId', instituteController.getAllInstitutesByHospitalId)
-router.delete('/delete-institute-by-hospitalId-instituteId/:hospitalId/:instituteId', instituteController.createInstituteByHospitalId)
+router.delete('/delete-institute-by-hospitalId-instituteId/:hospitalId/:instituteId', instituteController.deleteInstituteByHospitalId)
 
 
 export default router
