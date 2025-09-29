@@ -151,8 +151,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
     // ✅ Store refresh token in secure HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,  
-        secure: process.env.NODE_ENV === "production", 
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -161,7 +161,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     await LoginOtp.deleteOne({ mobileNumber });
 
     return res.status(200).json(
-        new ApiResponse(200, { token, user,refreshToken }, "OTP verified successfully")
+        new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully")
     );
 });
 
@@ -226,3 +226,21 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 //         new ApiResponse(200, { token, user }, "OTP verified successfully")
 //     );
 // });
+export const logout = asyncHandler(async (req, res) => {
+    try {
+        // Clear refresh token cookie
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+        });
+
+        // Optionally: You can also return a message
+        return res.status(200).json(
+            new ApiResponse(200, null, "Logged out successfully")
+        );
+    } catch (err) {
+        console.error("Logout error:", err);
+        throw new ApiError(500, "Failed to logout");
+    }
+});

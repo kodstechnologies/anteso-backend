@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { sendOtp, verifyOtp } from '../../../controllers/users/login.controller.js';
+import { sendOtp, verifyOtp,logout } from '../../../controllers/users/login.controller.js';
 import { verifyUserJWT } from '../../../middlewares/userAuthMiddleware.js';
 import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../../../middlewares/authorizeRoles.js'
@@ -12,5 +12,7 @@ router.use(authenticate, authorizeRoles("Admin", "Customer", ""))
 // router.post('/machines', machineRoutes)
 router.use('/machines', machineRoutes)
 // router.use('/logout')
+router.post("/logout", logout);
+
 
 export default router
