@@ -1903,9 +1903,6 @@ const addByHospitalId = asyncHandler(async (req, res) => {
                 new ApiResponse(400, null, "Customer ID is missing. Please provide a valid customerId in the request body.")
             );
         }
-
-
-
         let value = { ...req.body };
 
         // Parse JSON fields safely

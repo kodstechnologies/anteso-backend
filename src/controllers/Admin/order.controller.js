@@ -510,6 +510,7 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         message: "Service workType updated successfully",
+        isSubmitted: true,
         service,
     });
 });

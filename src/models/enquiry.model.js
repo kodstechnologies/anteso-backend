@@ -17,7 +17,7 @@ const enquirySchema = new mongoose.Schema({
     branch: { type: String, required: true },
     contactPerson: { type: String, required: true },
     emailAddress: { type: String, required: true },
-    contactNumber: { type: String, required: true },
+    contactNumber: { type: String, required: true,unique:true },
     designation: { type: String, required: true },
     services: [
         {
