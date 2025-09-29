@@ -15,7 +15,13 @@ const router = Router();
 // router.use('/tools', ToolRoutes)
 // router.use('/leaves', LeaveRoutes)
 // router.use('/enquiry', EnquiryRoutes)
+
+
 router.use('/admin', AdminRoutes)
+// router.use('/admin', (req, res) => {
+//    return res.json({msg:"hi"})
+// })
+
 router.use('/user', UserRoutes)
 
 export default router

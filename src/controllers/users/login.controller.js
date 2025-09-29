@@ -149,8 +149,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
     // ✅ Store refresh token in secure HTTP-only cookie
     res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,   // not accessible by JavaScript
-        secure: process.env.NODE_ENV === "production", // only HTTPS in production
+        httpOnly: true,  
+        secure: process.env.NODE_ENV === "production", 
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -159,7 +159,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     await LoginOtp.deleteOne({ mobileNumber });
 
     return res.status(200).json(
-        new ApiResponse(200, { token, user }, "OTP verified successfully")
+        new ApiResponse(200, { token, user,refreshToken }, "OTP verified successfully")
     );
 });
 

@@ -30,6 +30,10 @@ router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Empl
 router.use('/clients', ClientRoutes)
 router.use('/hospital', HospitalRoutes)
 router.use('/rso', RSORoutes)
+// router.use('/rso', (req,res)=>{
+//     return res.json({msg:"hi"})
+// })
+
 router.use('/institute', InstituteRoutes)
 router.get('/pdf', PDFRouter)
 
