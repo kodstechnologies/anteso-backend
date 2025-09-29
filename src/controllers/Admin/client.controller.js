@@ -89,7 +89,9 @@ const getById = asyncHandler(async (req, res) => {
 
 const updateById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    console.log("🚀 ~ id:", id)
     const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
+    console.log("🚀 ~ value:", value)
 
     if (error) {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
@@ -108,7 +110,7 @@ const updateById = asyncHandler(async (req, res) => {
 
     const validHospitals = await validateReferences(Hospital, hospitals);
 
-    const updatedClient = await Client.findByIdAndUpdate(
+    const updatedClient = await User.findByIdAndUpdate(
         id,
         { name, phone, email, address, gstNo },
         { new: true, runValidators: true }

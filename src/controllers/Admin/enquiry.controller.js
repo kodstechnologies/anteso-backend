@@ -1897,6 +1897,11 @@ const addByHospitalId = asyncHandler(async (req, res) => {
         const existingHospital = await Hospital.findById(hospitalId);
         if (!existingHospital) throw new ApiError(404, "Hospital not found");
 
+        // 🔍 Ensure customerId is provided
+        if (!req.body.customerId) {
+            throw new ApiError(400, "Customer ID is required");
+        }
+
         let value = { ...req.body };
 
         // Parse JSON fields safely
@@ -1907,13 +1912,9 @@ const addByHospitalId = asyncHandler(async (req, res) => {
             try { value.additionalServices = JSON.parse(value.additionalServices); } catch { value.additionalServices = {}; }
         }
 
-        // ✅ Attach hospital
+        // ✅ Attach hospital & customer
         value.hospital = hospitalId;
-
-        // ✅ Attach customer if passed (optional)
-        if (req.body.customerId) {
-            value.customer = req.body.customerId;
-        }
+        value.customer = req.body.customerId;
 
         // ✅ Single file upload
         if (req.file) {
@@ -1966,11 +1967,12 @@ const addByHospitalId = asyncHandler(async (req, res) => {
             { new: true }
         );
 
-        // ✅ Populate services, additionalServices & hospital
+        // ✅ Populate everything including customer
         newEnquiry = await Enquiry.findById(newEnquiry._id)
             .populate("services")
             .populate("additionalServices")
             .populate("hospital")
+            .populate("customer");
 
         return res
             .status(201)
@@ -1980,8 +1982,6 @@ const addByHospitalId = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create enquiry", [error.message]);
     }
 });
-
-
 
 // const addByCustomerId = asyncHandler(async (req, res) => {
 //     try {
