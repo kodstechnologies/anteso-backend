@@ -9,7 +9,7 @@ import Quotation from "../../models/quotation.model.js";
 import orderModel from "../../models/order.model.js";
 import Service from '../../models/Services.js'
 import AdditionalService from "../../models/additionalService.model.js";
-import { uploadToS3 } from '../../utils/s3Upload.js'
+import { getS3SignedUrl, uploadToS3 } from '../../utils/s3Upload.js'
 import Hospital from '../../models/hospital.model.js'
 import Client from "../../models/client.model.js";
 // const add = asyncHandler(async (req, res) => {
@@ -458,12 +458,177 @@ import Client from "../../models/client.model.js";
 
 
 // controllers/enquiry.controller.js
+// const add = asyncHandler(async (req, res) => {
+//     try {
+//         console.log("🚀 ~ req.body:", req.body)
+
+//         // ✅ Validate input
+//         const { error, value } = enquirySchema.validate(req.body, {
+//             abortEarly: false,
+//         });
+
+//         if (error) {
+//             const errorMessages = error.details.map((err) => err.message);
+//             throw new ApiError(400, "Validation failed", errorMessages);
+//         }
+
+//         let customerId = value.customer;
+
+//         // ✅ Check if customer exists or create new
+//         if (!customerId) {
+//             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
+
+//             let existingCustomer = null;
+//             // if (emailAddress) {
+//             //     existingCustomer = await User.findOne({ email: emailAddress });
+//             // }
+//             if (contactNumber) {
+//                 existingCustomer = await User.findOne({ phone: contactNumber });
+//             }
+
+//             if (existingCustomer) {
+//                 return res.status(200).json(
+//                     new ApiResponse(
+//                         200,
+//                         { existingCustomer },
+//                         "Customer already exists. Please enquire via mobile app."
+//                     )
+//                 );
+//             }
+
+//             // ✅ Create Customer
+//             const newCustomer = await User.create({
+//                 name: contactPerson,
+//                 email: emailAddress,
+//                 phone: contactNumber,
+//                 role: "Customer", // 👈 discriminator field
+//             });
+
+//             customerId = newCustomer._id;
+//             value.customer = customerId;
+
+//             // ✅ Create Hospital for this customer
+//             const newHospital = await Hospital.create({
+//                 name: hospitalName,
+//                 email: emailAddress,
+//                 address: fullAddress,
+//                 branch: branch,
+//                 phone: contactNumber,
+//             });
+
+//             // Link hospital back to customer
+//             await Client.findByIdAndUpdate(customerId, {
+//                 $push: { hospitals: newHospital._id },
+//             });
+//             value.hospital = newHospital._id;
+//         }
+
+//         // ✅ Handle file uploads to S3
+//         let attachments = [];
+//         if (req.files && req.files.length > 0) {
+//             const uploadPromises = req.files.map(async (file) => {
+//                 const { url, key } = await uploadToS3(file);
+//                 return {
+//                     filename: file.originalname,
+//                     key,
+//                     url,
+//                     mimetype: file.mimetype,
+//                     size: file.size,
+//                 };
+//             });
+//             attachments = await Promise.all(uploadPromises);
+//         }
+//         value.attachments = attachments;
+
+//         // ✅ Create Services
+//         let serviceIds = [];
+//         if (value.services && value.services.length > 0) {
+//             const transformedServices = value.services.map((s) => ({
+//                 machineType: s.machineType,
+//                 equipmentNo: s.equipmentNo,
+//                 machineModel: s.machineModel,
+//                 serialNumber: s.serialNumber || "",
+//                 remark: s.remark || "",
+//                 workTypeDetails: (s.workType || []).map((wt) => ({
+//                     workType: wt,
+//                     status: "pending",
+//                 })),
+//             }));
+//             const createdServices = await Service.insertMany(transformedServices);
+//             serviceIds = createdServices.map((s) => s._id);
+//         }
+
+//         // ✅ Create Additional Services
+//         let additionalServiceIds = [];
+//         if (value.additionalServices && Object.keys(value.additionalServices).length > 0) {
+//             const createdAdditionalServices = await AdditionalService.insertMany(
+//                 Object.entries(value.additionalServices).map(([name, data]) => ({
+//                     name,
+//                     description: data.description || "",
+//                     totalAmount: data.totalAmount || 0,
+//                 }))
+//             );
+//             additionalServiceIds = createdAdditionalServices.map((a) => a._id);
+//         }
+
+//         const { additionalServices, services, ...rest } = value;
+
+//         // ✅ Create Enquiry
+//         const newEnquiry = await Enquiry.create({
+//             ...rest,
+//             services: serviceIds,
+//             additionalServices: additionalServiceIds,
+//             enquiryStatusDates: { enquiredOn: new Date() },
+//         });
+
+//         // ✅ Link enquiry to customer
+//         await User.findByIdAndUpdate(customerId, {
+//             $push: { enquiries: newEnquiry._id },
+//         });
+
+//         // ✅ Link enquiry to hospital
+//         if (value.hospital) {
+//             await Hospital.findByIdAndUpdate(value.hospital, {
+//                 $push: { enquiries: newEnquiry._id },
+//             });
+//         }
+
+//             console.log("🚀 ~ newEnquiry:", newEnquiry)
+//         return res
+//             .status(201)
+//             .json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
+//     } catch (error) {
+//         console.error("Create Enquiry Error:", error);
+//         throw new ApiError(500, "Failed to create enquiry", [error.message]);
+//     }
+// });
+
 const add = asyncHandler(async (req, res) => {
     try {
-        console.log("🚀 ~ req.body:", req.body)
+        console.log("🚀 ~ req.file:", req.file); // single file
+        console.log("🚀 ~ req.body:", req.body); // other form fields
 
-        // ✅ Validate input
-        const { error, value } = enquirySchema.validate(req.body, {
+        // ✅ Step 1: Preprocess services & additionalServices
+        let body = { ...req.body };
+
+        if (typeof body.services === "string") {
+            try {
+                body.services = JSON.parse(body.services);
+            } catch (err) {
+                throw new ApiError(400, "Invalid JSON format in services");
+            }
+        }
+
+        if (typeof body.additionalServices === "string") {
+            try {
+                body.additionalServices = JSON.parse(body.additionalServices);
+            } catch (err) {
+                throw new ApiError(400, "Invalid JSON format in additionalServices");
+            }
+        }
+
+        // ✅ Step 2: Validate input with Joi
+        const { error, value } = enquirySchema.validate(body, {
             abortEarly: false,
         });
 
@@ -474,14 +639,11 @@ const add = asyncHandler(async (req, res) => {
 
         let customerId = value.customer;
 
-        // ✅ Check if customer exists or create new
+        // ✅ Step 3: Customer handling
         if (!customerId) {
             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
 
             let existingCustomer = null;
-            // if (emailAddress) {
-            //     existingCustomer = await User.findOne({ email: emailAddress });
-            // }
             if (contactNumber) {
                 existingCustomer = await User.findOne({ phone: contactNumber });
             }
@@ -496,18 +658,18 @@ const add = asyncHandler(async (req, res) => {
                 );
             }
 
-            // ✅ Create Customer
+            // Create Customer
             const newCustomer = await User.create({
                 name: contactPerson,
                 email: emailAddress,
                 phone: contactNumber,
-                role: "Customer", // 👈 discriminator field
+                role: "Customer",
             });
 
             customerId = newCustomer._id;
             value.customer = customerId;
 
-            // ✅ Create Hospital for this customer
+            // Create Hospital for this customer
             const newHospital = await Hospital.create({
                 name: hospitalName,
                 email: emailAddress,
@@ -523,24 +685,17 @@ const add = asyncHandler(async (req, res) => {
             value.hospital = newHospital._id;
         }
 
-        // ✅ Handle file uploads to S3
+        // ✅ Step 4: Handle file uploads to S3
         let attachments = [];
-        if (req.files && req.files.length > 0) {
-            const uploadPromises = req.files.map(async (file) => {
-                const { url, key } = await uploadToS3(file);
-                return {
-                    filename: file.originalname,
-                    key,
-                    url,
-                    mimetype: file.mimetype,
-                    size: file.size,
-                };
-            });
-            attachments = await Promise.all(uploadPromises);
+        // ✅ Step 4: Handle single file upload to S3
+        if (req.file) {
+            const { url } = await uploadToS3(req.file);
+            value.attachment = url; // matches your schema
         }
+
         value.attachments = attachments;
 
-        // ✅ Create Services
+        // ✅ Step 5: Create Services
         let serviceIds = [];
         if (value.services && value.services.length > 0) {
             const transformedServices = value.services.map((s) => ({
@@ -558,7 +713,7 @@ const add = asyncHandler(async (req, res) => {
             serviceIds = createdServices.map((s) => s._id);
         }
 
-        // ✅ Create Additional Services
+        // ✅ Step 6: Create Additional Services
         let additionalServiceIds = [];
         if (value.additionalServices && Object.keys(value.additionalServices).length > 0) {
             const createdAdditionalServices = await AdditionalService.insertMany(
@@ -573,26 +728,29 @@ const add = asyncHandler(async (req, res) => {
 
         const { additionalServices, services, ...rest } = value;
 
-        // ✅ Create Enquiry
+        // ✅ Step 7: Create Enquiry
         const newEnquiry = await Enquiry.create({
             ...rest,
             services: serviceIds,
             additionalServices: additionalServiceIds,
             enquiryStatusDates: { enquiredOn: new Date() },
+            attachment: value.attachment, // single file URL
+
         });
 
-        // ✅ Link enquiry to customer
+        // ✅ Step 8: Link enquiry to customer
         await User.findByIdAndUpdate(customerId, {
             $push: { enquiries: newEnquiry._id },
         });
 
-        // ✅ Link enquiry to hospital
+        // ✅ Step 9: Link enquiry to hospital
         if (value.hospital) {
             await Hospital.findByIdAndUpdate(value.hospital, {
                 $push: { enquiries: newEnquiry._id },
             });
         }
 
+        console.log("🚀 ~ newEnquiry:", newEnquiry);
         return res
             .status(201)
             .json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
@@ -601,6 +759,7 @@ const add = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create enquiry", [error.message]);
     }
 });
+
 
 
 // const createDirectOrder = asyncHandler(async (req, res) => {
@@ -2096,9 +2255,46 @@ const addByHospitalId = asyncHandler(async (req, res) => {
 
 const getAll = asyncHandler(async (req, res) => {
     try {
-        const enquiries = await Enquiry.find()
-            .populate("customer")
-            .sort({ createdAt: -1 });           // populates the customer info
+        const enquiries = await Enquiry.aggregate([
+            {
+                $lookup: {
+                    from: "quotations",            // collection name
+                    localField: "_id",
+                    foreignField: "enquiry",
+                    as: "quotation"
+                }
+            },
+            {
+                $project: {
+                    enquiryId: 1,
+                    hospitalName: 1,
+                    fullAddress: 1,
+                    city: 1,
+                    district: 1,
+                    state: 1,
+                    pinCode: 1,
+                    branch: 1,
+                    contactPerson: 1,
+                    emailAddress: 1,
+                    contactNumber: 1,
+                    designation: 1,
+                    enquiryStatus: 1,
+                    quotationStatus: 1,
+                    createdAt: 1,
+                    updatedAt: 1,
+                    discount: 1,
+                    grandTotal: 1,
+                    subtotalAmount: 1,
+                    // only keep rejectionRemark from quotation
+                    quotation: {
+                        rejectionRemark: { $arrayElemAt: ["$quotation.rejectionRemark", 0] }
+                    }
+                }
+            },
+            { $sort: { createdAt: -1 } }
+        ]);
+
+        // populates the customer info
 
         const createdQuotations = await Quotation.find({ quotationStatus: "Created" })
             .populate("enquiry")
@@ -2108,7 +2304,8 @@ const getAll = asyncHandler(async (req, res) => {
         // console.log("Created Quotations:", createdQuotations);
         console.log(enquiries.map(e => ({
             enquiryId: e.enquiryId,
-            quotationStatus: e.quotationStatus || 'No quotation linked'
+            quotationStatus: e.quotationStatus || 'No quotation linked',
+            rejectionRemark: e.rejectionRemark
         })));
         return res
             .status(200)
@@ -2295,6 +2492,14 @@ const getEnquiryDetailsById = async (req, res) => {
             return res.status(404).json({ message: "Enquiry not found" });
         }
 
+        let attachmentSignedUrl = null;
+        if (enquiry.attachment) {
+            // attachment is a string URL → extract key
+            const urlParts = enquiry.attachment.split(".com/");
+            const key = urlParts[1]; // everything after bucket-name.s3.amazonaws.com/
+            attachmentSignedUrl = await getS3SignedUrl(key);
+        }
+
         return res.status(200).json({
             enquiryId: enquiry.enquiryId,
             hospitalName: enquiry.hospitalName,
@@ -2304,10 +2509,14 @@ const getEnquiryDetailsById = async (req, res) => {
             pinCode: enquiry.pinCode,
             designation: enquiry.designation,
             customer: enquiry.customer,
-            services: enquiry.services, // now includes populated QATest.officeStaff & Elora.officeStaff
+            services: enquiry.services,
+            contactPerson: enquiry.contactPerson,
+            contactNumber: enquiry.contactNumber,
+            emailAddress: enquiry.emailAddress,
             additionalServices: enquiry.additionalServices,
             specialInstructions: enquiry.specialInstructions,
-            attachment: enquiry.attachment,
+            attachment: enquiry.attachment, // return original stored string
+            signedUrl: attachmentSignedUrl, // optional signed download link
             enquiryStatus: enquiry.enquiryStatus,
             enquiryStatusDates: enquiry.enquiryStatusDates,
             quotationStatus: enquiry.quotationStatus,

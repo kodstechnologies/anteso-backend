@@ -8,6 +8,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { clientValidationSchema } from "../../validators/clientValidators.js";
 import { handleDuplicateKeyError } from "../../utils/ErrorHandler.js";
+import User from "../../models/user.model.js";
 
 const create = asyncHandler(async (req, res) => {
     const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
@@ -75,11 +76,11 @@ const getAll = asyncHandler(async (req, res) => {
 const getById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const client = await Client.findById(id)
-        .populate({
-            path: 'hospitals',
-            populate: [{ path: 'institutes' }, { path: 'rsos' }]
-        });
+    const client = await User.findById(id).select('_id name email phone');
+    // .populate({
+    //     path: 'hospitals',
+    //     populate: [{ path: 'institutes' }, { path: 'rsos' }]
+    // });
 
     if (!client) throw new ApiError(404, 'Client not found');
 
@@ -109,7 +110,7 @@ const updateById = asyncHandler(async (req, res) => {
 
     const updatedClient = await Client.findByIdAndUpdate(
         id,
-        { name, phone, email, address, gstNo, hospitals: validHospitals },
+        { name, phone, email, address, gstNo },
         { new: true, runValidators: true }
     );
 

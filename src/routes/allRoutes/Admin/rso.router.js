@@ -20,7 +20,7 @@ router.get('/get-rso-by-clienId-and-rsoId/:clientId/:rsoId', RSOController.getrs
 router.post('/create-rso-by-hospitalId/:hospitalId', upload.single("attachment"), rsoController.createRsoByHospitalId)
 router.get('/get-rso-by-hospitalId-rsoId/:hospitalId/:rsoId', rsoController.getRsoByHospitalIdAndRsoId)
 router.get('/get-all-rso-by-hospitalId/:hospitalId', rsoController.getAllRsoByHospitalId)
-router.put('/update-rso-by-hospitalId-rsoId/:hospitalId/:rsoId ', rsoController.updateRsoByHospitalId)
+router.put('/edit/:hospitalId/:rsoId ', rsoController.updateRsoByHospitalId)
 router.delete('/delete-rso-by-hospitalId-rsoId/:hospitalId/:rsoId', rsoController.deleteRsoByHospitalId)
 
 

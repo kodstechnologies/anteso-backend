@@ -4,7 +4,7 @@ import upload from '../../../middlewares/upload.js'
 const router = Router();
 
 //enquiry creation by open form
-router.post('/add', EnquiryController.add) //--1--done
+router.post("/add", upload.single("attachment"), EnquiryController.add);
 router.get('/get-all', EnquiryController.getAll)
 router.get("/all-states", EnquiryController.getAllStates)
 

@@ -6,4 +6,5 @@ router.post('/add',manufacturerController.addManufacturer)
 router.get('/get-by-id/:id',manufacturerController.getManufacturerById)
 router.put('/update-manufacturer/:id',manufacturerController.editManufacturer)
 router.delete('/delete-manufacturer/:id',manufacturerController.deleteManufacturer)
+router.get('/get-all',manufacturerController.getAllManufacturers)
 export default router

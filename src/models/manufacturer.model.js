@@ -16,6 +16,7 @@ const qaTestSchema = new Schema({
 // Manufacturer Schema
 const ManufacturerSchema = new Schema(
     {
+        contactPersonName: { type: String, trim: true },
         city: {
             type: String,
         },

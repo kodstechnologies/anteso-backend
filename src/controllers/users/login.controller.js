@@ -144,7 +144,18 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     };
 
     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "1d" });
+    // Refresh token (long life)
+    const refreshToken = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "7d" });
 
+    // ✅ Store refresh token in secure HTTP-only cookie
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,   // not accessible by JavaScript
+        secure: process.env.NODE_ENV === "production", // only HTTPS in production
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    // Remove OTP record after successful verification
     await LoginOtp.deleteOne({ mobileNumber });
 
     return res.status(200).json(

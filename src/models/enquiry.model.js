@@ -44,7 +44,7 @@ const enquirySchema = new mongoose.Schema({
     // Status Tracking
     enquiryStatus: {
         type: String,
-        enum: ['Enquired', 'Quotation Sent', 'Approved', 'Rejected'],
+        enum: ['Enquired', 'Quotation Sent', 'Approved', 'Rejected'],  
         default: 'Enquired'
     },
     enquiryStatusDates: {

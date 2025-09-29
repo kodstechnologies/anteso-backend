@@ -40,7 +40,6 @@ const adminLogin = asyncHandler(async (req, res) => {
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: "7d" }
     );
-    // 5. Optional: Store or send refreshToken securely (e.g. HTTP-only cookie)
     res.status(200).json(
         new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
     );

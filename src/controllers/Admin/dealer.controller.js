@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Dealer from "../../models/dealer.model.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
+import {ApiResponse} from "../../utils/ApiResponse.js"
 
 const FIXED_QA_TESTS = [
     { testName: "FIXED X RAY", price: 3500 },

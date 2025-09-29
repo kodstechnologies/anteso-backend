@@ -50,3 +50,10 @@ export const uploadToS3 = async (file) => {
     const url = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
     return { key, url };
 };
+export const getS3SignedUrl = async (key, expiresIn = 3600) => {
+    const command = new GetObjectCommand({
+        Bucket: process.env.AWS_BUCKET_NAME,
+        Key: key,
+    });
+    return await getSignedUrl(s3, command, { expiresIn }); // default 1 hour
+};

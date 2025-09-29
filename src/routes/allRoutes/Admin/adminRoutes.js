@@ -17,13 +17,14 @@ import DealerRouter from '../Admin/dealer.router.js'
 import PaymentRouter from '../Admin/payment.router.js'
 import InvoiceRouter from '../Admin/invoice.router.js'
 import Manufacturer from '../Admin/manufacturer.router.js'
-import { authenticate } from '../../../middlewares/authMiddleware.js'
+import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js'
 
 // https://anteso-backend.onrender.com
 import { verifyAccessToken } from '../../../middlewares/adminAuthMiddleware.js';
 import { authorizeRoles } from '../../../middlewares/authorizeRoles.js';
 const router = Router();
 router.use('/auth', AuthRouter)
+router.use('/refresh', refreshAccessToken);
 router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Employee", "office-staff"))
 
 router.use('/clients', ClientRoutes)
@@ -35,14 +36,14 @@ router.get('/pdf', PDFRouter)
 router.use('/tools', ToolRoutes)
 router.use('/leaves', LeaveRoutes)
 router.use('/enquiry', EnquiryRoutes)
-router.use('/technician', TechnicianRoutes) 
+router.use('/technician', TechnicianRoutes)
 router.use('/quotation', QuotationRoutes)
 router.use('/courier', CourierRoutes)
 router.use('/orders', OrderRoutes)
 
 router.use('/advance', AdvanceRouter)
 router.use('/dealers', DealerRouter)
-router.use('/manufacturers',Manufacturer)
+router.use('/manufacturers', Manufacturer)
 router.use('/payment', PaymentRouter)
 router.use('/invoice', InvoiceRouter)
 export default router

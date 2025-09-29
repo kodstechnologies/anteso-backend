@@ -8,7 +8,8 @@ const addManufacturer = asyncHandler(async (req, res) => {
             name,
             email,
             phone,
-            password, // if you store hashed password in User
+            password,
+            contactPersonName,
             city,
             state,
             pincode,
@@ -25,6 +26,7 @@ const addManufacturer = asyncHandler(async (req, res) => {
             phone,
             password, // make sure you hash password if required
             city,
+            contactPersonName,
             state,
             pincode,
             branch,
@@ -146,5 +148,31 @@ const deleteManufacturer = async (req, res) => {
     }
 };
 
+const getAllManufacturers = async (req, res) => {
+    try {
+        // Fetch all manufacturers
+        const manufacturers = await Manufacturer.find();
 
-export default { addManufacturer, getManufacturerById, editManufacturer, deleteManufacturer }
+        if (!manufacturers || manufacturers.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "No manufacturers found",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            count: manufacturers.length,
+            data: manufacturers,
+        });
+    } catch (error) {
+        console.error("Error fetching manufacturers:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+};
+
+export default { addManufacturer, getManufacturerById, editManufacturer, deleteManufacturer, getAllManufacturers }
