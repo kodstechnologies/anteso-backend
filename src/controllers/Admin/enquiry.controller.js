@@ -1897,10 +1897,14 @@ const addByHospitalId = asyncHandler(async (req, res) => {
         const existingHospital = await Hospital.findById(hospitalId);
         if (!existingHospital) throw new ApiError(404, "Hospital not found");
 
-        // 🔍 Ensure customerId is provided
+        
         if (!req.body.customerId) {
-            throw new ApiError(400, "Customer ID is required");
+            return res.status(400).json(
+                new ApiResponse(400, null, "Customer ID is missing. Please provide a valid customerId in the request body.")
+            );
         }
+
+
 
         let value = { ...req.body };
 
