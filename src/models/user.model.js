@@ -27,10 +27,11 @@ const userSchema = new Schema(
     },
     {
         timestamps: true,
-        discriminatorKey: 'role', 
+        discriminatorKey: 'role',
     }
 );
 
 const User = mongoose.model('User', userSchema);
+userSchema.index({ phone: 1 }, { unique: true });
 
 export default User;
