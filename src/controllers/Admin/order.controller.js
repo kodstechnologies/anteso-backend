@@ -2833,6 +2833,60 @@ const getQaReportsByTechnician = async (req, res) => {
 
 
 // GET QA Report by orderId, serviceId, qaReportId
+// const getReportById = asyncHandler(async (req, res) => {
+//     const { orderId, serviceId, qaReportId } = req.params;
+
+//     // Validate IDs
+//     if (!mongoose.Types.ObjectId.isValid(orderId) ||
+//         !mongoose.Types.ObjectId.isValid(serviceId) ||
+//         !mongoose.Types.ObjectId.isValid(qaReportId)) {
+//         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
+//     }
+
+//     // Populate services -> workTypeDetails -> QAtest -> officeStaff
+//     const order = await orderModel.findById(orderId)
+//         .populate({
+//             path: "services",
+//             populate: {
+//                 path: "workTypeDetails.QAtest",
+//                 populate: { path: "officeStaff ", select: "name email" }
+//             }
+//         });
+
+//     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+//     // Find service
+//     const service = order.services.find(s => s._id.toString() === serviceId);
+//     if (!service) return res.status(404).json({ success: false, message: "Service not found in this order" });
+
+//     // Find QA report
+//     let foundReport = null;
+//     service.workTypeDetails.forEach(wt => {
+//         const qaId = wt.QAtest?._id ? wt.QAtest._id.toString() : wt.QAtest?.toString();
+//         if (qaId === qaReportId) {
+//             foundReport = {
+//                 orderId: order._id,
+//                 serviceId: service._id,
+//                 // srfNumber: order.srfNumber,
+//                 // procNoOrPoNo: order.procNoOrPoNo,
+//                 // partyCodeOrSysId: order.partyCodeOrSysId,
+//                 // machineType: service.machineType,
+//                 reportId: qaId,
+//                 report: wt.QAtest?.report,
+//                 // reportULRNumber: wt.QAtest?.reportULRNumber,
+//                 // qaTestReportNumber: wt.QAtest?.qaTestReportNumber,
+//                 // uploadedAt: wt.QAtest?.createdAt,
+//                 officeStaff: wt.QAtest?.officeStaff,
+//             };
+//         }
+//     });
+
+//     if (!foundReport) return res.status(404).json({ success: false, message: "Report not found in this service" });
+
+//     res.status(200).json({ success: true, report: foundReport });
+// });
+
+
 const getReportById = asyncHandler(async (req, res) => {
     const { orderId, serviceId, qaReportId } = req.params;
 
@@ -2867,15 +2921,9 @@ const getReportById = asyncHandler(async (req, res) => {
             foundReport = {
                 orderId: order._id,
                 serviceId: service._id,
-                // srfNumber: order.srfNumber,
-                // procNoOrPoNo: order.procNoOrPoNo,
-                // partyCodeOrSysId: order.partyCodeOrSysId,
-                // machineType: service.machineType,
                 reportId: qaId,
                 report: wt.QAtest?.report,
-                // reportULRNumber: wt.QAtest?.reportULRNumber,
-                // qaTestReportNumber: wt.QAtest?.qaTestReportNumber,
-                // uploadedAt: wt.QAtest?.createdAt,
+                reportStatus: wt.QAtest?.reportStatus, 
                 officeStaff: wt.QAtest?.officeStaff,
             };
         }
