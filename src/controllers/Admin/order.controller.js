@@ -917,28 +917,9 @@ const startOrder = asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'Engineer is not assigned to this order' });
     }
 
-    // Step 3: Add isSubmitted = false for each workTypeDetail
-    const servicesWithFlags = order.services.map(service => {
-        const workTypeDetailsWithFlag = service.workTypeDetails.map(wt => ({
-            ...wt.toObject(),
-            isSubmitted: false
-        }));
-
-        return {
-            ...service.toObject(),
-            workTypeDetails: workTypeDetailsWithFlag
-        };
-    });
-
-    const orderWithFlags = {
-        ...order.toObject(),
-        services: servicesWithFlags
-    };
-
-    // Step 4: Return order with isSubmitted flags
-    res.status(200).json(orderWithFlags);
+    // Step 3: Return order directly with DB value of isSubmitted
+    res.status(200).json(order);
 });
-
 
 //mobile api--previously created api -not using this one
 const updateOrderDetails = asyncHandler(async (req, res) => {

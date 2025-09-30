@@ -41,6 +41,7 @@ const workTypeDetailSchema = new mongoose.Schema({
     // qaTestReportNumber: {
     //     type: String
     // }
+    isSubmitted: { type: Boolean, default: false }
 }, { _id: false });
 const serviceSchema = new mongoose.Schema({
     machineType: {
