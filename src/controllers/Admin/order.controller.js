@@ -843,6 +843,49 @@ const createOrder = asyncHandler(async (req, res) => {
 
 //check this one also
 //mobile--get the order by customerId orderId and status--if status is inprogress then only show that order details
+// const startOrder = asyncHandler(async (req, res) => {
+//     const { employeeId, orderId } = req.params;
+//     // const {isSubmitted}=req.body
+
+//     if (!mongoose.Types.ObjectId.isValid(orderId) || !mongoose.Types.ObjectId.isValid(employeeId)) {
+//         return res.status(400).json({ message: 'Invalid orderId or employeeId' });
+//     }
+
+//     // Step 1: Find the order
+//     const order = await orderModel.findOne({
+//         _id: orderId,
+//         // status: 'assigned' // uncomment if needed
+//     })
+//         .populate({
+//             path: 'services',
+//             model: 'Service'
+//         })
+//         .populate({
+//             path: 'customer',
+//             model: 'User',
+//             select: 'name email phone role' // only required fields
+//         });
+
+
+//     if (!order) {
+//         return res.status(404).json({ message: 'Order not found' });
+//     }
+
+//     // Step 2: Check if employee is assigned as engineer
+//     const isEngineerAssigned = order.services.some(service =>
+//         service.workTypeDetails.some(work =>
+//             work.engineer?.toString() === employeeId
+//         )
+//     );
+
+//     if (!isEngineerAssigned) {
+//         return res.status(403).json({ message: 'Engineer is not assigned to this order' });
+//     }
+
+//     // Step 3: Return order
+//     res.status(200).json(order);
+// });
+
 const startOrder = asyncHandler(async (req, res) => {
     const { employeeId, orderId } = req.params;
 
@@ -851,18 +894,12 @@ const startOrder = asyncHandler(async (req, res) => {
     }
 
     // Step 1: Find the order
-    const order = await orderModel.findOne({
-        _id: orderId,
-        // status: 'assigned' // uncomment if needed
-    })
-        .populate({
-            path: 'services',
-            model: 'Service'
-        })
+    const order = await orderModel.findOne({ _id: orderId })
+        .populate({ path: 'services', model: 'Service' })
         .populate({
             path: 'customer',
             model: 'User',
-            select: 'name email phone role' // only required fields
+            select: 'name email phone role'
         });
 
     if (!order) {
@@ -880,9 +917,29 @@ const startOrder = asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'Engineer is not assigned to this order' });
     }
 
-    // Step 3: Return order
-    res.status(200).json(order);
+    // Step 3: Add isSubmitted = false for each workTypeDetail
+    const servicesWithFlags = order.services.map(service => {
+        const workTypeDetailsWithFlag = service.workTypeDetails.map(wt => ({
+            ...wt.toObject(),
+            isSubmitted: false
+        }));
+
+        return {
+            ...service.toObject(),
+            workTypeDetails: workTypeDetailsWithFlag
+        };
+    });
+
+    const orderWithFlags = {
+        ...order.toObject(),
+        services: servicesWithFlags
+    };
+
+    // Step 4: Return order with isSubmitted flags
+    res.status(200).json(orderWithFlags);
 });
+
+
 //mobile api--previously created api -not using this one
 const updateOrderDetails = asyncHandler(async (req, res) => {
     const { orderId, technicianId } = req.params;
