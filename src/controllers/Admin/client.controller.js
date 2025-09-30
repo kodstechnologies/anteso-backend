@@ -97,29 +97,26 @@ const updateById = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
     }
 
-    const { name, phone, email, address, gstNo, hospitals } = value;
-
-    const validateReferences = async (Model, ids) => {
-        if (!ids) return [];
-        const found = await Model.find({ _id: { $in: ids } });
-        if (found.length !== ids.length) {
-            throw new ApiError(400, `Some ${Model.modelName} IDs are invalid.`);
-        }
-        return ids;
-    };
-
-    const validHospitals = await validateReferences(Hospital, hospitals);
+    const { name, phone, email } = value;
 
     const updatedClient = await User.findByIdAndUpdate(
         id,
-        { name, phone, email, address, gstNo },
+        { name, phone, email },
         { new: true, runValidators: true }
     );
 
     if (!updatedClient) throw new ApiError(404, 'Client not found');
 
-    return res.status(200).json(new ApiResponse(200, updatedClient, 'Client updated successfully'));
+    // Only return the desired fields
+    const responseData = {
+        name: updatedClient.name,
+        email: updatedClient.email,
+        phone: updatedClient.phone
+    };
+
+    return res.status(200).json(new ApiResponse(200, responseData, 'Client updated successfully'));
 });
+
 
 const deleteById = asyncHandler(async (req, res) => {
     const { id } = req.params;
