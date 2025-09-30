@@ -424,11 +424,12 @@ const getMachineDetails = asyncHandler(async (req, res) => {
 
 // });
 
-
 const updateServiceWorkType = asyncHandler(async (req, res) => {
     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
-    const { machineModel, serialNumber, remark } = req.body;
-
+    const { machineModel, serialNumber, remark, isSubmitted } = req.body; // receive isSubmitted from body
+    if (!isSubmitted) {
+        return res.status(400).json({ message: "isSubmitted is required" });
+    }
     // ✅ Validate IDs
     if (
         !mongoose.Types.ObjectId.isValid(orderId) ||
@@ -465,6 +466,11 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         return res
             .status(404)
             .json({ message: "WorkTypeDetail not found for this technician" });
+    }
+
+    // ✅ Update isSubmitted from req.body
+    if (isSubmitted !== undefined) {
+        workTypeDetail.isSubmitted = Boolean(isSubmitted); // save it in DB
     }
 
     // ✅ Handle file uploads
@@ -504,31 +510,16 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
     workTypeDetail.elora = elora._id;
     incrementSequence();
 
-
+    // ✅ Save service
     await service.save();
-
-    // ✅ Clone workTypeDetails and add isSubmitted dynamically
-    const workTypeDetailsWithFlag = service.workTypeDetails.map((wt) => {
-        const isSame =
-            wt.workType === workTypeDetail.workType &&
-            ((wt.engineer && wt.engineer.toString() === technicianId));
-
-        return {
-            ...wt.toObject(),
-            isSubmitted: isSame,
-        };
-    });
 
     res.status(200).json({
         success: true,
         message: "Service workType updated successfully",
-        service: {
-            ...service.toObject(),
-            workTypeDetails: workTypeDetailsWithFlag,
-        },
+        service,
     });
-
 });
+
 
 const getReportNumbers = asyncHandler(async (req, res) => {
     try {
