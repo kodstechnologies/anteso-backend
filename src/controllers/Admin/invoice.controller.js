@@ -8,6 +8,7 @@ import Invoice from "../../models/invoice.model.js";
 import mongoose from "mongoose";
 import { generateReadableId } from "../../utils/GenerateReadableId.js";
 import Payment from "../../models/payment.model.js";
+import { uploadToS3 } from "../../utils/s3Upload.js";
 
 // const getAllOrdersWithType = async (req, res) => {
 //   try {
@@ -344,6 +345,7 @@ const createInvoice = asyncHandler(async (req, res) => {
       paymentAmount,
       utrNumber,
     } = req.body;
+    console.log("🚀 ~  req.body:", req.body)
     if (!orderId) {
       return res.status(400).json({
         success: false,
@@ -472,6 +474,32 @@ const createInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+// const getInvoiceById = asyncHandler(async (req, res) => {
+//   try {
+//     const { invoiceId } = req.params;
+
+//     // Validate invoiceId
+//     if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+//       return res.status(400).json({ success: false, message: "Invalid invoice ID" });
+//     }
+
+//     // Fetch invoice with optional population of enquiry
+//     const invoice = await Invoice.findById(invoiceId).populate("enquiry");
+
+//     if (!invoice) {
+//       return res.status(404).json({ success: false, message: "Invoice not found" });
+//     }
+
+//     res.status(200).json({ success: true, data: invoice });
+//   } catch (error) {
+//     console.error("Error fetching invoice:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error?.message || "Failed to fetch invoice",
+//     });
+//   }
+// });
+
 const getInvoiceById = asyncHandler(async (req, res) => {
   try {
     const { invoiceId } = req.params;
@@ -481,14 +509,22 @@ const getInvoiceById = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid invoice ID" });
     }
 
-    // Fetch invoice with optional population of enquiry
-    const invoice = await Invoice.findById(invoiceId).populate("enquiry");
+    // Fetch invoice with optional population of enquiry and order
+    const invoice = await Invoice.findById(invoiceId)
+      .populate("enquiry")
+      .populate("order"); // ✅ populate order to get orderId and other details
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: "Invoice not found" });
     }
 
-    res.status(200).json({ success: true, data: invoice });
+    // If you want to return orderId only
+    const invoiceData = {
+      ...invoice.toObject(),
+      orderId: invoice.order?._id, // add orderId explicitly
+    };
+
+    res.status(200).json({ success: true, data: invoiceData });
   } catch (error) {
     console.error("Error fetching invoice:", error);
     res.status(500).json({
@@ -497,6 +533,7 @@ const getInvoiceById = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 const getAllInvoices = asyncHandler(async (req, res) => {
   try {
@@ -561,5 +598,45 @@ const deleteInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+const uploadInvoicePdf = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const file = req.file;
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice }
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: "orderId is required" });
+    }
+
+    if (!file) {
+      return res.status(400).json({ success: false, message: "invoicePdf file is required" });
+    }
+
+    // Find invoice by orderId
+    const invoice = await Invoice.findOne({ order: orderId });
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: "Invoice not found for this orderId" });
+    }
+
+    // Upload file to S3
+    const { url } = await uploadToS3(file);
+
+    // Save S3 URL in invoice
+    invoice.invoicePdf = url;
+    await invoice.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Invoice PDF uploaded to S3 successfully",
+      data: invoice,
+    });
+  } catch (error) {
+    console.error("Error uploading invoice PDF:", error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to upload invoice PDF",
+    });
+  }
+});
+
+
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf }

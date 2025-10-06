@@ -202,26 +202,60 @@ const deleteHospitalByClientId = asyncHandler(async (req, res) => {
 });
 
 
+// const getAllHospitalsByClientId = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         console.log("🚀 ~ id:", id)
+
+//         const client = await Client.findById(id).populate({
+//             path: 'hospitals',
+//             populate: [
+//                 { path: 'rsos' },        // Assuming field name is 'rsos' in Hospital schema
+//                 { path: 'institutes' }   // Assuming field name is 'institutes' in Hospital schema
+//             ]
+//         });
+//         console.log("🚀 ~ client:", client)
+
+//         if (!client) {
+//             throw new ApiError(404, 'Client not found');
+//         }
+
+//         return res.status(200).json(
+//             new ApiResponse(200, client.hospitals, 'Hospitals (with RSOs & Institutes) fetched for client')
+//         );
+//     } catch (error) {
+//         return res.status(error.statusCode || 500).json(
+//             new ApiResponse(error.statusCode || 500, null, error.message || 'Something went wrong')
+//         );
+//     }
+// });
+
 const getAllHospitalsByClientId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("🚀 ~ id:", id)
+        console.log("🚀 ~ id:", id);
 
         const client = await Client.findById(id).populate({
             path: 'hospitals',
             populate: [
-                { path: 'rsos' },        // Assuming field name is 'rsos' in Hospital schema
-                { path: 'institutes' }   // Assuming field name is 'institutes' in Hospital schema
+                { path: 'rsos' },      
+                { path: 'institutes' }   
             ]
         });
-        console.log("🚀 ~ client:", client)
+        console.log("🚀 ~ client:", client);
 
         if (!client) {
             throw new ApiError(404, 'Client not found');
         }
 
+        // Add increment number for each hospital
+        const hospitalsWithNumbers = client.hospitals.map((hospital, index) => ({
+            number: index + 1, // 1-based numbering
+            ...hospital.toObject(), // convert mongoose doc to plain object
+        }));
+
         return res.status(200).json(
-            new ApiResponse(200, client.hospitals, 'Hospitals (with RSOs & Institutes) fetched for client')
+            new ApiResponse(200, hospitalsWithNumbers, 'Hospitals (with RSOs & Institutes) fetched for client')
         );
     } catch (error) {
         return res.status(error.statusCode || 500).json(
@@ -229,7 +263,6 @@ const getAllHospitalsByClientId = asyncHandler(async (req, res) => {
         );
     }
 });
-
 
 const getHospitalByClientIdAndHospitalId = asyncHandler(async (req, res) => {
     try {

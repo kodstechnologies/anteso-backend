@@ -59,7 +59,9 @@ const invoiceSchema = new Schema(
         order: {
             type: Schema.Types.ObjectId,
             ref: "Order", // reference to Order model
-
+        },
+        invoicePdf: {
+            type: String
         }
     },
     { timestamps: true }
