@@ -42,7 +42,13 @@ const quotationSchema = new Schema(
         customersPDF: {
             type: String
         },
-        termsAndConditions: [String],
+        termsAndConditions: [
+            {
+                id: { type: Number, required: true },
+                text: { type: String, required: true }
+            }
+        ]
+        ,
         pdfUrl: {
             type: String,
             default: null,

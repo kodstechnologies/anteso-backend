@@ -17,6 +17,7 @@ import DealerRouter from '../Admin/dealer.router.js'
 import PaymentRouter from '../Admin/payment.router.js'
 import InvoiceRouter from '../Admin/invoice.router.js'
 import Manufacturer from '../Admin/manufacturer.router.js'
+import SalaryRouter from "../Admin/salary.router.js"
 import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js'
 
 // https://anteso-backend.onrender.com
@@ -44,7 +45,7 @@ router.use('/technician', TechnicianRoutes)
 router.use('/quotation', QuotationRoutes)
 router.use('/courier', CourierRoutes)
 router.use('/orders', OrderRoutes)
-
+router.use('/salary', SalaryRouter)
 router.use('/advance', AdvanceRouter)
 router.use('/dealers', DealerRouter)
 router.use('/manufacturers', Manufacturer)

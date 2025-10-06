@@ -49,6 +49,7 @@ const verifyToken = (token, secret, type) => {
 
 export const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
+    console.log("🚀 ~ authenticate ~ token:", token)
     if (!token) throw new ApiError(401, "Token missing");
 
     // Try admin token first, then user token

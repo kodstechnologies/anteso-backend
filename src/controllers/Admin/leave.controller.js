@@ -35,7 +35,24 @@ const getAllLeaves = asyncHandler(async (req, res) => {
 
     const skip = (page - 1) * limit;
     const totalLeaves = await Leave.countDocuments();
-    const leaves = await Leave.find().skip(skip).limit(limit).sort({ createdAt: -1 });
+
+    // ✅ If no leaves exist, return empty array but still success
+    if (totalLeaves === 0) {
+        return res.status(200).json(
+            new ApiResponse(200, {
+                total: 0,
+                page,
+                limit,
+                totalPages: 0,
+                data: []
+            }, "No leaves found")
+        );
+    }
+
+    const leaves = await Leave.find()
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
     res.status(200).json(
         new ApiResponse(200, {
@@ -47,6 +64,7 @@ const getAllLeaves = asyncHandler(async (req, res) => {
         }, "Leaves fetched successfully")
     );
 });
+
 const updateLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updatedLeave = await Leave.findByIdAndUpdate(
@@ -107,7 +125,7 @@ const applyForLeave = asyncHandler(async (req, res) => {
         throw new ApiError(500, error.message || "Failed to apply for leave");
     }
 });
-    
+
 // const getLeaveByType=asyncHandler(async(req,res)=>{
 //     try {
 

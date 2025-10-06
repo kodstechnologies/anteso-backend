@@ -328,6 +328,7 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             description: s.description,
             totalAmount: s.totalAmount,
         }));
+        console.log("🚀 ~ additionalServiceSnapshots:", additionalServiceSnapshots)
 
         // Create quotation
         const quotation = await Quotation.create({

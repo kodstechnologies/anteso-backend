@@ -13,4 +13,5 @@ router.get('/get-all-leaves/:technicianId', leaveController.getAllLeavesByCustom
 router.post('/approve-leave/:employeeId/:leaveId',leaveController.approveLeave)
 router.post('/reject-leave/:employeeId/:leaveId',leaveController.rejectLeave)
 
+
 export default router

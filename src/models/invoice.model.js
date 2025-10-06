@@ -55,6 +55,12 @@ const invoiceSchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "Payment",
         },
+        // Inside invoiceSchema
+        order: {
+            type: Schema.Types.ObjectId,
+            ref: "Order", // reference to Order model
+
+        }
     },
     { timestamps: true }
 );

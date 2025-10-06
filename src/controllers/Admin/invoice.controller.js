@@ -344,6 +344,20 @@ const createInvoice = asyncHandler(async (req, res) => {
       paymentAmount,
       utrNumber,
     } = req.body;
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId is required to link invoice",
+      });
+    }
+
+    const orderExists = await Order.findById(orderId);
+    if (!orderExists) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
 
     if (!srfNumber || !buyerName) {
       return res.status(400).json({
@@ -424,6 +438,7 @@ const createInvoice = asyncHandler(async (req, res) => {
       igst: taxAmounts.igst,
       grandtotal: grandTotal,
       createdBy: req.user ? req.user._id : null,
+      order: orderId,
     });
 
     // If payment details are provided, create payment and link to invoice
