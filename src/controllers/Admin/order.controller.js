@@ -2010,7 +2010,6 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 //     }
 // });
 
-
 const completedStatusAndReport = asyncHandler(async (req, res) => {
     try {
         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
@@ -2161,8 +2160,6 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
         res.status(500).json({ message: error.message || "Server error" });
     }
 });
-
-
 
 // export const
 const getRawDetailsByTechnician = asyncHandler(async (req, res) => {
