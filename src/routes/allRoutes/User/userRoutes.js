@@ -12,7 +12,7 @@ router.use(authenticate, authorizeRoles("Admin", "Customer", ""))
 // router.post('/machines', machineRoutes)
 router.use('/machines', machineRoutes)
 // router.use('/logout')
-router.post("/logout", logout);s
+router.post("/logout", logout);
 
 
 export default router

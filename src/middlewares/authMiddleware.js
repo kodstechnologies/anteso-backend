@@ -35,62 +35,6 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 const JWT_ADMIN_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-
-// helper function to try verifying a token
-const verifyToken = (token, secret, type) => {
-    try {
-        const decoded = jwt.verify(token, secret);
-        console.log("🚀 ~ verifyToken ~ decoded:", decoded)
-        return { ...decoded, type };
-    } catch {
-        return null; // if fails, just return null instead of throwing
-    }
-};
-
-export const authenticate = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    console.log("🚀 ~ authenticate ~ token:", token)
-    if (!token) throw new ApiError(401, "Token missing");
-
-    // Try admin token first, then user token
-    const user =
-        verifyToken(token, JWT_ADMIN_SECRET, "admin") ||
-        verifyToken(token, JWT_USER_SECRET, "user");
-
-    if (!user) throw new ApiError(401, "Invalid or expired token");
-
-    req.user = user;
-    console.log("✅ Token authenticated:", req.user);
-
-    next();
-};
-
-// export const refreshAccessToken = asyncHandler(async (req, res) => {
-//     const refreshToken = req.cookies.refreshToken;
-//     if (!refreshToken) {
-//         throw new ApiError(401, "Refresh token missing");
-//     }
-
-//     try {
-//         const decoded = jwt.verify(refreshToken, JWT_USER_SECRET); 
-//         console.log("🚀 ~ decoded:", decoded);
-
-//         const newAccessToken = jwt.sign(
-//             { _id: decoded._id, role: decoded.role, phone: decoded.phone },
-//             JWT_USER_SECRET,
-//             { expiresIn: "15m" }
-//         );
-//         console.log("🚀 ~ newAccessToken:", newAccessToken);
-
-//         res
-//             .status(200)
-//             .json(new ApiResponse(200, { accessToken: newAccessToken }, "Access token refreshed"));
-//         return; // very important
-//     } catch (err) {
-//         console.error("🚀 ~ refreshAccessToken error:", err.message);
-//         throw new ApiError(401, "Invalid or expired refresh token");
-//     }
-// });
 export const refreshAccessToken = asyncHandler(async (req, res) => {
     // Check if body exists and has refreshToken
     if (!req.body || !req.body.refreshToken) {
@@ -134,3 +78,58 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         throw new ApiError(401, "Invalid or expired refresh token");
     }
 });
+// helper function to try verifying a token
+const verifyToken = (token, secret, type) => {
+    try {
+        const decoded = jwt.verify(token, secret);
+        console.log("🚀 ~ verifyToken ~ decoded:", decoded)
+        return { ...decoded, type };
+    } catch {
+        return null; // if fails, just return null instead of throwing
+    }
+};
+
+export const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    console.log("🚀 ~ authenticate ~ token:", token)
+    if (!token) throw new ApiError(401, "Token missing");
+
+    // Try admin token first, then user token
+    const user =
+        verifyToken(token, JWT_ADMIN_SECRET, "admin") ||
+        verifyToken(token, JWT_USER_SECRET, "user");
+
+    if (!user) throw new ApiError(401, "Invalid or expired token");
+
+    req.user = user;
+    console.log("✅ Token authenticated:", req.user);
+
+    next();
+};
+
+// export const refreshAccessToken = asyncHandler(async (req, res) => {
+//     const refreshToken = req.cookies.refreshToken;
+//     if (!refreshToken) {
+//         throw new ApiError(401, "Refresh token missing");
+//     }
+
+//     try {
+//         const decoded = jwt.verify(refreshToken, JWT_USER_SECRET);
+//         console.log("🚀 ~ decoded:", decoded);
+
+//         const newAccessToken = jwt.sign(
+//             { _id: decoded._id, role: decoded.role, phone: decoded.phone },
+//             JWT_USER_SECRET,
+//             { expiresIn: "15m" }
+//         );
+//         console.log("🚀 ~ newAccessToken:", newAccessToken);
+
+//         res
+//             .status(200)
+//             .json(new ApiResponse(200, { accessToken: newAccessToken }, "Access token refreshed"));
+//         return; // very important
+//     } catch (err) {
+//         console.error("🚀 ~ refreshAccessToken error:", err.message);
+//         throw new ApiError(401, "Invalid or expired refresh token");
+//     }
+// });
