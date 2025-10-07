@@ -23,6 +23,10 @@ app.use(cookieParser());
 // })
 
 //test push
+app.use((req, res, next) => {
+    console.log("👉 Incoming request:", req.method, req.originalUrl);
+    next();
+});
 
 app.use('/anteso', mainRouter)
 app.use(errorHandler);
