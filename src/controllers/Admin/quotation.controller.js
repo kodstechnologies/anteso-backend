@@ -288,7 +288,9 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params; // enquiryId
-        console.log("🚀 ~ id:", id)
+
+        
+        console.log("🚀 ~ inisde createQuotationByEnquiryId:")
         const {
             date,
             quotationNumber,
@@ -299,6 +301,7 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             bankDetails,
             companyDetails,
         } = req.body;
+        console.log("🚀 ~ req.body:", req.body)
 
         if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
 
@@ -321,6 +324,7 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             remark: s.remark,
             totalAmount: s.totalAmount,
         }));
+        console.log("🚀 ~ serviceSnapshots:", serviceSnapshots)
 
         const additionalServiceSnapshots = items.additionalServices.map((s) => ({
             id: s.id,

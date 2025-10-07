@@ -1897,7 +1897,7 @@ const addByHospitalId = asyncHandler(async (req, res) => {
         const existingHospital = await Hospital.findById(hospitalId);
         if (!existingHospital) throw new ApiError(404, "Hospital not found");
 
-        
+
         if (!req.body.customerId) {
             return res.status(400).json(
                 new ApiResponse(400, null, "Customer ID is missing. Please provide a valid customerId in the request body.")
@@ -2495,10 +2495,14 @@ const getEnquiryDetailsById = async (req, res) => {
 
         let attachmentSignedUrl = null;
         if (enquiry.attachment) {
-            // attachment is a string URL → extract key
             const urlParts = enquiry.attachment.split(".com/");
-            const key = urlParts[1]; // everything after bucket-name.s3.amazonaws.com/
-            attachmentSignedUrl = await getS3SignedUrl(key);
+            const key = urlParts[1];
+
+            if (key) {
+                attachmentSignedUrl = await getS3SignedUrl(key);
+            } else {
+                console.warn("Invalid attachment URL format:", enquiry.attachment);
+            }
         }
 
         return res.status(200).json({
