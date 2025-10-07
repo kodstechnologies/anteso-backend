@@ -44,7 +44,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
             message: "Request body missing or refreshToken not provided"
         });
     }
-
+    
     const { refreshToken } = req.body;
 
     try {
