@@ -2014,6 +2014,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 const completedStatusAndReport = asyncHandler(async (req, res) => {
     try {
         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
+        console.log("🚀 ~ status:", status)
 
         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
             return res.status(400).json({ message: "File is required for completed status" });
