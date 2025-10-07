@@ -5,15 +5,14 @@ import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddl
 import { authorizeRoles } from '../../../middlewares/authorizeRoles.js'
 import machineRoutes from '../../../routes/allRoutes/User/machineRoutes.js'
 const router = Router();
-router.post('/refresh', refreshAccessToken);
 router.use('/send-otp', sendOtp)
 router.use('/verify-otp', verifyOtp)
-// router.post('/refresh', refreshAccessToken)
+router.post('/refresh', refreshAccessToken)
 router.use(authenticate, authorizeRoles("Admin", "Customer", ""))
 // router.post('/machines', machineRoutes)
 router.use('/machines', machineRoutes)
 // router.use('/logout')
-router.post("/logout", logout);
+router.post("/logout", logout);s
 
 
 export default router
