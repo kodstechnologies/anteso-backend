@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import Employee from "../../models/technician.model.js";
 
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
+const JWT_REFRESH_SECRET=process.env.JWT_REFRESH_SECRET
 
 //otp functions using sendsms function
 
@@ -146,7 +147,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "5m" });
     console.log("🚀 ~ token:", token)
     // Refresh token (long life)
-    const refreshToken = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "5m" });
+    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "5m" });
     console.log("🚀 ~ refreshToken:", refreshToken)
 
     // ✅ Store refresh token in secure HTTP-only cookie

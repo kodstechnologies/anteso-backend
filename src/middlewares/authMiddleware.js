@@ -53,7 +53,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         console.log("👉 Incoming refresh route hit, body:", req.body);
 
 
-        const decoded = jwt.verify(refreshToken, JWT_USER_SECRET);
+        const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
         console.log("🚀 ~ decoded:", decoded);
 
         // create a new access token
