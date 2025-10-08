@@ -79,7 +79,11 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         );
     } catch (err) {
         console.error("🚀 ~ refreshAccessToken error:", err.message);
-        throw new ApiError(401, "Invalid or expired refresh token");
+        return res.status(401).json({
+            status: 401,
+            data: null,
+            message: "Invalid or expired refresh token"
+        });
     }
 });
 // helper function to try verifying a token
