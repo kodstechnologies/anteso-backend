@@ -144,10 +144,10 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         phone: user.phone,
     };
 
-    const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "5m" });
+    const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "2m" });
     console.log("🚀 ~ token:", token)
     // Refresh token (long life)
-    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "15m" });
+    const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "4m" });
     console.log("🚀 ~ refreshToken:", refreshToken)
 
     // ✅ Store refresh token in secure HTTP-only cookie
