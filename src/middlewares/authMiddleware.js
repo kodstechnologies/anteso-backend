@@ -67,7 +67,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         const newRefreshToken = jwt.sign(
             { _id: decoded._id, role: decoded.role, phone: decoded.phone },
             JWT_REFRESH_SECRET,
-            { expiresIn: "5m" }
+            { expiresIn: "15m" }
         );
 
         res.status(200).json(
