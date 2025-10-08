@@ -98,21 +98,43 @@ const verifyToken = (token, secret, type) => {
 };
 
 export const authenticate = (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    console.log("🚀 ~ authenticate ~ token:", token)
-    if (!token) throw new ApiError(401, "Token missing");
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        console.log("🚀 ~ authenticate ~ token:", token);
 
-    // Try admin token first, then user token
-    const user =
-        verifyToken(token, JWT_ADMIN_SECRET, "admin") ||
-        verifyToken(token, JWT_USER_SECRET, "user");
+        if (!token) {
+            return res.status(401).json({
+                status: 401,
+                data: null,
+                message: "Token missing",
+            });
+        }
 
-    if (!user) throw new ApiError(401, "Invalid or expired token");
+        // Try admin token first, then user token
+        const user =
+            verifyToken(token, JWT_ADMIN_SECRET, "admin") ||
+            verifyToken(token, JWT_USER_SECRET, "user");
 
-    req.user = user;
-    console.log("✅ Token authenticated:", req.user);
+        if (!user) {
+            return res.status(401).json({
+                status: 401,
+                data: null,
+                message: "Invalid or expired token",
+            });
+        }
 
-    next();
+        req.user = user;
+        console.log("✅ Token authenticated:", req.user);
+
+        next();
+    } catch (err) {
+        console.error("🚀 ~ authenticate error:", err.message);
+        return res.status(401).json({
+            status: 401,
+            data: null,
+            message: "Authentication failed",
+        });
+    }
 };
 
 // export const refreshAccessToken = asyncHandler(async (req, res) => {
