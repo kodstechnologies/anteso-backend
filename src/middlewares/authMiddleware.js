@@ -60,14 +60,14 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         const newAccessToken = jwt.sign(
             { _id: decoded._id, role: decoded.role, phone: decoded.phone },
             JWT_USER_SECRET,
-            { expiresIn: "2m" }
+            { expiresIn: "10m" }
         );
 
         // create a new refresh token
         const newRefreshToken = jwt.sign(
             { _id: decoded._id, role: decoded.role, phone: decoded.phone },
             JWT_REFRESH_SECRET,
-            { expiresIn: "4m" }
+            { expiresIn: "50m" }
         );
 
         res.status(200).json(

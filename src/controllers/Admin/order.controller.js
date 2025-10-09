@@ -16,14 +16,54 @@ import AdditionalService from "../../models/additionalService.model.js";
 import QATest from "../../models/QATest.model.js";
 import Elora from "../../models/elora.model.js";
 
+// const getAllOrders = asyncHandler(async (req, res) => {
+//     try {
+//         const orders = await orderModel.find({}).sort({ createdAt: -1 });
+//         console.log("🚀 ~ orders:", orders)
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(404).json({ message: "No orders found" });
+//         }
+//         res.status(200).json({
+//             message: "Orders fetched successfully",
+//             count: orders.length,
+//             orders
+//         });
+//     } catch (error) {
+//         console.error("Error in getAllOrders:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
+
+
 const getAllOrders = asyncHandler(async (req, res) => {
     try {
-        const orders = await orderModel.find({}).sort({ createdAt: -1 });
-        console.log("🚀 ~ orders:", orders)
+        let orders = await orderModel.find({}).sort({ createdAt: -1 });
+
+        // Fetch leadOwner names for all orders
+        orders = await Promise.all(
+            orders.map(async (order) => {
+                let leadOwnerName = order.leadOwner;
+
+                // Try to find a user with this ID or string
+                const user = await User.findById(order.leadOwner).select('name');
+                console.log("🚀 ~ user:", user)
+                if (user) {
+                    leadOwnerName = user.name;
+                }
+
+                return {
+                    ...order.toObject(),
+                    leadOwner: leadOwnerName
+                };
+            })
+        );
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No orders found" });
         }
+
         res.status(200).json({
             message: "Orders fetched successfully",
             count: orders.length,
@@ -34,6 +74,8 @@ const getAllOrders = asyncHandler(async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
+
+
 
 const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
     try {
