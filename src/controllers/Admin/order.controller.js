@@ -468,6 +468,7 @@ const getMachineDetails = asyncHandler(async (req, res) => {
 
 const updateServiceWorkType = asyncHandler(async (req, res) => {
     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
+    console.log("🚀 ~ workType:", workType)
     const { machineModel, serialNumber, remark, isSubmitted } = req.body; // receive isSubmitted from body
     if (!isSubmitted) {
         return res.status(400).json({ message: "isSubmitted is required" });
@@ -926,7 +927,7 @@ const startOrder = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'Invalid orderId or employeeId' });
     }
 
-    // Step 1: Find the order
+    // Step 1: Find the order with populated fields
     const order = await orderModel.findOne({ _id: orderId })
         .populate({ path: 'services', model: 'Service' })
         .populate({
@@ -939,19 +940,33 @@ const startOrder = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Step 2: Check if employee is assigned as engineer
-    const isEngineerAssigned = order.services.some(service =>
-        service.workTypeDetails.some(work =>
-            work.engineer?.toString() === employeeId
-        )
-    );
+    // Step 2: Filter services and workTypes to only include ones assigned to this engineer
+    const filteredServices = order.services.map(service => {
+        const filteredWorkTypes = service.workTypeDetails.filter(
+            work => work.engineer?.toString() === employeeId
+        );
 
-    if (!isEngineerAssigned) {
+        // Return service only if it has at least one assigned workType
+        if (filteredWorkTypes.length > 0) {
+            return {
+                ...service.toObject(),
+                workTypeDetails: filteredWorkTypes
+            };
+        }
+        return null;
+    }).filter(service => service !== null);
+
+    if (filteredServices.length === 0) {
         return res.status(403).json({ message: 'Engineer is not assigned to this order' });
     }
 
-    // Step 3: Return order directly with DB value of isSubmitted
-    res.status(200).json(order);
+    // Step 3: Return order but only with filtered services/workTypes
+    const responseOrder = {
+        ...order.toObject(),
+        services: filteredServices
+    };
+
+    res.status(200).json(responseOrder);
 });
 
 //mobile api--previously created api -not using this one
