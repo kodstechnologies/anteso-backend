@@ -3216,64 +3216,64 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
 });
 
 
-// const getQaReportsByTechnician = async (req, res) => {
-//     try {
-//         const { technicianId } = req.params;
+const getQaReportsByTechnician = async (req, res) => {
+    try {
+        const { technicianId } = req.params;
 
-//         if (!mongoose.Types.ObjectId.isValid(technicianId)) {
-//             return res.status(400).json({ success: false, message: "Invalid technicianId" });
-//         }
+        if (!mongoose.Types.ObjectId.isValid(technicianId)) {
+            return res.status(400).json({ success: false, message: "Invalid technicianId" });
+        }
 
-//         // Step 1: Find services for this technician
-//         const services = await Services.find({
-//             "workTypeDetails.engineer": technicianId,
-//         }).populate({
-//             path: "workTypeDetails.QAtest",
-//             select: "report reportULRNumber qaTestReportNumber createdAt",
-//         });
+        // Step 1: Find services for this technician
+        const services = await Services.find({
+            "workTypeDetails.engineer": technicianId,
+        }).populate({
+            path: "workTypeDetails.QAtest",
+            select: "report reportULRNumber qaTestReportNumber createdAt",
+        });
 
-//         if (!services || services.length === 0) {
-//             return res.status(404).json({ success: false, message: "No QA reports found for this technician" });
-//         }
+        if (!services || services.length === 0) {
+            return res.status(404).json({ success: false, message: "No QA reports found for this technician" });
+        }
 
-//         // Step 2: Collect all orderIds containing these services
-//         const serviceIds = services.map(s => s._id);
-//         const orders = await orderModel.find({ services: { $in: serviceIds } }).select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
+        // Step 2: Collect all orderIds containing these services
+        const serviceIds = services.map(s => s._id);
+        const orders = await orderModel.find({ services: { $in: serviceIds } }).select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
 
-//         // Step 3: Build response
-//         const reports = [];
-//         for (const service of services) {
-//             const parentOrder = orders.find(order => order.services.includes(service._id));
-//             service.workTypeDetails.forEach(wt => {
-//                 if (wt.engineer?.toString() === technicianId && wt.QAtest) {
-//                     reports.push({
-//                         orderId: parentOrder?._id,
-//                         srfNumber: parentOrder?.srfNumber,
-//                         procNoOrPoNo: parentOrder?.procNoOrPoNo,
-//                         partyCodeOrSysId: parentOrder?.partyCodeOrSysId,
-//                         serviceId: service._id,
-//                         machineType: service.machineType,
-//                         qaReportId: wt.QAtest._id,
-//                         report: wt.QAtest.report,
-//                         reportULRNumber: wt.QAtest.reportULRNumber,
-//                         qaTestReportNumber: wt.QAtest.qaTestReportNumber,
-//                         uploadedAt: wt.QAtest.createdAt,
-//                     });
-//                 }
-//             });
-//         }
+        // Step 3: Build response
+        const reports = [];
+        for (const service of services) {
+            const parentOrder = orders.find(order => order.services.includes(service._id));
+            service.workTypeDetails.forEach(wt => {
+                if (wt.engineer?.toString() === technicianId && wt.QAtest) {
+                    reports.push({
+                        orderId: parentOrder?._id,
+                        srfNumber: parentOrder?.srfNumber,
+                        procNoOrPoNo: parentOrder?.procNoOrPoNo,
+                        partyCodeOrSysId: parentOrder?.partyCodeOrSysId,
+                        serviceId: service._id,
+                        machineType: service.machineType,
+                        qaReportId: wt.QAtest._id,
+                        report: wt.QAtest.report,
+                        reportULRNumber: wt.QAtest.reportULRNumber,
+                        qaTestReportNumber: wt.QAtest.qaTestReportNumber,
+                        uploadedAt: wt.QAtest.createdAt,
+                    });
+                }
+            });
+        }
 
-//         return res.status(200).json({
-//             success: true,
-//             technicianId,
-//             totalReports: reports.length,
-//             reports,
-//         });
-//     } catch (error) {
-//         console.error("❌ Error in getQaReportsByTechnician:", error);
-//         res.status(500).json({ success: false, message: "Server error", error: error.message });
-//     }
-// };
+        return res.status(200).json({
+            success: true,
+            technicianId,
+            totalReports: reports.length,
+            reports,
+        });
+    } catch (error) {
+        console.error("❌ Error in getQaReportsByTechnician:", error);
+        res.status(500).json({ success: false, message: "Server error", error: error.message });
+    }
+};
 
 
 // GET /admin/orders/:orderId/:serviceId/:qaReportId
@@ -3334,70 +3334,79 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
 // });
 
 
-const getQaReportsByTechnician = async (req, res) => {
-    try {
-        const { technicianId } = req.params;
+// const getQaReportsByTechnician = async (req, res) => {
+//     try {
+//         const { technicianId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(technicianId)) {
-            return res.status(400).json({ success: false, message: "Invalid technicianId" });
-        }
+//         if (!mongoose.Types.ObjectId.isValid(technicianId)) {
+//             return res.status(400).json({ success: false, message: "Invalid technicianId" });
+//         }
 
-        // Step 1: Find services for this technician
-        const services = await Services.find({
-            "workTypeDetails.engineer": technicianId,
-        }).populate({
-            path: "workTypeDetails.QAtest",
-            select: "report reportULRNumber qaTestReportNumber reportStatus createdAt",
-            match: { reportStatus: "pending" } // ✅ Only pending reports
-        });
+//         // Step 1: Fetch all services assigned to this technician
+//         const services = await Services.find({
+//             "workTypeDetails.engineer": technicianId
+//         }).populate({
+//             path: "workTypeDetails.QAtest",
+//             select: "report reportULRNumber qaTestReportNumber reportStatus createdAt"
+//         });
 
-        if (!services || services.length === 0) {
-            return res.status(404).json({ success: false, message: "No QA reports found for this technician" });
-        }
+//         if (!services.length) {
+//             return res.status(404).json({ success: false, message: "No services found for this technician" });
+//         }
 
-        // Step 2: Collect all orderIds containing these services
-        const serviceIds = services.map(s => s._id);
-        const orders = await orderModel.find({ services: { $in: serviceIds } })
-            .select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
+//         // Step 2: Fetch orders containing these services
+//         const serviceIds = services.map(s => s._id);
+//         const orders = await orderModel.find({
+//             services: { $elemMatch: { $in: serviceIds } }
+//         }).select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
 
-        // Step 3: Build response
-        const reports = [];
-        for (const service of services) {
-            const parentOrder = orders.find(order => order.services.includes(service._id));
-            service.workTypeDetails.forEach(wt => {
-                if (
-                    wt.engineer?.toString() === technicianId &&
-                    wt.QAtest // only populated if pending
-                ) {
-                    reports.push({
-                        orderId: parentOrder?._id,
-                        srfNumber: parentOrder?.srfNumber,
-                        procNoOrPoNo: parentOrder?.procNoOrPoNo,
-                        partyCodeOrSysId: parentOrder?.partyCodeOrSysId,
-                        serviceId: service._id,
-                        machineType: service.machineType,
-                        qaReportId: wt.QAtest._id,
-                        report: wt.QAtest.report,
-                        reportULRNumber: wt.QAtest.reportULRNumber,
-                        qaTestReportNumber: wt.QAtest.qaTestReportNumber,
-                        uploadedAt: wt.QAtest.createdAt,
-                        reportStatus: wt.QAtest.reportStatus
-                    });
-                }
-            });
-        }
+//         // Step 3: Build pending QA reports
+//         const reports = [];
 
-        return res.status(200).json({
-            success: true,
-            technicianId,
-            totalReports: reports.length,
-            reports,
-        });
-    } catch (error) {
-        console.error("❌ Error in getQaReportsByTechnician:", error);
-        res.status(500).json({ success: false, message: "Server error", error: error.message });
-    }
-};
+//         for (const service of services) {
+//             // Find parent order by comparing ObjectIds
+//             const parentOrder = orders.find(order =>
+//                 order.services.some(sId => sId.equals(service._id))
+//             );
+
+//             service.workTypeDetails.forEach(wt => {
+//                 if (wt.engineer?.toString() === technicianId && wt.QAtest?.reportStatus === "pending") {
+//                     reports.push({
+//                         orderId: parentOrder?._id,
+//                         srfNumber: parentOrder?.srfNumber,
+//                         procNoOrPoNo: parentOrder?.procNoOrPoNo,
+//                         partyCodeOrSysId: parentOrder?.partyCodeOrSysId,
+//                         serviceId: service._id,
+//                         machineType: service.machineType,
+//                         qaReportId: wt.QAtest._id,
+//                         report: wt.QAtest.report,
+//                         reportULRNumber: wt.QAtest.reportULRNumber,
+//                         qaTestReportNumber: wt.QAtest.qaTestReportNumber,
+//                         uploadedAt: wt.QAtest.createdAt,
+//                         reportStatus: wt.QAtest.reportStatus
+//                     });
+//                 }
+//             });
+//         }
+
+//         if (!reports.length) {
+//             return res.status(404).json({ success: false, message: "No pending QA reports found" });
+//         }
+
+//         return res.status(200).json({
+//             success: true,
+//             technicianId,
+//             totalReports: reports.length,
+//             reports
+//         });
+
+//     } catch (error) {
+//         console.error("❌ Error in getQaReportsByTechnician:", error);
+//         return res.status(500).json({ success: false, message: "Server error", error: error.message });
+//     }
+// };
+
+
 
 
 const getReportById = asyncHandler(async (req, res) => {
