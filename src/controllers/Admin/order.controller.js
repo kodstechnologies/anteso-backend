@@ -3224,28 +3224,30 @@ const getQaReportsByTechnician = async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid technicianId" });
         }
 
-        // Step 1: Find services for this technician
         const services = await Services.find({
             "workTypeDetails.engineer": technicianId,
         }).populate({
             path: "workTypeDetails.QAtest",
-            select: "report reportULRNumber qaTestReportNumber createdAt",
+            select: "report reportULRNumber qaTestReportNumber reportStatus createdAt",
         });
 
         if (!services || services.length === 0) {
             return res.status(404).json({ success: false, message: "No QA reports found for this technician" });
         }
 
-        // Step 2: Collect all orderIds containing these services
         const serviceIds = services.map(s => s._id);
-        const orders = await orderModel.find({ services: { $in: serviceIds } }).select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
+        const orders = await orderModel.find({ services: { $in: serviceIds } })
+            .select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
 
-        // Step 3: Build response
         const reports = [];
         for (const service of services) {
             const parentOrder = orders.find(order => order.services.includes(service._id));
             service.workTypeDetails.forEach(wt => {
-                if (wt.engineer?.toString() === technicianId && wt.QAtest) {
+                if (
+                    wt.engineer?.toString() === technicianId &&
+                    wt.QAtest &&
+                    wt.QAtest.reportStatus === "pending" // ✅ filter pending only
+                ) {
                     reports.push({
                         orderId: parentOrder?._id,
                         srfNumber: parentOrder?.srfNumber,
@@ -3258,6 +3260,7 @@ const getQaReportsByTechnician = async (req, res) => {
                         reportULRNumber: wt.QAtest.reportULRNumber,
                         qaTestReportNumber: wt.QAtest.qaTestReportNumber,
                         uploadedAt: wt.QAtest.createdAt,
+                        reportStatus: wt.QAtest.reportStatus
                     });
                 }
             });
