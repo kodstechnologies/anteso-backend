@@ -54,7 +54,12 @@ const hospitalSchema = new Schema(
                 ref: "Enquiry",
             }
         ],
-
+        qaReports: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "QAReport", // assuming QAReport is a model
+            }
+        ]
     },
     { timestamps: true }
 );
