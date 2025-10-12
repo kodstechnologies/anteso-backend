@@ -9,6 +9,7 @@ import mongoose from "mongoose";
 import { generateReadableId } from "../../utils/GenerateReadableId.js";
 import Payment from "../../models/payment.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
+import { getFileUrl } from "../../utils/s3Fetch.js";
 
 // const getAllOrdersWithType = async (req, res) => {
 //   try {
@@ -503,6 +504,7 @@ const createInvoice = asyncHandler(async (req, res) => {
 const getInvoiceById = asyncHandler(async (req, res) => {
   try {
     const { invoiceId } = req.params;
+    console.log("🚀 ~ invoiceId:", invoiceId)
 
     // Validate invoiceId
     if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
@@ -513,6 +515,7 @@ const getInvoiceById = asyncHandler(async (req, res) => {
     const invoice = await Invoice.findById(invoiceId)
       .populate("enquiry")
       .populate("order"); // ✅ populate order to get orderId and other details
+    console.log("🚀 ~ invoice:", invoice)
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: "Invoice not found" });
@@ -638,5 +641,54 @@ const uploadInvoicePdf = asyncHandler(async (req, res) => {
   }
 });
 
+const getInvoicePdf = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    console.log("🚀 ~ getInvoicePdf ~ orderId:", orderId);
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf }
+    // 1️⃣ Validate orderId
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID",
+      });
+    }
+
+    // 2️⃣ Find invoice linked with this order
+    const invoice = await Invoice.findOne({ order: orderId });
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice not found for this order",
+      });
+    }
+
+    // 3️⃣ Check for stored invoicePdf URL
+    if (!invoice.invoicePdf) {
+      return res.status(404).json({
+        success: false,
+        message: "No invoice PDF found for this order",
+      });
+    }
+
+    // 4️⃣ Send database-stored invoicePdf URL
+    res.status(200).json({
+      success: true,
+      data: {
+        orderId,
+        invoiceId: invoice._id,
+        invoiceNumber: invoice.invoiceId,
+        invoicePdf: invoice.invoicePdf, // direct DB value (URL)
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in getInvoicePdf:", error);
+    res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to retrieve invoice PDF",
+    });
+  }
+});
+
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf }

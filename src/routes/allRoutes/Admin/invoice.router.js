@@ -8,6 +8,8 @@ router.post('/create-invoice', InvoiceController.createInvoice)
 router.get('/get-invoice-by-id/:invoiceId', InvoiceController.getInvoiceById)
 router.get('/get-all-invoices', InvoiceController.getAllInvoices)
 router.delete('/delete-invoice/:id', InvoiceController.deleteInvoice)
-router.post("/upload-pdf/:orderId", Upload.single("invoicePdf"), InvoiceController.uploadInvoicePdf);
 
+//mobile API'S
+router.post("/upload-pdf/:orderId", Upload.single("invoicePdf"), InvoiceController.uploadInvoicePdf);
+router.get("/get-invoice-pdf/:orderId",InvoiceController.getInvoicePdf)
 export default router
