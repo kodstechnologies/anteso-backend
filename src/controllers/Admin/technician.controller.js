@@ -792,12 +792,100 @@ const addExpenseByTechnicianAndTripId = asyncHandler(async (req, res) => {
 //     });
 // });
 
+// const addTripExpense = asyncHandler(async (req, res) => {
+//     const { tripId, technicianId } = req.params;
+//     const { requiredAmount, typeOfExpense, date, remarks } = req.body;
+//     const file = req.file; // multer puts the file here
+
+//     // validate
+//     const amt = Number(requiredAmount);
+//     if (!amt || isNaN(amt) || amt <= 0) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "Please provide a valid amount (> 0)."
+//         });
+//     }
+
+//     // find trip
+//     const trip = await tripModel.findById(tripId).populate("expenses");
+//     if (!trip) {
+//         return res.status(404).json({ success: false, message: "Trip not found." });
+//     }
+//     if (trip.tripstatus === "completed") {
+//         return res.status(400).json({ success: false, message: "Cannot add expenses to a completed trip." });
+//     }
+//     if (!trip.technician || trip.technician.toString() !== technicianId) {
+//         return res.status(400).json({ success: false, message: "Technician is not assigned to this trip." });
+//     }
+
+//     // find technician's advance account
+//     const account = await advanceAccountModel.findOne({ technician: technicianId });
+//     if (!account) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "No advance account found for this technician. Admin must add advanced amount first."
+//         });
+//     }
+
+//     // check balance
+//     if (amt > account.balance) {
+//         return res.status(400).json({ success: false, message: "Not enough balance." });
+//     }
+
+//     // upload screenshot if present
+//     let screenshotUrl = null;
+//     if (file) {
+//         const { url } = await uploadToS3(file);
+//         screenshotUrl = url;
+//     }
+
+//     // update account totals
+//     account.totalExpense += amt;
+//     account.balance -= amt;
+//     await account.save();
+
+//     // create expense linked to trip
+//     const expense = await expenseModel.create({
+//         trip: tripId,
+//         typeOfExpense,
+//         requiredAmount: amt,
+//         date: date || new Date(),
+//         screenshot: screenshotUrl,
+//         remarks
+//     });
+
+//     // attach expense to trip
+//     trip.expenses.push(expense._id);
+//     await trip.save();
+
+//     // calculate total expense for this trip
+//     const tripExpenses = await expenseModel.find({ _id: { $in: trip.expenses } });
+//     const tripTotalExpense = tripExpenses.reduce((sum, exp) => sum + (exp.requiredAmount || 0), 0);
+
+//     return res.status(201).json({
+//         success: true,
+//         message: "Expense added successfully",
+//         data: {
+//             tripId: trip._id,
+//             expense,
+//             accountSummary: {
+//                 advancedAmount: account.advancedAmount,
+//                 totalExpense: account.totalExpense,
+//                 balance: account.balance
+//             },
+//             tripSummary: { tripTotalExpense },
+//             submittedData: { requiredAmount, typeOfExpense, date, remarks, screenshotUrl }
+//         }
+//     });
+// });
+
 const addTripExpense = asyncHandler(async (req, res) => {
     const { tripId, technicianId } = req.params;
     const { requiredAmount, typeOfExpense, date, remarks } = req.body;
-    const file = req.file; // multer puts the file here
+    console.log("🚀 ~ req.body:", req.body)
+    const file = req.file;
 
-    // validate
+    // Validate amount
     const amt = Number(requiredAmount);
     if (!amt || isNaN(amt) || amt <= 0) {
         return res.status(400).json({
@@ -806,19 +894,40 @@ const addTripExpense = asyncHandler(async (req, res) => {
         });
     }
 
-    // find trip
+    // Find trip
     const trip = await tripModel.findById(tripId).populate("expenses");
     if (!trip) {
         return res.status(404).json({ success: false, message: "Trip not found." });
     }
+
     if (trip.tripstatus === "completed") {
         return res.status(400).json({ success: false, message: "Cannot add expenses to a completed trip." });
     }
+
     if (!trip.technician || trip.technician.toString() !== technicianId) {
         return res.status(400).json({ success: false, message: "Technician is not assigned to this trip." });
     }
 
-    // find technician's advance account
+    // ✅ Validate date range
+    const expenseDate = new Date(date);
+    const startDate = new Date(trip.startDate);
+    const endDate = new Date(trip.endDate);
+
+    // Normalize dates to YYYY-MM-DD (ignore time)
+    const normalizeDate = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    const expDateOnly = normalizeDate(expenseDate);
+    const startDateOnly = normalizeDate(startDate);
+    const endDateOnly = normalizeDate(endDate);
+
+    if (expDateOnly < startDateOnly || expDateOnly > endDateOnly) {
+        return res.status(400).json({
+            success: false,
+            message: `Expense date must be between ${startDateOnly.toLocaleDateString("en-GB")} and ${endDateOnly.toLocaleDateString("en-GB")}.`
+        });
+    }
+
+    // Find technician's advance account
     const account = await advanceAccountModel.findOne({ technician: technicianId });
     if (!account) {
         return res.status(400).json({
@@ -827,38 +936,38 @@ const addTripExpense = asyncHandler(async (req, res) => {
         });
     }
 
-    // check balance
+    // Check balance
     if (amt > account.balance) {
         return res.status(400).json({ success: false, message: "Not enough balance." });
     }
 
-    // upload screenshot if present
+    // Upload screenshot if present
     let screenshotUrl = null;
     if (file) {
         const { url } = await uploadToS3(file);
         screenshotUrl = url;
     }
 
-    // update account totals
+    // Update account totals
     account.totalExpense += amt;
     account.balance -= amt;
     await account.save();
 
-    // create expense linked to trip
+    // Create expense linked to trip
     const expense = await expenseModel.create({
         trip: tripId,
         typeOfExpense,
         requiredAmount: amt,
-        date: date || new Date(),
+        date: expenseDate,
         screenshot: screenshotUrl,
         remarks
     });
 
-    // attach expense to trip
+    // Attach expense to trip
     trip.expenses.push(expense._id);
     await trip.save();
 
-    // calculate total expense for this trip
+    // Calculate total expense for this trip
     const tripExpenses = await expenseModel.find({ _id: { $in: trip.expenses } });
     const tripTotalExpense = tripExpenses.reduce((sum, exp) => sum + (exp.requiredAmount || 0), 0);
 
@@ -878,7 +987,6 @@ const addTripExpense = asyncHandler(async (req, res) => {
         }
     });
 });
-
 
 
 const getTransactionLogs = asyncHandler(async (req, res) => {
