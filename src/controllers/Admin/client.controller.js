@@ -49,29 +49,57 @@ const create = asyncHandler(async (req, res) => {
     }
 });
 
+// const getAll = asyncHandler(async (req, res) => {
+//     const page = parseInt(req.query.page) || 1;
+//     const limit = 10;
+//     const skip = (page - 1) * limit;
+
+//     const totalClients = await Client.countDocuments();
+//     const clients = await Client.find()
+//         .populate({
+//             path: 'hospitals',
+//             populate: [{ path: 'institutes' }, { path: 'rsos' }]
+//         })
+//         .skip(skip)
+//         .limit(limit);
+
+//     return res.status(200).json(
+//         new ApiResponse(200, {
+//             clients,
+//             totalClients,
+//             totalPages: Math.ceil(totalClients / limit),
+//             currentPage: page
+//         }, 'Clients fetched successfully')
+//     );
+// });
+
+
+
 const getAll = asyncHandler(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 10;
-    const skip = (page - 1) * limit;
+    try {
+        // Fetch all clients and populate nested references
+        const clients = await Client.find()
+            .populate({
+                path: 'hospitals',
+                populate: [{ path: 'institutes' }, { path: 'rsos' }]
+            });
 
-    const totalClients = await Client.countDocuments();
-    const clients = await Client.find()
-        .populate({
-            path: 'hospitals',
-            populate: [{ path: 'institutes' }, { path: 'rsos' }]
-        })
-        .skip(skip)
-        .limit(limit);
+        const totalClients = clients.length;
 
-    return res.status(200).json(
-        new ApiResponse(200, {
-            clients,
-            totalClients,
-            totalPages: Math.ceil(totalClients / limit),
-            currentPage: page
-        }, 'Clients fetched successfully')
-    );
+        return res.status(200).json(
+            new ApiResponse(200, {
+                clients,
+                totalClients
+            }, 'Clients fetched successfully')
+        );
+    } catch (error) {
+        console.error("❌ Error fetching clients:", error);
+        return res.status(500).json(
+            new ApiResponse(500, null, 'Failed to fetch clients')
+        );
+    }
 });
+
 
 const getById = asyncHandler(async (req, res) => {
     const { id } = req.params;

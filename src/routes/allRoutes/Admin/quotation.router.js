@@ -3,6 +3,7 @@ const router = Router();
 import upload from '../../../middlewares/upload.js'
 import quotationController from "../../../controllers/Admin/quotation.controller.js";
 router.post('/create/:id', quotationController.createQuotationByEnquiryId)
+router.put('/edit-quotation/:id',quotationController.updateQuotationById)
 router.get('/get-by-enquiry-id/:id', quotationController.getQuotationByEnquiryId)
 router.get('/get-quotation-by-hospital-enq-quo-ids/:hospitalId/:enquiryId', quotationController.getQuotationByIds)
 router.put(

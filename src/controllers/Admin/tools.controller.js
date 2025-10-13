@@ -66,20 +66,92 @@ const allTools = asyncHandler(async (req, res) => {
     );
 });
 
+// const updateById = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
+//     const { error, value } = createToolSchema.validate(req.body);
+//     if (error) {
+//         throw new ApiError(400, error.details[0].message);
+//     }
+//     const updatedTool = await Tool.findByIdAndUpdate(id, value, {
+//         new: true, // return updated doc
+//         runValidators: true, // apply schema validation
+//     });
+//     if (!updatedTool) {
+//         throw new ApiError(404, "Tool not found");
+//     }
+//     res.status(200).json(new ApiResponse(200, updatedTool, "Tool updated successfully"));
+// });
+
 const updateById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { error, value } = createToolSchema.validate(req.body);
-    if (error) {
-        throw new ApiError(400, error.details[0].message);
+    try {
+        const { toolId } = req.params;
+        console.log("🚀 ~ toolId:", toolId)
+        const updateData = req.body;
+        console.log("🚀 ~ updateData:", updateData)
+
+        if (!toolId) {
+            return res.status(400).json({
+                success: false,
+                message: "Tool ID is required.",
+            });
+        }
+
+        // find tool by toolId
+        const tool = await Tools.findById(toolId);
+        console.log("🚀 ~ tool:", tool)
+        if (!tool) {
+            return res.status(404).json({
+                success: false,
+                message: "Tool not found.",
+            });
+        }
+
+        // ✅ Prevent invalid updates
+        const allowedFields = [
+            "SrNo",
+            "nomenclature",
+            "manufacturer",
+            "manufacture_date",
+            "model",
+            "calibrationCertificateNo",
+            "calibrationValidTill",
+            "range",
+            "certificate",
+            "toolStatus",
+            "technician",
+        ];
+
+        // Object.keys(updateData).forEach((key) => {
+        //     if (allowedFields.includes(key)) {
+        //         tool[key] = updateData[key];
+        //     }
+        // });
+        Object.keys(updateData).forEach((key) => {
+            if (allowedFields.includes(key)) {
+                if (key === 'technician') {
+                    // Already an ObjectId from frontend
+                    tool[key] = updateData[key];
+                } else {
+                    tool[key] = updateData[key];
+                }
+            }
+        });
+
+        await tool.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Tool updated successfully.",
+            data: tool,
+        });
+    } catch (error) {
+        console.error("Error updating tool:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating tool.",
+            error: error.message,
+        });
     }
-    const updatedTool = await Tool.findByIdAndUpdate(id, value, {
-        new: true, // return updated doc
-        runValidators: true, // apply schema validation
-    });
-    if (!updatedTool) {
-        throw new ApiError(404, "Tool not found");
-    }
-    res.status(200).json(new ApiResponse(200, updatedTool, "Tool updated successfully"));
 });
 
 const deleteById = asyncHandler(async (req, res) => {
@@ -160,6 +232,41 @@ const createToolByTechnician = asyncHandler(async (req, res) => {
 //     });
 // });
 
+
+
+// const getEngineerByTool = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
+
+//     // Step 1: Find tool and populate engineer
+//     const tool = await Tools.findById(id).populate("technician");
+
+//     if (!tool) {
+//         return res.status(404).json({ message: "Tool not found" });
+//     }
+
+//     if (!tool.technician) {
+//         return res.status(404).json({ message: "Engineer not assigned to this tool" });
+//     }
+
+//     return res.status(200).json({
+//         engineer: {
+//             _id: tool.technician._id,
+//             name: tool.technician.name,
+//             email: tool.technician.email,
+//             technicianType: tool.technician.technicianType,
+//             designation: tool.technician.designation,
+//             department: tool.technician.department,
+//         },
+//         tool: {
+//             toolId: tool.toolId,
+//             toolName: tool.nomenclature,
+//             serialNumber: tool.SrNo,
+//             issueDate: tool.createdAt, // or keep from employee if needed
+//             submitDate: tool.updatedAt,
+//         },
+//     });
+// });
+
 const getEngineerByTool = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -171,8 +278,20 @@ const getEngineerByTool = asyncHandler(async (req, res) => {
     }
 
     if (!tool.technician) {
-        return res.status(404).json({ message: "Engineer not assigned to this tool" });
+        return res.status(200).json({
+            engineer: null,
+            tool: {
+                toolId: tool.toolId,
+                toolName: tool.nomenclature,
+                serialNumber: tool.SrNo,
+                issueDate: null,
+                submitDate: null,
+            },
+        });
     }
+
+    // Step 2: Find issue/submit date from technician's tools array
+    const toolHistory = tool.technician.tools.find(t => t.toolId.toString() === tool._id.toString());
 
     return res.status(200).json({
         engineer: {
@@ -187,11 +306,13 @@ const getEngineerByTool = asyncHandler(async (req, res) => {
             toolId: tool.toolId,
             toolName: tool.nomenclature,
             serialNumber: tool.SrNo,
-            issueDate: tool.createdAt, // or keep from employee if needed
-            submitDate: tool.updatedAt,
+            issueDate: toolHistory?.issueDate || null,
+            submitDate: toolHistory?.submitDate || null,
         },
     });
 });
+
+
 const getAllTechnicians = asyncHandler(async (req, res) => {
     try {
 
@@ -308,10 +429,93 @@ const getToolByTechnicianAndTool = asyncHandler(async (req, res) => {
     }
 });
 
+// const toolHistory = asyncHandler(async (req, res) => {
+//     const { toolId } = req.params;
+
+//     if (!toolId) {
+//         return res.status(400).json({ success: false, message: "Tool ID is required" });
+//     }
+
+//     try {
+//         // Find the tool by ID and populate the technician (engineer)
+//         const tool = await Tool.findById(toolId).populate({
+//             path: "technician", // assuming 'technician' field in Tool schema
+//             select: "name email", // select fields you want
+//         });
+
+//         if (!tool) {
+//             return res.status(404).json({ success: false, message: "Tool not found" });
+//         }
+
+//         // Respond with engineer + issue/submit dates
+//         res.status(200).json({
+//             success: true,
+//             engineer: tool.technician || null,
+//             issueDate: tool.issueDate || null,
+//             submitDate: tool.submitDate || null,
+//         });
+//     } catch (error) {
+//         console.error("❌ Error fetching tool history:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to fetch tool history",
+//             error: error.message,
+//         });
+//     }
+// });
+
+const toolHistory = asyncHandler(async (req, res) => {
+    const { toolId } = req.params;
+
+    if (!toolId) {
+        return res.status(400).json({ success: false, message: "Tool ID is required" });
+    }
+
+    try {
+        // Find the tool and populate the technician
+        const tool = await Tools.findById(toolId).populate({
+            path: "technician",
+            select: "name email tools", // get tools array too
+        });
+
+        if (!tool) {
+            return res.status(404).json({ success: false, message: "Tool not found" });
+        }
+
+        let issueDate = null;
+        let submitDate = null;
+
+        if (tool.technician) {
+            // Find the tool inside technician.tools array
+            const techTool = tool.technician.tools.find(t => t.toolId.toString() === tool._id.toString());
+            if (techTool) {
+                issueDate = techTool.issueDate;
+                submitDate = techTool.submitDate;
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            engineer: tool.technician
+                ? {
+                    _id: tool.technician._id,
+                    name: tool.technician.name,
+                    email: tool.technician.email,
+                }
+                : null,
+            issueDate,
+            submitDate,
+        });
+    } catch (error) {
+        console.error("❌ Error fetching tool history:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch tool history",
+            error: error.message,
+        });
+    }
+});
 
 
 
-
-
-
-export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool };
+export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory };

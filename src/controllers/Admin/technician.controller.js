@@ -9,6 +9,8 @@ import tripModel from "../../models/trip.model.js";
 import expenseModel from "../../models/expense.model.js";
 import advanceAccountModel from "../../models/advanceAccount.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
+import mongoose from "mongoose";
+import Attendance from "../../models/attendanceSchema.model.js"
 
 // const add = asyncHandler(async (req, res) => {
 //     try {
@@ -1170,4 +1172,63 @@ const getTripByTechnicianAndTrip = asyncHandler(async (req, res) => {
 });
 
 
-export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip };
+
+export const getAttendanceSummary = asyncHandler(async (req, res) => {
+    try {
+        const { empId } = req.params;
+        const { month, year } = req.query; // month & year from query
+        const { totalWorkingDays } = req.body; // 👈 total working days from body
+        console.log("🚀 ~ empId:", empId, "month:", month, "year:", year, "totalWorkingDays:", totalWorkingDays);
+
+        // Validate empId
+        if (!mongoose.Types.ObjectId.isValid(empId)) {
+            return res.status(400).json({ success: false, message: "Invalid empId" });
+        }
+
+        // Validate month, year, and totalWorkingDays
+        if (!month || !year) {
+            return res.status(400).json({ success: false, message: "Month and year are required" });
+        }
+
+        if (!totalWorkingDays || isNaN(totalWorkingDays)) {
+            return res.status(400).json({ success: false, message: "Total working days are required and must be a number" });
+        }
+
+        // Build date range for the month
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0); // last day of month
+
+        // Fetch attendance records for the employee in the month
+        const records = await Attendance.find({
+            empId,
+            date: { $gte: startDate, $lte: endDate }
+        });
+
+        const presentDays = records.filter(r => r.status === "present").length;
+        const leaveDays = records.filter(r => r.status === "leave").length;
+
+        // Calculate absent days using provided total working days
+        const absentDays = Math.max(totalWorkingDays - (presentDays + leaveDays), 0);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                totalWorkingDays,
+                presentDays,
+                leaveDays,
+                absentDays
+            },
+            message: "Attendance summary fetched successfully"
+        });
+    } catch (error) {
+        console.error("❌ Error fetching attendance summary:", error);
+        res.status(500).json({
+            success: false,
+            message: error?.message || "Failed to fetch attendance summary"
+        });
+    }
+});
+
+
+
+export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary };

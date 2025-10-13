@@ -7,9 +7,11 @@ import sendSMS from "../../utils/SendSMS.js";
 import User from "../../models/user.model.js";
 import jwt from "jsonwebtoken";
 import Employee from "../../models/technician.model.js";
+import Attendance from "../../models/attendanceSchema.model.js";
+import Leave from "../../models/leave.model.js";
 
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
-const JWT_REFRESH_SECRET=process.env.JWT_REFRESH_SECRET
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
 
 //otp functions using sendsms function
 
@@ -110,7 +112,63 @@ export const sendOtp = asyncHandler(async (req, res) => {
 });
 
 // ================== VERIFY OTP ==================
+// export const verifyOtp = asyncHandler(async (req, res) => {
+//     const verifyOtpSchema = Joi.object({
+//         mobileNumber: Joi.string().required(),
+//         otp: Joi.string().length(6).required()
+//     });
+
+//     const { error } = verifyOtpSchema.validate(req.body);
+//     if (error) throw new ApiError(400, error.details[0].message);
+
+//     const { mobileNumber, otp } = req.body;
+//     const otpRecord = await LoginOtp.findOne({ mobileNumber });
+
+//     if (!otpRecord) throw new ApiError(400, "No OTP sent to this number");
+//     if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
+//     if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
+
+//     // ✅ Allow "Customer" OR "Employee" with technicianType = "engineer"
+//     let user = await User.findOne({ phone: mobileNumber, role: "Customer" });
+
+//     if (!user) {
+//         user = await User.findOne({ phone: mobileNumber, role: "Employee" }).populate("Employee");
+//         if (!user) throw new ApiError(404, "User not found or not allowed");
+
+//         // make sure it is an engineer
+//         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
+//         if (!employee) throw new ApiError(403, "Only engineers are allowed");
+//     }
+
+//     const payload = {
+//         _id: user._id,
+//         role: user.role,
+//         phone: user.phone,
+//     };
+
+//     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
+//     console.log("🚀 ~ token:", token)
+//     // Refresh token (long life)
+//     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
+//     console.log("🚀 ~ refreshToken:", refreshToken)
+
+//     // ✅ Store refresh token in secure HTTP-only cookie
+//     res.cookie("refreshToken", refreshToken, {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === "production",
+//         sameSite: "strict",
+//         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+//     });
+
+//     // Remove OTP record after successful verification
+//     await LoginOtp.deleteOne({ mobileNumber });
+
+//     return res.status(200).json(
+//         new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully")
+//     );
+// });
 export const verifyOtp = asyncHandler(async (req, res) => {
+    // ✅ Validate OTP
     const verifyOtpSchema = Joi.object({
         mobileNumber: Joi.string().required(),
         otp: Joi.string().length(6).required()
@@ -126,18 +184,45 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
     if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
 
-    // ✅ Allow "Customer" OR "Employee" with technicianType = "engineer"
+    // ✅ Find user (Customer or Employee)
     let user = await User.findOne({ phone: mobileNumber, role: "Customer" });
 
     if (!user) {
-        user = await User.findOne({ phone: mobileNumber, role: "Employee" }).populate("Employee");
+        user = await User.findOne({ phone: mobileNumber, role: "Employee" });
         if (!user) throw new ApiError(404, "User not found or not allowed");
 
         // make sure it is an engineer
         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
         if (!employee) throw new ApiError(403, "Only engineers are allowed");
+
+        // ✅ Mark attendance for today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // normalize date
+
+        let attendance = await Attendance.findOne({ employee: user._id, date: today });
+
+        if (!attendance) {
+            // Check if employee has approved leave today
+            const leave = await Leave.findOne({
+                employee: user._id,
+                startDate: { $lte: today },
+                endDate: { $gte: today },
+                status: 'Approved'
+            });
+
+            attendance = new Attendance({
+                employee: user._id,
+                date: today,
+                status: leave ? 'Absent' : 'Present',
+                workingDays: employee.workingDays,
+                leave: leave ? leave._id : null,
+            });
+
+            await attendance.save();
+        }
     }
 
+    // ✅ JWT Token
     const payload = {
         _id: user._id,
         role: user.role,
@@ -145,27 +230,24 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     };
 
     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
-    console.log("🚀 ~ token:", token)
-    // Refresh token (long life)
     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
-    console.log("🚀 ~ refreshToken:", refreshToken)
 
-    // ✅ Store refresh token in secure HTTP-only cookie
+    // ✅ Set refresh token cookie
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Remove OTP record after successful verification
+    // ✅ Delete OTP record
     await LoginOtp.deleteOne({ mobileNumber });
 
+    // ✅ Send response
     return res.status(200).json(
         new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully")
     );
 });
-
 
 
 //test otp functions--without send sms

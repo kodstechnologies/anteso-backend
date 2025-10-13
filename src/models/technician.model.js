@@ -49,6 +49,10 @@ const toolSubSchema = new Schema({
     issueDate: {
         type: Date,
         // required: false,
+    },
+    submitDate: {
+        type: Date,
+        // required: false,
     }
 }, { _id: false }); // Prevents automatic _id generation for subdocuments
 

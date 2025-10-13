@@ -33,12 +33,12 @@ const adminLogin = asyncHandler(async (req, res) => {
     const accessToken = jwt.sign(
         { id: admin._id, email: admin.email, role: admin.role }, // <-- include role
         process.env.JWT_SECRET,
-        { expiresIn: "1d" }
+        { expiresIn: "360d" }
     );
     const refreshToken = jwt.sign(
         { id: admin._id },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: "7d" }
+        { expiresIn: "365d" }
     );
     res.status(200).json(
         new ApiResponse(200, { accessToken, refreshToken }, "Login successful")

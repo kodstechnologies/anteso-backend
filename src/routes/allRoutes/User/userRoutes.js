@@ -8,6 +8,7 @@ const router = Router();
 router.post('/send-otp', sendOtp)
 router.post('/verify-otp', verifyOtp)
 router.post('/refresh', refreshAccessToken)
+router.post("/logout", logout);
 // router.post('/refresh', (req, res, next) => {
 //     console.log("🔥 Hit /refresh route", req.body);
 //     next();
@@ -17,7 +18,6 @@ router.use(authenticate, authorizeRoles("Admin", "Customer", ""))
 // router.post('/machines', machineRoutes)
 router.use('/machines', machineRoutes)
 // router.use('/logout')
-router.post("/logout", logout);
 
 
 export default router

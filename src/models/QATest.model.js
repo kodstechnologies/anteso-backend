@@ -16,7 +16,7 @@ const qaTestSchema = new Schema({
     report: { type: String },
     reportStatus: {
         type: String,
-        enum:["pending","accepted","rejected"],
+        enum:["pending","accepted","rejected","reuploaded"],
         default:"pending"
     }
 }, { timestamps: true });
