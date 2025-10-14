@@ -22,6 +22,18 @@ const quotationSchema = new Schema(
             ref: 'Hospital',
             required: true,
         },
+        subtotal: {
+            type: Number,
+            required: true,
+        },
+        gstRate: {
+            type: Number,
+            default: 18, // Always 18%
+        },
+        gstAmount: {
+            type: Number,
+            default: 0,
+        },
 
         discount: {
             type: Number,
@@ -31,6 +43,7 @@ const quotationSchema = new Schema(
             type: Number,
             required: true,
         },
+
         quotationStatus: {
             type: String,
             enum: ['Create', 'Created', 'Accepted', 'Rejected'],
@@ -52,6 +65,10 @@ const quotationSchema = new Schema(
         pdfUrl: {
             type: String,
             default: null,
+        },
+        assignedEmployee: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Employee', // Reference the Employee model
         },
     },
     { timestamps: true }

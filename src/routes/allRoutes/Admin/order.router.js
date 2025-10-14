@@ -104,5 +104,5 @@ router.patch('/accept-report/:orderId/:serviceId/:qaReportId', orderController.a
 router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.rejectQAReport)
 
 router.get('/get-elora-report/:orderId/:serviceId/:eloraId',orderController.getEloraReport)
-
+router.get('/get-pdf/:orderId',orderController.getPdfForAcceptQuotation)
 export default router

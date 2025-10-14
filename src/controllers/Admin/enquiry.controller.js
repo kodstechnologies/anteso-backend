@@ -2296,7 +2296,11 @@ const getAll = asyncHandler(async (req, res) => {
         ]);
 
         // populates the customer info
-
+        if (!enquiries || enquiries.length === 0) {
+            return res
+                .status(200)
+                .json(new ApiResponse(200, [], "No enquiries found"));
+        }
         const createdQuotations = await Quotation.find({ quotationStatus: "Created" })
             .populate("enquiry")
             .populate("from"); // Optional, if you want user info

@@ -273,7 +273,7 @@ const getAllMachinesByHospitalId = asyncHandler(async (req, res) => {
             .populate('hospital', 'name gstNo');
 
         if (!machines || machines.length === 0) {
-            return res.status(404).json({ success: false, message: "No machines found for this hospital" });
+            return res.status(200).json(new ApiResponse(200, [], "No machines found for this hospital"));
         }
 
         // Helper function: compares dates in local timezone ignoring time

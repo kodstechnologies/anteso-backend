@@ -284,16 +284,13 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 //     }
 // });
 
-
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
-        const { id } = req.params; // enquiryId
-
-
-        console.log("🚀 ~ inisde createQuotationByEnquiryId:")
+        const { id } = req.params;
         const {
             date,
             quotationNumber,
+            customer,
             assignedEmployee,
             items,
             calculations,
@@ -301,21 +298,20 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             bankDetails,
             companyDetails,
         } = req.body;
-        console.log("🚀 ~ req.body:", req.body)
 
-        if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
+        if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
 
-        // Fetch enquiry with hospital & services
+        // Fetch enquiry
         const enquiry = await Enquiry.findById(id)
-            .populate("services")
-            .populate("additionalServices")
-            .populate("hospital");
+            .populate('services')
+            .populate('additionalServices')
+            .populate('customer');
+        if (!enquiry) throw new ApiError(404, 'Enquiry not found');
+        if (!enquiry.customer || !enquiry.customer._id)
+            throw new ApiError(400, 'Customer info missing in enquiry');
 
-        if (!enquiry) throw new ApiError(404, "Enquiry not found");
-        if (!enquiry.hospital) throw new ApiError(400, "Hospital info missing in enquiry");
-
-        // Prepare snapshots
-        const serviceSnapshots = items.services.map((s) => ({
+        // Service snapshots
+        const serviceSnapshots = items.services.map(s => ({
             id: s.id,
             machineType: s.machineType,
             equipmentNo: s.equipmentNo,
@@ -324,85 +320,111 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             remark: s.remark,
             totalAmount: s.totalAmount,
         }));
-        console.log("🚀 ~ serviceSnapshots:", serviceSnapshots)
 
-        const additionalServiceSnapshots = items.additionalServices.map((s) => ({
+        const additionalServiceSnapshots = items.additionalServices.map(s => ({
             id: s.id,
             name: s.name,
             description: s.description,
             totalAmount: s.totalAmount,
         }));
-        console.log("🚀 ~ additionalServiceSnapshots:", additionalServiceSnapshots)
 
-        // Create quotation
+        // 🧮 GST Calculations
+        const subtotal = Number(calculations?.subtotal || 0);
+        const discount = Number(calculations?.discountAmount || 0);
+        const gstRate = 18;
+        const gstAmount = ((subtotal - discount) * gstRate) / 100;
+        const total = subtotal - discount + gstAmount;
+
+        // 🧾 Create quotation
+        // const quotation = await Quotation.create({
+        //     date,
+        //     quotationId: quotationNumber,
+        //     enquiry: enquiry._id,
+        //     // from: enquiry.customer._id,
+        //     from: enquiry.hospital._id,
+
+        //     customer,
+        //     assignedEmployee,
+        //     items: {
+        //         services: serviceSnapshots,
+        //         additionalServices: additionalServiceSnapshots,
+        //     },
+        //     subtotal,
+        //     discount,
+        //     gstRate,
+        //     gstAmount,
+        //     total,
+        //     bankDetails,
+        //     companyDetails,
+        //     quotationStatus: 'Created',
+        //     termsAndConditions,
+        // });
         const quotation = await Quotation.create({
             date,
             quotationId: quotationNumber,
             enquiry: enquiry._id,
-            from: enquiry.hospital._id, // ✅ hospital reference
-            assignedEmployee,
+            from: enquiry.hospital._id,
+            customer,
+            assignedEmployee: assignedEmployee.id || assignedEmployee, // only the ObjectId
             items: {
                 services: serviceSnapshots,
                 additionalServices: additionalServiceSnapshots,
             },
-            calculations,
+            subtotal,
+            discount,
+            gstRate,
+            gstAmount,
+            total,
             bankDetails,
             companyDetails,
-            discount: calculations?.discountAmount || 0,
-            total: calculations?.totalAmount || 0,
-            quotationStatus: "Created",
+            quotationStatus: 'Created',
             termsAndConditions,
         });
 
-        // Update service totals in DB
-        await Promise.all(
-            serviceSnapshots
-                .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                .map((s) =>
-                    Services.findByIdAndUpdate(
-                        s.id,
-                        { $set: { totalAmount: s.totalAmount } },
-                        { new: true }
-                    )
-                )
+
+        console.log("🚀 ~ quotation:", quotation)
+
+        // Update totals in DB
+        await Promise.all(serviceSnapshots
+            .filter(s => mongoose.Types.ObjectId.isValid(s.id))
+            .map(s => Services.findByIdAndUpdate(
+                s.id,
+                { $set: { totalAmount: s.totalAmount } },
+                { new: true }
+            ))
         );
 
-        // Update additional service totals
-        await Promise.all(
-            additionalServiceSnapshots
-                .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                .map((s) =>
-                    AdditionalService.findByIdAndUpdate(
-                        s.id,
-                        { $set: { totalAmount: s.totalAmount } },
-                        { new: true }
-                    )
-                )
+        await Promise.all(additionalServiceSnapshots
+            .filter(s => s.id)
+            .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
         );
 
-        // Update enquiry with quotation info
+        // 🧩 Update enquiry with totals and GST details
         await Enquiry.findByIdAndUpdate(enquiry._id, {
             quotationStatus: quotation.quotationStatus,
             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-            subtotalAmount: calculations?.subtotal || 0,
-            discount: calculations?.discountAmount || 0,
-            grandTotal: calculations?.totalAmount || 0,
+            subtotalAmount: subtotal,
+            discount: discount,
+            grandTotal: total,
         });
 
-        return res
-            .status(201)
-            .json(new ApiResponse(201, quotation, "Quotation created successfully"));
+        return res.status(201).json(
+            new ApiResponse(201, quotation, 'Quotation created successfully')
+        );
+
     } catch (error) {
         console.error("Error creating quotation:", error);
-        throw new ApiError(500, "Failed to create quotation", [error.message]);
+        throw new ApiError(500, 'Failed to create quotation', [error.message]);
     }
 });
 
+
+
 // const updateQuotationById = asyncHandler(async (req, res) => {
 //     try {
-//         const { id } = req.params; // quotationId
+//         const { id } = req.params; // This is the enquiry ID
 
-//         console.log("🚀 ~ inside updateQuotationById:");
+//         console.log("🚀 ~ inside updateQuotationByEnquiryId:");
 //         const {
 //             date,
 //             quotationNumber,
@@ -419,12 +441,12 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 
 //         if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
 
-//         // Fetch quotation with enquiry & hospital
-//         const quotation = await Quotation.findById(id)
+//         // Find the quotation by enquiry ID
+//         const quotation = await Quotation.findOne({ enquiry: id })
 //             .populate("enquiry")
 //             .populate("from"); // hospital
 
-//         if (!quotation) throw new ApiError(404, "Quotation not found");
+//         if (!quotation) throw new ApiError(404, "Quotation not found for this enquiry");
 //         if (!quotation.enquiry) throw new ApiError(400, "Enquiry info missing in quotation");
 //         if (!quotation.from) throw new ApiError(400, "Hospital info missing in quotation");
 
@@ -442,7 +464,6 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 //                 remark: s.remark,
 //                 totalAmount: s.totalAmount,
 //             }));
-//             console.log("🚀 ~ serviceSnapshots:", serviceSnapshots);
 
 //             additionalServiceSnapshots = items.additionalServices.map((s) => ({
 //                 id: s.id,
@@ -450,12 +471,11 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 //                 description: s.description,
 //                 totalAmount: s.totalAmount,
 //             }));
-//             console.log("🚀 ~ additionalServiceSnapshots:", additionalServiceSnapshots);
 //         }
 
 //         // Update quotation
 //         const updatedQuotation = await Quotation.findByIdAndUpdate(
-//             id,
+//             quotation._id, // use quotation._id here
 //             {
 //                 date: date || quotation.date,
 //                 quotationId: quotationNumber || quotation.quotationId,
@@ -521,11 +541,14 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 // });
 
 
+
+
+//web
+
+
 const updateQuotationById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params; // This is the enquiry ID
-
-        console.log("🚀 ~ inside updateQuotationByEnquiryId:");
         const {
             date,
             quotationNumber,
@@ -538,7 +561,6 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             quotationStatus,
             rejectionRemark,
         } = req.body;
-        console.log("🚀 ~ req.body:", req.body);
 
         if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
 
@@ -552,35 +574,35 @@ const updateQuotationById = asyncHandler(async (req, res) => {
         if (!quotation.from) throw new ApiError(400, "Hospital info missing in quotation");
 
         // Prepare snapshots if items provided
-        let serviceSnapshots = quotation.items.services || [];
-        let additionalServiceSnapshots = quotation.items.additionalServices || [];
+        let serviceSnapshots = quotation.items?.services || [];
+        let additionalServiceSnapshots = quotation.items?.additionalServices || [];
 
         if (items) {
-            serviceSnapshots = items.services.map((s) => ({
+            serviceSnapshots = (items.services || []).map((s) => ({
                 id: s.id,
                 machineType: s.machineType,
                 equipmentNo: s.equipmentNo,
                 machineModel: s.machineModel,
                 serialNumber: s.serialNumber,
                 remark: s.remark,
-                totalAmount: s.totalAmount,
+                totalAmount: Number(s.totalAmount) || 0,
             }));
 
-            additionalServiceSnapshots = items.additionalServices.map((s) => ({
+            additionalServiceSnapshots = (items.additionalServices || []).map((s) => ({
                 id: s.id,
                 name: s.name,
                 description: s.description,
-                totalAmount: s.totalAmount,
+                totalAmount: Number(s.totalAmount) || 0,
             }));
         }
 
         // Update quotation
         const updatedQuotation = await Quotation.findByIdAndUpdate(
-            quotation._id, // use quotation._id here
+            quotation._id,
             {
                 date: date || quotation.date,
                 quotationId: quotationNumber || quotation.quotationId,
-                assignedEmployee: assignedEmployee || quotation.assignedEmployee,
+                // assignedEmployee: assignedEmployee || quotation.assignedEmployee,
                 items: {
                     services: serviceSnapshots,
                     additionalServices: additionalServiceSnapshots,
@@ -602,25 +624,21 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             await Promise.all(
                 serviceSnapshots
                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                    .map((s) =>
-                        Services.findByIdAndUpdate(
-                            s.id,
-                            { $set: { totalAmount: s.totalAmount } },
-                            { new: true }
-                        )
-                    )
+                    .map((s) => Services.findByIdAndUpdate(
+                        s.id,
+                        { $set: { totalAmount: s.totalAmount } },
+                        { new: true }
+                    ))
             );
 
             await Promise.all(
                 additionalServiceSnapshots
                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                    .map((s) =>
-                        AdditionalService.findByIdAndUpdate(
-                            s.id,
-                            { $set: { totalAmount: s.totalAmount } },
-                            { new: true }
-                        )
-                    )
+                    .map((s) => AdditionalService.findByIdAndUpdate(
+                        s.id,
+                        { $set: { totalAmount: s.totalAmount } },
+                        { new: true }
+                    ))
             );
         }
 
@@ -632,9 +650,7 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             grandTotal: calculations?.totalAmount || quotation.enquiry.grandTotal,
         });
 
-        return res
-            .status(200)
-            .json(new ApiResponse(200, updatedQuotation, "Quotation updated successfully"));
+        return res.status(200).json(new ApiResponse(200, updatedQuotation, "Quotation updated successfully"));
     } catch (error) {
         console.error("Error updating quotation:", error);
         throw new ApiError(500, "Failed to update quotation", [error.message]);
@@ -642,11 +658,58 @@ const updateQuotationById = asyncHandler(async (req, res) => {
 });
 
 
-//web
+
+// const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         console.log("🚀 ~ id:", id)
+
+//         if (!id) {
+//             throw new ApiError(400, 'Enquiry ID is required');
+//         }
+
+//         // Find the quotation associated with the given enquiry ID
+//         const quotation = await Quotation.findOne({ enquiry: id })
+//             .populate({
+//                 path: 'enquiry',
+//                 populate: [
+//                     {
+//                         path: 'services', // populate services inside enquiry
+//                         model: 'Service',
+//                     },
+//                     {
+//                         path: 'additionalServices', // populate additionalServices inside enquiry
+//                         model: 'AdditionalService',
+//                         select: 'name description totalAmount', // select only these fields
+//                     },
+//                 ],
+//             })
+//             .populate('from', 'name email') // employee info
+//             .exec();
+//         // console.log("🚀 ~ quotation:", quotation)
+
+//         if (!quotation) {
+//             throw new ApiError(404, 'Quotation not found for this enquiry');
+//         }
+
+//         return res
+//             .status(200)
+//             .json(new ApiResponse(200, quotation, 'Quotation fetched successfully'));
+//     } catch (error) {
+//         console.error("Error fetching quotation:", error);
+//         throw new ApiError(500, 'Failed to fetch quotation', [error.message]);
+//     }
+// });
+
+
+
+
+//mobile
+
 const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("🚀 ~ id:", id)
+        console.log("🚀 ~ id:", id);
 
         if (!id) {
             throw new ApiError(400, 'Enquiry ID is required');
@@ -657,19 +720,15 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
             .populate({
                 path: 'enquiry',
                 populate: [
-                    {
-                        path: 'services', // populate services inside enquiry
-                        model: 'Service',
-                    },
-                    {
-                        path: 'additionalServices', // populate additionalServices inside enquiry
-                        model: 'AdditionalService',
-                        select: 'name description totalAmount', // select only these fields
-                    },
+                    { path: 'services', model: 'Service' },
+                    { path: 'additionalServices', model: 'AdditionalService', select: 'name description totalAmount' },
                 ],
             })
-            .populate('from', 'name email') // employee info
+            .populate('from', 'name email') // hospital info
+            .populate('assignedEmployee', 'empId name phone designation department') // employee info
             .exec();
+
+        console.log("🚀 ~ quotation:", quotation)
 
         if (!quotation) {
             throw new ApiError(404, 'Quotation not found for this enquiry');
@@ -683,7 +742,8 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
         throw new ApiError(500, 'Failed to fetch quotation', [error.message]);
     }
 });
-//mobile
+
+
 const getQuotationByIds = asyncHandler(async (req, res) => {
     const { hospitalId, enquiryId } = req.params;
 
@@ -980,6 +1040,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
     try {
         const { hospitalId, enquiryId, quotationId } = req.params;
         let pdfFile = req.file; // optional PDF
+        console.log("🚀 ~ pdfFile:", pdfFile)
 
         // 1️⃣ Find the quotation by enquiry + hospital
         const quotation = await Quotation.findOne({
@@ -995,6 +1056,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         if (pdfFile) {
             const { url } = await uploadToS3(pdfFile);
             quotation.customersPDF = url;
+            console.log("🚀 ~  quotation.customersPDF:", quotation.customersPDF)
         }
 
         // Update quotation status
