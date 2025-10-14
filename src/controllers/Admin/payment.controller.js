@@ -87,12 +87,93 @@ const addPayment = asyncHandler(async (req, res) => {
 //     }
 // });
 
+
+
+
+
+// const allOrdersWithClientName = asyncHandler(async (req, res) => {
+//     try {
+
+//         // 1️⃣ Fetch all orders
+//         let orders = await orderModel.find({})
+//             .select("srfNumber hospitalName leadOwner")
+//             .sort({ createdAt: -1 })
+//             .lean();
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(404).json({ message: "No orders found" });
+//         }
+
+//         // 2️⃣ Get unique non-empty leadOwner IDs
+//         // const leadOwnerIds = [...new Set(orders.map(o => o.leadOwner).filter(Boolean))];
+
+//         // // 3️⃣ Fetch users for these leadOwners
+//         // const users = await User.find({ _id: { $in: leadOwnerIds } })
+//         //     .select("_id name role email")
+//         //     .lean();
+
+//         // // Build lookup map
+//         // const userMap = {};
+//         // users.forEach(u => {
+//         //     userMap[u._id.toString()] = u;
+//         // });
+//         // unique names
+//         const leadOwnerNames = [...new Set(orders.map(o => o.leadOwner).filter(Boolean))];
+
+//         // query by name instead of _id
+//         const users = await User.find({ name: { $in: leadOwnerNames } })
+//             .select("_id name role email")
+//             .lean();
+
+//         const userMap = {};
+//         users.forEach(u => {
+//             userMap[u.name] = u; // map by name
+//         });
+
+//         orders = orders.filter(order => {
+//             if (!order.leadOwner) return true;
+//             const owner = userMap[order.leadOwner];
+//             return owner && owner.role !== "Dealer";
+//         });
+
+
+//         // 4️⃣ Filter orders
+//         orders = orders.filter(order => {
+//             if (!order.leadOwner) return true; // ✅ keep if no leadOwner
+//             const owner = userMap[order.leadOwner?.toString()];
+//             return owner && owner.role !== "Dealer"; // ✅ keep only if not Dealer
+//         });
+
+//         // 5️⃣ Append hospitalName and owner details
+//         const formattedOrders = orders.map(order => {
+//             const owner = order.leadOwner ? userMap[order.leadOwner?.toString()] : null;
+//             return {
+//                 ...order,
+//                 srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
+//                 leadOwnerDetails: owner, // can be null if no leadOwner
+//             };
+//         });
+
+//         res.status(200).json({
+//             success: true,
+//             count: formattedOrders.length,
+//             orders: formattedOrders,
+//         });
+//     } catch (error) {
+//         console.error("❌ Error fetching orders:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Internal Server Error",
+//         });
+//     }
+// });
+
+
 const allOrdersWithClientName = asyncHandler(async (req, res) => {
     try {
-
         // 1️⃣ Fetch all orders
         let orders = await orderModel.find({})
-            .select("srfNumber hospitalName leadOwner")
+            .select("srfNumber hospitalName leadOwner _id")
             .sort({ createdAt: -1 })
             .lean();
 
@@ -100,49 +181,39 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: "No orders found" });
         }
 
-        // 2️⃣ Get unique non-empty leadOwner IDs
-        // const leadOwnerIds = [...new Set(orders.map(o => o.leadOwner).filter(Boolean))];
-
-        // // 3️⃣ Fetch users for these leadOwners
-        // const users = await User.find({ _id: { $in: leadOwnerIds } })
-        //     .select("_id name role email")
-        //     .lean();
-
-        // // Build lookup map
-        // const userMap = {};
-        // users.forEach(u => {
-        //     userMap[u._id.toString()] = u;
-        // });
-        // unique names
+        // 2️⃣ Get unique non-empty leadOwner names
         const leadOwnerNames = [...new Set(orders.map(o => o.leadOwner).filter(Boolean))];
 
-        // query by name instead of _id
+        // 3️⃣ Fetch users by name
         const users = await User.find({ name: { $in: leadOwnerNames } })
             .select("_id name role email")
             .lean();
 
         const userMap = {};
         users.forEach(u => {
-            userMap[u.name] = u; // map by name
+            userMap[u.name] = u;
         });
 
+        // 4️⃣ Filter out orders with leadOwner role = 'Dealer'
         orders = orders.filter(order => {
             if (!order.leadOwner) return true;
             const owner = userMap[order.leadOwner];
             return owner && owner.role !== "Dealer";
         });
 
+        // 5️⃣ Get all order IDs that already have payments
+        const paidOrders = await Payment.find({})
+            .select("orderId")
+            .lean();
 
-        // 4️⃣ Filter orders
-        orders = orders.filter(order => {
-            if (!order.leadOwner) return true; // ✅ keep if no leadOwner
-            const owner = userMap[order.leadOwner?.toString()];
-            return owner && owner.role !== "Dealer"; // ✅ keep only if not Dealer
-        });
+        const paidOrderIds = paidOrders.map(p => p.orderId.toString());
 
-        // 5️⃣ Append hospitalName and owner details
+        // 6️⃣ Filter out orders that are already paid
+        orders = orders.filter(order => !paidOrderIds.includes(order._id.toString()));
+
+        // 7️⃣ Format orders with srfNumberWithHospital and leadOwnerDetails
         const formattedOrders = orders.map(order => {
-            const owner = order.leadOwner ? userMap[order.leadOwner?.toString()] : null;
+            const owner = order.leadOwner ? userMap[order.leadOwner] : null;
             return {
                 ...order,
                 srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
@@ -163,6 +234,12 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
         });
     }
 });
+
+
+
+
+
+
 
 // const getTotalAmount = asyncHandler(async (req, res) => {
 
@@ -479,37 +556,51 @@ const deletePayment = asyncHandler(async (req, res) => {
 //     }
 // });
 
+
+
 // ✅ Edit payment by ID
 const editPaymentById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        const { totalAmount, paymentAmount, paymentType, utrNumber, screenshot } = req.body;
+        const { srfClient, totalAmount, paymentAmount, paymentType, utrNumber } = req.body;
+        console.log("🚀 ~ req.body:", req.body);
+        console.log("🚀 ~ req.file:", req.file);
 
         if (!id) {
             return res.status(400).json({ success: false, message: "Payment ID is required" });
         }
 
+        // Fetch the payment record
         const payment = await Payment.findById(id);
         if (!payment) {
             return res.status(404).json({ success: false, message: "Payment not found" });
         }
 
-        // Update fields if provided
+        // 🧾 Update normal fields
+        if (srfClient) payment.srfNumber = srfClient;
         if (totalAmount !== undefined) payment.totalAmount = totalAmount;
         if (paymentAmount !== undefined) payment.paymentAmount = paymentAmount;
-        if (paymentType) payment.paymentType = paymentType;
+        if (paymentType) payment.paymentType = paymentType.toLowerCase(); // ensure lowercase
         if (utrNumber) payment.utrNumber = utrNumber;
-        if (screenshot) payment.screenshot = screenshot;
+
+        // 🖼️ Handle Screenshot Upload
+        if (req.file) {
+            const uploaded = await uploadToS3(req.file);
+            payment.screenshot = uploaded.url;
+        }
 
         await payment.save();
 
-        res.status(200).json({ success: true, message: "Payment updated successfully", payment });
+        res.status(200).json({
+            success: true,
+            message: "Payment updated successfully",
+            payment,
+        });
     } catch (error) {
         console.error("Error in editPaymentById:", error);
         res.status(500).json({ success: false, message: "Failed to update payment" });
     }
 });
-
 
 
 const getPaymentDetailsByOrderId = async (req, res) => {
