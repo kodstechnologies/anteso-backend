@@ -277,7 +277,8 @@ const getById = asyncHandler(async (req, res) => {
 
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
-        const employees = await Technician.find()  // 👈 no filter
+        const employees = await Technician.find()
+            .sort({ createdAt: -1 })
             .populate({
                 path: "tools.toolId",
                 select: "nomenclature manufacturer model"

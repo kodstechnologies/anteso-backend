@@ -10,6 +10,6 @@ router.delete('/delete-by-id/:id', CourierController.deleteCompanyById)
 
 
 router.post('/add-by-orderId/:orderId',CourierController.addByOrderId)
-
+router.get('/get-all-courier/:orderId',CourierController.getAllByOrderId)
 
 export default router

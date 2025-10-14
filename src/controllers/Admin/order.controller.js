@@ -1468,7 +1468,11 @@ const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
     const serviceIds = servicesWithEngineer.map((s) => s._id);
 
     if (serviceIds.length === 0) {
-        return res.status(404).json({ message: 'No services found for this engineer' });
+        return res.status(200).json({
+            success: true,
+            count: 0,
+            orders: []
+        });
     }
 
     // Step 2: Find orders that contain those services
@@ -1491,6 +1495,8 @@ const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
         orders,
     });
 });
+
+
 // const updateCompletedStatus = asyncHandler(async (req, res) => {
 //     const { orderId, employeeId } = req.params;
 //     if (!orderId || !employeeId) {
@@ -3903,7 +3909,6 @@ const getQaReportsByTechnician = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
-
 
 
 

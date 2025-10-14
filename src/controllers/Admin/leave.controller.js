@@ -45,6 +45,7 @@ const getAllLeaves = asyncHandler(async (req, res) => {
                 limit,
                 totalPages: 0,
                 data: []
+
             }, "No leaves found")
         );
     }
@@ -146,7 +147,11 @@ const getAllLeavesByCustomerId = asyncHandler(async (req, res) => {
             .sort({ createdAt: -1 }); // newest first
 
         if (!leaves || leaves.length === 0) {
-            return res.status(404).json({ message: "No leave records found for this technician" });
+            return res.status(200).json({
+                success: true,
+                count: 0,
+                data: []
+            });
         }
         return res.status(200).json({
             success: true,

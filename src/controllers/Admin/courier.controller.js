@@ -3,6 +3,7 @@ import Courier from "../../models/courier.model.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import orderModel from "../../models/order.model.js";
+import mongoose from "mongoose";
 
 const addCourier = asyncHandler(async (req, res) => {
     console.log("📦 Payload received:", req.body);
@@ -82,37 +83,80 @@ const updateCourierById = asyncHandler(async (req, res) => {
 
 const addByOrderId = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
-    const { courierCompanyName, trackingId, trackingUrl, status } = req.body;
+    const { courierCompanyName, trackingId, trackingUrl, status } = req.body || {};
+
+    if (!req.body) {
+        return res.status(400).json({
+            success: false,
+            message: "Request body is missing",
+        });
+    }
 
     if (!courierCompanyName) {
-        res.status(400);
-        throw new Error("Courier company name is required");
+        return res.status(400).json({
+            success: false,
+            message: "Courier company name is required",
+        });
     }
 
     // Check if order exists
     const order = await orderModel.findById(orderId);
     if (!order) {
-        res.status(404);
-        throw new Error("Order not found");
+        return res.status(404).json({
+            success: false,
+            message: "Order not found",
+        });
     }
 
     // Create courier
     const courier = await Courier.create({
+        orderId, // attach orderId
         courierCompanyName,
         trackingId: trackingId || null,
         trackingUrl: trackingUrl || null,
         status: status || "Active",
     });
 
-    // Optionally, you can save the courier ID in order
+    // Optionally, save courier reference in order
     order.courierId = courier._id;
     await order.save();
 
     res.status(201).json({
         success: true,
+        message: "Courier successfully added to the order",
         data: courier,
-        message: "Courier added successfully to order",
     });
+});
+
+
+const getAllByOrderId = asyncHandler(async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // Validate orderId
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid orderId",
+            });
+        }
+
+        // Fetch all courier records for this orderId
+        const couriers = await Courier.find({ orderId }).sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            total: couriers.length,
+            couriers,
+        });
+    } catch (error) {
+        console.error("❌ Error in getAllByOrderId:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message,
+        });
+    }
 });
 
 export default {
@@ -121,5 +165,6 @@ export default {
     getCompanyById,
     deleteCompanyById,
     updateCourierById,
-    addByOrderId
+    addByOrderId,
+    getAllByOrderId
 };

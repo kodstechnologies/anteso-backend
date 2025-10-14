@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const courierSchema = new mongoose.Schema(
     {
+        orderId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Order",
+            required: true,
+        },
         courierCompanyName: {
             type: String,
             required: true,
