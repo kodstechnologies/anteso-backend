@@ -546,9 +546,127 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 //web
 
 
+
+
+
+
+// const updateQuotationById = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params; // This is the enquiry ID
+//         const {
+//             date,
+//             quotationNumber,
+//             assignedEmployee,
+//             items,
+//             calculations,
+//             termsAndConditions,
+//             bankDetails,
+//             companyDetails,
+//             quotationStatus,
+//             rejectionRemark,
+//         } = req.body;
+
+//         if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
+
+//         // Find the quotation by enquiry ID
+//         const quotation = await Quotation.findOne({ enquiry: id })
+//             .populate("enquiry")
+//             .populate("from"); // hospital
+
+//         if (!quotation) throw new ApiError(404, "Quotation not found for this enquiry");
+//         if (!quotation.enquiry) throw new ApiError(400, "Enquiry info missing in quotation");
+//         if (!quotation.from) throw new ApiError(400, "Hospital info missing in quotation");
+
+//         // Prepare snapshots if items provided
+//         let serviceSnapshots = quotation.items?.services || [];
+//         let additionalServiceSnapshots = quotation.items?.additionalServices || [];
+
+//         if (items) {
+//             serviceSnapshots = (items.services || []).map((s) => ({
+//                 id: s.id,
+//                 machineType: s.machineType,
+//                 equipmentNo: s.equipmentNo,
+//                 machineModel: s.machineModel,
+//                 serialNumber: s.serialNumber,
+//                 remark: s.remark,
+//                 totalAmount: Number(s.totalAmount) || 0,
+//             }));
+
+//             additionalServiceSnapshots = (items.additionalServices || []).map((s) => ({
+//                 id: s.id,
+//                 name: s.name,
+//                 description: s.description,
+//                 totalAmount: Number(s.totalAmount) || 0,
+//             }));
+//         }
+
+//         // Update quotation
+//         const updatedQuotation = await Quotation.findByIdAndUpdate(
+//             quotation._id,
+//             {
+//                 date: date || quotation.date,
+//                 quotationId: quotationNumber || quotation.quotationId,
+//                 // assignedEmployee: assignedEmployee || quotation.assignedEmployee,
+//                 items: {
+//                     services: serviceSnapshots,
+//                     additionalServices: additionalServiceSnapshots,
+//                 },
+//                 calculations: calculations || quotation.calculations,
+//                 bankDetails: bankDetails || quotation.bankDetails,
+//                 companyDetails: companyDetails || quotation.companyDetails,
+//                 discount: calculations?.discountAmount || quotation.discount,
+//                 total: calculations?.totalAmount || quotation.total,
+//                 quotationStatus: quotationStatus || quotation.quotationStatus,
+//                 rejectionRemark: rejectionRemark || quotation.rejectionRemark,
+//                 termsAndConditions: termsAndConditions || quotation.termsAndConditions,
+//             },
+//             { new: true, runValidators: true }
+//         ).populate("enquiry").populate("from");
+
+//         // Update service totals if items changed
+//         if (items) {
+//             await Promise.all(
+//                 serviceSnapshots
+//                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
+//                     .map((s) => Services.findByIdAndUpdate(
+//                         s.id,
+//                         { $set: { totalAmount: s.totalAmount } },
+//                         { new: true }
+//                     ))
+//             );
+
+//             await Promise.all(
+//                 additionalServiceSnapshots
+//                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
+//                     .map((s) => AdditionalService.findByIdAndUpdate(
+//                         s.id,
+//                         { $set: { totalAmount: s.totalAmount } },
+//                         { new: true }
+//                     ))
+//             );
+//         }
+
+//         // Update enquiry with new calculations if changed
+//         await Enquiry.findByIdAndUpdate(quotation.enquiry._id, {
+//             quotationStatus: updatedQuotation.quotationStatus,
+//             subtotalAmount: calculations?.subtotal || quotation.enquiry.subtotalAmount,
+//             discount: calculations?.discountAmount || quotation.enquiry.discount,
+//             grandTotal: calculations?.totalAmount || quotation.enquiry.grandTotal,
+//         });
+
+//         return res.status(200).json(new ApiResponse(200, updatedQuotation, "Quotation updated successfully"));
+//     } catch (error) {
+//         console.error("Error updating quotation:", error);
+//         throw new ApiError(500, "Failed to update quotation", [error.message]);
+//     }
+// });
+
+
+
+
 const updateQuotationById = asyncHandler(async (req, res) => {
     try {
-        const { id } = req.params; // This is the enquiry ID
+        const { id } = req.params; // enquiry ID
         const {
             date,
             quotationNumber,
@@ -564,16 +682,16 @@ const updateQuotationById = asyncHandler(async (req, res) => {
 
         if (!assignedEmployee) throw new ApiError(400, "Assigned employee is required");
 
-        // Find the quotation by enquiry ID
+        // Find the quotation linked to this enquiry
         const quotation = await Quotation.findOne({ enquiry: id })
             .populate("enquiry")
-            .populate("from"); // hospital
+            .populate("from");
 
         if (!quotation) throw new ApiError(404, "Quotation not found for this enquiry");
         if (!quotation.enquiry) throw new ApiError(400, "Enquiry info missing in quotation");
         if (!quotation.from) throw new ApiError(400, "Hospital info missing in quotation");
 
-        // Prepare snapshots if items provided
+        // Prepare updated snapshots if items provided
         let serviceSnapshots = quotation.items?.services || [];
         let additionalServiceSnapshots = quotation.items?.additionalServices || [];
 
@@ -596,13 +714,12 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             }));
         }
 
-        // Update quotation
+        // Update quotation data
         const updatedQuotation = await Quotation.findByIdAndUpdate(
             quotation._id,
             {
                 date: date || quotation.date,
                 quotationId: quotationNumber || quotation.quotationId,
-                // assignedEmployee: assignedEmployee || quotation.assignedEmployee,
                 items: {
                     services: serviceSnapshots,
                     additionalServices: additionalServiceSnapshots,
@@ -619,44 +736,59 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             { new: true, runValidators: true }
         ).populate("enquiry").populate("from");
 
-        // Update service totals if items changed
+        // Update related services (if amounts changed)
         if (items) {
             await Promise.all(
                 serviceSnapshots
                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                    .map((s) => Services.findByIdAndUpdate(
-                        s.id,
-                        { $set: { totalAmount: s.totalAmount } },
-                        { new: true }
-                    ))
+                    .map((s) =>
+                        Services.findByIdAndUpdate(
+                            s.id,
+                            { $set: { totalAmount: s.totalAmount } },
+                            { new: true }
+                        )
+                    )
             );
 
             await Promise.all(
                 additionalServiceSnapshots
                     .filter((s) => mongoose.Types.ObjectId.isValid(s.id))
-                    .map((s) => AdditionalService.findByIdAndUpdate(
-                        s.id,
-                        { $set: { totalAmount: s.totalAmount } },
-                        { new: true }
-                    ))
+                    .map((s) =>
+                        AdditionalService.findByIdAndUpdate(
+                            s.id,
+                            { $set: { totalAmount: s.totalAmount } },
+                            { new: true }
+                        )
+                    )
             );
         }
 
-        // Update enquiry with new calculations if changed
+        // ✅ Update Enquiry status as "Quotation Sent"
+        const newEnquiryStatus =
+            quotationStatus === "Accepted"
+                ? "Approved"
+                : quotationStatus === "Rejected"
+                    ? "Rejected"
+                    : "Quotation Sent";
+
         await Enquiry.findByIdAndUpdate(quotation.enquiry._id, {
+            enquiryStatus: newEnquiryStatus,
+            "enquiryStatusDates.quotationSentOn":
+                newEnquiryStatus === "Quotation Sent" ? new Date() : undefined,
             quotationStatus: updatedQuotation.quotationStatus,
             subtotalAmount: calculations?.subtotal || quotation.enquiry.subtotalAmount,
             discount: calculations?.discountAmount || quotation.enquiry.discount,
             grandTotal: calculations?.totalAmount || quotation.enquiry.grandTotal,
         });
 
-        return res.status(200).json(new ApiResponse(200, updatedQuotation, "Quotation updated successfully"));
+        return res
+            .status(200)
+            .json(new ApiResponse(200, updatedQuotation, "Quotation updated successfully"));
     } catch (error) {
         console.error("Error updating quotation:", error);
         throw new ApiError(500, "Failed to update quotation", [error.message]);
     }
 });
-
 
 
 // const getQuotationByEnquiryId = asyncHandler(async (req, res) => {

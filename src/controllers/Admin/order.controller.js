@@ -5,7 +5,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import Services from "../../models/Services.js";
 import User from "../../models/user.model.js";
-import { generateULRReportNumber, generateQATestReportNumber, incrementSequence } from "../../utils/ReportNumberGenerator.js";
+import { generateULRReportNumber, generateQATestReportNumber } from "../../utils/ReportNumberGenerator.js";
 import Employee from "../../models/technician.model.js";
 import Client from "../../models/client.model.js";
 import Hospital from "../../models/hospital.model.js";
@@ -42,23 +42,39 @@ const getAllOrders = asyncHandler(async (req, res) => {
         let orders = await orderModel.find({}).sort({ createdAt: -1 });
 
         // Fetch leadOwner names for all orders
+        // orders = await Promise.all(
+        //     orders.map(async (order) => {
+        //         let leadOwnerName = order.leadOwner;
+
+        //         // Try to find a user with this ID or string
+        //         const user = await User.findById(order.leadOwner).select('name');
+        //         console.log("🚀 ~ user:", user)
+        //         if (user) {
+        //             leadOwnerName = user.name;
+        //         }
+
+        //         return {
+        //             ...order.toObject(),
+        //             leadOwner: leadOwnerName
+        //         };
+        //     })
+        // );
         orders = await Promise.all(
             orders.map(async (order) => {
                 let leadOwnerName = order.leadOwner;
 
-                // Try to find a user with this ID or string
-                const user = await User.findById(order.leadOwner).select('name');
-                console.log("🚀 ~ user:", user)
-                if (user) {
-                    leadOwnerName = user.name;
+                if (mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+                    const user = await User.findById(order.leadOwner).select("name");
+                    if (user) leadOwnerName = user.name;
                 }
 
                 return {
                     ...order.toObject(),
-                    leadOwner: leadOwnerName
+                    leadOwner: leadOwnerName,
                 };
             })
         );
+
 
         if (!orders || orders.length === 0) {
             return res.status(200).json(new ApiResponse(200, [], "No Orders found"));
@@ -596,6 +612,98 @@ const getMachineDetails = asyncHandler(async (req, res) => {
 //     });
 // });
 
+
+
+// const updateServiceWorkType = asyncHandler(async (req, res) => {
+//     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
+//     const { machineModel, serialNumber, remark, isSubmitted } = req.body;
+
+//     if (isSubmitted === undefined) {
+//         return res.status(400).json({ message: "isSubmitted is required" });
+//     }
+
+//     // ✅ Validate IDs
+//     if (
+//         !mongoose.Types.ObjectId.isValid(orderId) ||
+//         !mongoose.Types.ObjectId.isValid(serviceId) ||
+//         !mongoose.Types.ObjectId.isValid(technicianId)
+//     ) {
+//         return res.status(400).json({ message: "Invalid IDs" });
+//     }
+
+//     // ✅ Find order
+//     const order = await orderModel.findById(orderId).populate("services");
+//     if (!order) return res.status(404).json({ message: "Order not found" });
+
+//     // ✅ Find service
+//     const service = order.services.find(
+//         (s) => s.machineType === machineType && s._id.equals(serviceId)
+//     );
+//     if (!service) return res.status(404).json({ message: "Service not found in this order" });
+
+//     // ✅ Update service fields
+//     if (machineModel) service.machineModel = machineModel;
+//     if (serialNumber) service.serialNumber = serialNumber;
+//     if (remark !== undefined) service.remark = remark;
+
+//     // ✅ Find workTypeDetail for this technician
+//     const workTypeDetail = service.workTypeDetails.find(
+//         (wt) =>
+//             wt.workType === workType &&
+//             ((wt.engineer && wt.engineer.toString() === technicianId) ||
+//                 (wt.officeStaff && wt.officeStaff.toString() === technicianId))
+//     );
+
+//     if (!workTypeDetail) {
+//         return res.status(404).json({ message: "WorkTypeDetail not found for this technician" });
+//     }
+
+//     // ✅ Update isSubmitted
+//     workTypeDetail.isSubmitted = Boolean(isSubmitted);
+
+//     // ✅ Handle file uploads
+//     if (req.files) {
+//         if (req.files.uploadFile && req.files.uploadFile[0]) {
+//             const uploaded = await uploadToS3(req.files.uploadFile[0]);
+//             workTypeDetail.uploadFile = uploaded.url;
+//         }
+
+//         if (req.files.viewFile && req.files.viewFile.length > 0) {
+//             const urls = [];
+//             for (let file of req.files.viewFile) {
+//                 const uploaded = await uploadToS3(file);
+//                 urls.push(uploaded.url);
+//             }
+//             workTypeDetail.viewFile = urls;
+//         }
+//     }
+
+//     // ✅ Generate QATest Report with numbers
+//     const reportULRNumber = await generateULRReportNumber();
+//     const qaTestReportNumber = await generateQATestReportNumber();
+
+//     const qaTest = new QATest({
+//         officeStaff: technicianId,
+//         reportULRNumber,
+//         qaTestReportNumber,
+//     });
+//     await qaTest.save();
+//     workTypeDetail.QAtest = qaTest._id;
+
+//     // ✅ Save service
+//     await service.save();
+
+//     res.status(200).json({
+//         success: true,
+//         message: "Service workType updated successfully",
+//         service,
+//         qaTestId: qaTest._id,
+//         reportULRNumber,
+//         qaTestReportNumber,
+//     });
+// });
+
+
 const updateServiceWorkType = asyncHandler(async (req, res) => {
     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
     const { machineModel, serialNumber, remark, isSubmitted } = req.body;
@@ -660,17 +768,38 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         }
     }
 
-    // ✅ Generate QATest Report with numbers
+    // ✅ Generate or update QATest Report with numbers
     const reportULRNumber = await generateULRReportNumber();
     const qaTestReportNumber = await generateQATestReportNumber();
 
-    const qaTest = new QATest({
-        officeStaff: technicianId,
-        reportULRNumber,
-        qaTestReportNumber,
-    });
-    await qaTest.save();
-    workTypeDetail.QAtest = qaTest._id;
+    let qaTest;
+    if (workTypeDetail.QAtest) {
+        // Update existing QA Test
+        qaTest = await QATest.findById(workTypeDetail.QAtest);
+        if (qaTest) {
+            qaTest.reportULRNumber = reportULRNumber;
+            qaTest.qaTestReportNumber = qaTestReportNumber;
+            await qaTest.save();
+        } else {
+            // fallback: create new QA Test if not found
+            qaTest = new QATest({
+                officeStaff: technicianId,
+                reportULRNumber,
+                qaTestReportNumber,
+            });
+            await qaTest.save();
+            workTypeDetail.QAtest = qaTest._id;
+        }
+    } else {
+        // Create new QA Test
+        qaTest = new QATest({
+            officeStaff: technicianId,
+            reportULRNumber,
+            qaTestReportNumber,
+        });
+        await qaTest.save();
+        workTypeDetail.QAtest = qaTest._id;
+    }
 
     // ✅ Save service
     await service.save();
@@ -684,6 +813,8 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         qaTestReportNumber,
     });
 });
+
+
 
 
 
@@ -4275,6 +4406,47 @@ const getReportStatus = async (req, res) => {
     }
 }
 
+// const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
+//     try {
+//         const { orderId } = req.params;
+
+//         // 1️⃣ Validate orderId
+//         if (!orderId) {
+//             return res.status(400).json({ message: "Order ID is required" });
+//         }
+
+//         // 2️⃣ Find the order and populate its quotation
+//         const order = await orderModel.findById(orderId).populate("quotation");
+
+//         if (!order) {
+//             return res.status(404).json({ message: "Order not found" });
+//         }
+
+//         if (!order.quotation) {
+//             return res.status(404).json({ message: "No quotation linked with this order" });
+//         }
+
+//         // 3️⃣ Get customer PDF from the linked quotation
+//         const quotation = order.quotation;
+
+//         if (!quotation.customersPDF) {
+//             return res.status(404).json({ message: "Customer PDF not found " });
+//         }
+
+//         // 4️⃣ Return PDF details
+//         res.status(200).json({
+//             message: "Customer PDF retrieved successfully",
+//             quotationId: quotation._id,
+//             quotationNumber: quotation.quotationId,
+//             pdfUrl: quotation.customersPDF,
+//         });
+//     } catch (error) {
+//         console.error("Error fetching customer PDF:", error);
+//         res.status(500).json({ message: "Internal server error" });
+//     }
+// });
+
+
 const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -4291,27 +4463,21 @@ const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
 
-        if (!order.quotation) {
-            return res.status(404).json({ message: "No quotation linked with this order" });
-        }
-
-        // 3️⃣ Get customer PDF from the linked quotation
         const quotation = order.quotation;
 
-        if (!quotation.customersPDF) {
-            return res.status(404).json({ message: "Customer PDF not found for this quotation" });
-        }
+        // 3️⃣ Return PDF details or empty string if not available
+        const pdfUrl = quotation?.customersPDF || "";
 
-        // 4️⃣ Return PDF details
         res.status(200).json({
             message: "Customer PDF retrieved successfully",
-            quotationId: quotation._id,
-            quotationNumber: quotation.quotationId,
-            pdfUrl: quotation.customersPDF,
+            quotationId: quotation?._id || null,
+            quotationNumber: quotation?.quotationId || null,
+            pdfUrl,
         });
     } catch (error) {
         console.error("Error fetching customer PDF:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 });
+
 export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation }
