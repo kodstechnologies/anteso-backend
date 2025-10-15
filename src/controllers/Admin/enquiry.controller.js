@@ -1630,18 +1630,31 @@ const createDirectOrder = asyncHandler(async (req, res) => {
             serviceIds = serviceDocs;
         }
 
-        // Additional Services
+        // // Additional Services
         let additionalServiceIds = [];
+        // if (additionalServices && Object.keys(additionalServices).length > 0) {
+        //     const additionalServiceDocs = await AdditionalService.insertMany(
+        //         Object.entries(additionalServices).map(([name, data]) => ({
+        //             name,
+        //             description: data?.description || "",
+        //             totalAmount: data?.totalAmount || 0,
+        //         }))
+        //     );
+        //     additionalServiceIds = additionalServiceDocs.map((a) => a._id);
+        // }
         if (additionalServices && Object.keys(additionalServices).length > 0) {
             const additionalServiceDocs = await AdditionalService.insertMany(
-                Object.entries(additionalServices).map(([name, data]) => ({
-                    name,
-                    description: data?.description || "",
-                    totalAmount: data?.totalAmount || 0,
-                }))
+                Object.entries(additionalServices)
+                    .filter(([_, desc]) => desc !== undefined) // ignore unchecked services
+                    .map(([name, description]) => ({
+                        name,
+                        description: description || "", // frontend sends string here
+                        totalAmount: 0, // you can extend later if needed
+                    }))
             );
             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
         }
+
 
         // Always create enquiry first
         const enquiryPayload = {
@@ -1677,6 +1690,9 @@ const createDirectOrder = asyncHandler(async (req, res) => {
         }
 
         const enquiry = await Enquiry.create(enquiryPayload);
+        console.log("HERE IS THE ENQUIRY");
+
+        console.log("🚀 ~ enquiry:", enquiry)
 
         // Employee → stop here
         if (leadOwnerUser?.role === "Employee") {

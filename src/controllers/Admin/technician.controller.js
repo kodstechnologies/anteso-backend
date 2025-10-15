@@ -485,6 +485,7 @@ const getTripsWithExpensesByTechnician = asyncHandler(async (req, res) => {
         // 1️⃣ Get all trips for this technician
         const trips = await tripModel.find({ technician: technicianId })
             .select("tripName startDate endDate remarks tripstatus tripTotalExpense")
+            .sort({ createdAt: -1 })
             .lean();
 
         const currentDate = new Date();
@@ -493,6 +494,7 @@ const getTripsWithExpensesByTechnician = asyncHandler(async (req, res) => {
         for (let trip of trips) {
             const expenses = await expenseModel.find({ trip: trip._id })
                 .select("typeOfExpense requiredAmount date screenshot remarks createdAt")
+                .sort({ createdAt: -1 })
                 .lean();
 
             // Map to include screenshot URL
