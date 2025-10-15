@@ -62,6 +62,9 @@ const additionalServiceSchema = new mongoose.Schema(
         },
         remark:{
             type:String
+        },
+        report:{
+            type:String
         }
     },
     { timestamps: true }

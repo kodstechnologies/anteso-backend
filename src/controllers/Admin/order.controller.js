@@ -3350,24 +3350,67 @@ export const editOrder = async (req, res) => {
 
 
 // Update Additional Service
+// export const updateAdditionalService = async (req, res) => {
+//     try {
+//         const { id } = req.params; // service ID from URL
+//         const { status, remark } = req.body; // values from fronten
+//         if (!id) {
+//             return res.status(400).json({ message: "Service ID is required" });
+//         }
+//         const updatedService = await AdditionalService.findByIdAndUpdate(
+//             id,
+//             { status, remark },
+//             { new: true, runValidators: true }
+//         );
+//         if (!updatedService) {
+//             return res.status(404).json({ message: "Service not found" });
+//         }
+//         res.status(200).json({
+//             message: "Additional Service updated successfully",
+//             service: updatedService,
+//         });
+//     } catch (error) {
+//         console.error("Error updating additional service:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// };
 export const updateAdditionalService = async (req, res) => {
     try {
-        const { id } = req.params; // service ID from URL
-        const { status, remark } = req.body; // values from fronten
+        const { id } = req.params;
+        const status = req.body?.status;
+        const remark = req.body?.remark;
+
         if (!id) {
             return res.status(400).json({ message: "Service ID is required" });
         }
-        const updatedService = await AdditionalService.findByIdAndUpdate(
-            id,
-            { status, remark },
-            { new: true, runValidators: true }
-        );
-        if (!updatedService) {
+
+        // Status is mandatory
+        if (!status) {
+            return res.status(400).json({ message: "Status is required" });
+        }
+
+        const service = await AdditionalService.findById(id);
+        if (!service) {
             return res.status(404).json({ message: "Service not found" });
         }
+
+        // If status is completed, file upload is mandatory
+        if (status.toLowerCase() === "completed") {
+            if (!req.file) {
+                return res.status(400).json({ message: "File upload is required when status is 'completed'" });
+            }
+            const { url } = await uploadToS3(req.file);
+            service.report = url; // store the file URL
+        }
+
+        service.status = status;
+        service.remark = remark || service.remark;
+
+        await service.save();
+
         res.status(200).json({
             message: "Additional Service updated successfully",
-            service: updatedService,
+            service,       // report URL is now included
         });
     } catch (error) {
         console.error("Error updating additional service:", error);

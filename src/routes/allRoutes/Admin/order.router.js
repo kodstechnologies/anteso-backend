@@ -76,8 +76,11 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 //has to be changed--changed
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
 router.post('/create-order', orderController.createOrder)
-router.put('/update-additional-service/:id', orderController.updateAdditionalService)
-// router.get('/',)
+router.put(
+    "/update-additional-service/:id",
+    upload.single("file"), // single file key: 'file'
+    orderController.updateAdditionalService
+);// router.get('/',)
 // router.post('/status-paid')
 
 router.patch(
@@ -103,6 +106,6 @@ router.get('/get-report-by-id/:orderId/:serviceId/:qaReportId', orderController.
 router.patch('/accept-report/:orderId/:serviceId/:qaReportId', orderController.acceptQAReport)
 router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.rejectQAReport)
 
-router.get('/get-elora-report/:orderId/:serviceId/:eloraId',orderController.getEloraReport)
-router.get('/get-pdf/:orderId',orderController.getPdfForAcceptQuotation)
+router.get('/get-elora-report/:orderId/:serviceId/:eloraId', orderController.getEloraReport)
+router.get('/get-pdf/:orderId', orderController.getPdfForAcceptQuotation)
 export default router
