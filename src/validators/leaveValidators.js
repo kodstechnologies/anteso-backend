@@ -20,10 +20,10 @@ export const leaveValidationSchema = Joi.object({
     leaveType: Joi.string()
         .valid(
             'Sick Leave',
-            'Vacation',
-            'Personal Leave',
+            'Casual Leave',
             'Maternity/Paternity',
-            'Bereavement Leave'
+            'Leave with pay',
+            'Leave without pay'
         )
         .required()
         .messages({

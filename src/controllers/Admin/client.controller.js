@@ -79,6 +79,7 @@ const getAll = asyncHandler(async (req, res) => {
     try {
         // Fetch all clients and populate nested references
         const clients = await Client.find()
+            .sort({ createdAt: -1 })
             .populate({
                 path: 'hospitals',
                 populate: [{ path: 'institutes' }, { path: 'rsos' }]

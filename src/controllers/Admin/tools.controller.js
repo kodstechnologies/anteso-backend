@@ -9,7 +9,7 @@ import Tools from "../../models/tools.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
 
 const create = asyncHandler(async (req, res) => {
-    console.log("🛠️ Tool body submitted:", req.body);
+    console.log(" Tool body submitted:", req.body);
 
     const { error, value } = createToolSchema.validate(req.body);
     if (error) {
@@ -48,23 +48,25 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const allTools = asyncHandler(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-    const [tools, totalCount] = await Promise.all([
-        Tool.find().skip(skip).limit(limit).sort({ createdAt: -1 }),
-        Tool.countDocuments()
-    ]);
+    try {
+        // Fetch all tools sorted by newest first
+        const tools = await Tool.find().sort({ createdAt: -1 });
+        const totalCount = tools.length;
 
-    res.status(200).json(
-        new ApiResponse(200, {
-            tools,
-            totalPages: Math.ceil(totalCount / limit),
-            currentPage: page,
-            totalCount
-        }, "Tools fetched successfully")
-    );
+        res.status(200).json(
+            new ApiResponse(200, {
+                tools,
+                totalCount
+            }, "Tools fetched successfully")
+        );
+    } catch (error) {
+        console.error("❌ Error fetching tools:", error);
+        res.status(500).json(
+            new ApiResponse(500, null, "Failed to fetch tools")
+        );
+    }
 });
+
 
 // const updateById = asyncHandler(async (req, res) => {
 //     const { id } = req.params;
@@ -185,6 +187,7 @@ const createToolByTechnician = asyncHandler(async (req, res) => {
 
     }
 })
+
 
 // const getEngineerByTool = asyncHandler(async (req, res) => {
 //     const { id } = req.params;

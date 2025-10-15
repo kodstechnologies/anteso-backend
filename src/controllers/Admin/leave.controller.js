@@ -99,7 +99,7 @@ const applyForLeave = asyncHandler(async (req, res) => {
         }
 
         // Validate leave type
-        const validLeaveTypes = ['Sick Leave', 'casual leave', 'Maternity/Paternity', 'Leave without pay'];
+        const validLeaveTypes = ['Sick Leave', 'Casual leave', 'Maternity/Paternity', 'Leave without pay', 'Leave with pay'];
         if (!validLeaveTypes.includes(leaveType)) {
             throw new ApiError(400, "Invalid leave type");
         }
