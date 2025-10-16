@@ -80,7 +80,7 @@ const getAddedAdvance = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: "Invalid technician ID" });
         }
         const advancedAmount = await Expense.find({ technician: technicianId })
-            .select("advancedAmount") // only needed fields
+            .select("advancedAmount totalExpense balance") // only needed fields
             .sort({ createdAt: -1 }); // latest first
 
         if (!advancedAmount || advancedAmount.length === 0) {

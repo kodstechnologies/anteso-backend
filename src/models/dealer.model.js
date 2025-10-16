@@ -34,14 +34,7 @@ const DealerSchema = new Schema(
         },
         qaTests: {
             type: [qaTestSchema],
-            default: [
-                { testName: "FIXED X RAY", price: 3500 },
-                { testName: "MOBILE X RAY", price: 2500 },
-                { testName: "C ARM", price: 3000 },
-                { testName: "MAMMOGRAPH", price: 4000 },
-                { testName: "CATH LAB", price: 5000 },
-                { testName: "CT SCAN", price: 600 },
-            ],
+            default: [],
         },
     },
     { timestamps: true }

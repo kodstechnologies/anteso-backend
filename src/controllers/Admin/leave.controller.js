@@ -1,16 +1,26 @@
 import Leave from '../../models/leave.model.js';
+import Employee from '../../models/technician.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { asyncHandler } from '../../utils/AsyncHandler.js';
 import { leaveValidationSchema } from '../../validators/leaveValidators.js';
 
 const add = asyncHandler(async (req, res) => {
-    // Validate input
+    // ✅ Validate input
     await leaveValidationSchema.validate(req.body);
 
-    const { startDate, endDate, leaveType, reason } = req.body;
+    const { employee, startDate, endDate, leaveType, reason } = req.body;
+    console.log("🚀 ~ req.body:", req.body)
 
+    // ✅ Check if employee exists
+    const existingEmployee = await Employee.findById(employee);
+    if (!existingEmployee) {
+        return res.status(404).json(new ApiResponse(404, null, "Employee not found"));
+    }
+
+    // ✅ Create new leave record
     const leave = await Leave.create({
+        employee, // reference to employee (technician)
         startDate,
         endDate,
         leaveType,
@@ -19,16 +29,24 @@ const add = asyncHandler(async (req, res) => {
 
     res.status(201).json(new ApiResponse(201, leave, "Leave created successfully"));
 });
+
 const getLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const leave = await Leave.findById(id);
+    const leave = await Leave.findById(id)
+        .populate("employee", "name designation"); // populate employee name + designation
+
     if (!leave) {
         throw new ApiError(404, "Leave not found");
     }
 
-    res.status(200).json(new ApiResponse(200, leave, "Leave fetched successfully"));
+    res.status(200).json(
+        new ApiResponse(200, leave, "Leave fetched successfully")
+    );
 });
+
+
+
 const getAllLeaves = asyncHandler(async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -66,18 +84,50 @@ const getAllLeaves = asyncHandler(async (req, res) => {
     );
 });
 
+// const updateLeaveById = asyncHandler(async (req, res) => {
+//     const { id } = req.params;
+//     const updatedLeave = await Leave.findByIdAndUpdate(
+//         id,
+//         { $set: req.body },
+//         { new: true, runValidators: true }
+//     );
+//     if (!updatedLeave) {
+//         throw new ApiError(404, "Leave not found");
+//     }
+//     res.status(200).json(new ApiResponse(200, updatedLeave, "Leave updated successfully"));
+// });
+
+
+
 const updateLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
+    const updateData = req.body;
+
+    // ✅ If employee field is being updated, validate it
+    if (updateData.employee) {
+        const existingEmployee = await Employee.findById(updateData.employee);
+        if (!existingEmployee) {
+            throw new ApiError(404, "Employee not found");
+        }
+    }
+
+    // ✅ Update leave document
     const updatedLeave = await Leave.findByIdAndUpdate(
         id,
-        { $set: req.body },
+        { $set: updateData },
         { new: true, runValidators: true }
-    );
+    ).populate("employee", "name designation");
+
     if (!updatedLeave) {
         throw new ApiError(404, "Leave not found");
     }
-    res.status(200).json(new ApiResponse(200, updatedLeave, "Leave updated successfully"));
+
+    res.status(200).json(
+        new ApiResponse(200, updatedLeave, "Leave updated successfully")
+    );
 });
+
+
 const deleteLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const deleted = await Leave.findByIdAndDelete(id);
@@ -99,7 +149,7 @@ const applyForLeave = asyncHandler(async (req, res) => {
         }
 
         // Validate leave type
-        const validLeaveTypes = ['Sick Leave', 'Casual leave', 'Maternity/Paternity', 'Leave without pay', 'Leave with pay'];
+        const validLeaveTypes = ['Sick Leave', 'Casual Leave', 'Maternity/Paternity', 'Leave without pay', 'Leave with pay'];
         if (!validLeaveTypes.includes(leaveType)) {
             throw new ApiError(400, "Invalid leave type");
         }
