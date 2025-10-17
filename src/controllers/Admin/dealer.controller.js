@@ -12,6 +12,69 @@ const FIXED_QA_TESTS = [
     { testName: "CT SCAN", price: 600 },
 ];
 
+// export const createDealer = asyncHandler(async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             phone,
+//             email,
+//             address,
+//             city,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests = []
+//         } = req.body;
+
+//         // ✅ Basic validation
+//         if (!name || !phone || !email) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Name, phone, and email are required",
+//             });
+//         }
+
+//         // ✅ Merge fixed + provided tests without duplicates
+//         const mergedQaTests = [
+//             ...FIXED_QA_TESTS,
+//             ...qaTests
+//         ].reduce((acc, curr) => {
+//             if (!acc.find(test => test.testName.toLowerCase() === curr.testName.toLowerCase())) {
+//                 acc.push(curr);
+//             }
+//             return acc;
+//         }, []);
+
+//         // ✅ Create dealer
+//         const dealer = new Dealer({
+//             name,
+//             phone,
+//             email,
+//             address,
+//             city,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests: mergedQaTests,
+//         });
+
+//         await dealer.save();
+
+//         res.status(201).json({
+//             success: true,
+//             message: "Dealer created successfully",
+//             dealer,
+//         });
+//     } catch (error) {
+//         console.error("❌ Dealer creation error:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Failed to create dealer",
+//         });
+//     }
+// });
 export const createDealer = asyncHandler(async (req, res) => {
     try {
         const {
@@ -29,10 +92,7 @@ export const createDealer = asyncHandler(async (req, res) => {
 
         // ✅ Basic validation
         if (!name || !phone || !email) {
-            return res.status(400).json({
-                success: false,
-                message: "Name, phone, and email are required",
-            });
+            throw new ApiError(400, "Name, phone, and email are required");
         }
 
         // ✅ Merge fixed + provided tests without duplicates
@@ -46,7 +106,20 @@ export const createDealer = asyncHandler(async (req, res) => {
             return acc;
         }, []);
 
-        // ✅ Create dealer
+        // ✅ Identify creator
+        const tokenUser = req.admin || req.user; // Admin or Staff
+        const creatorId = tokenUser?.id || tokenUser?._id;
+        let creatorModel = "User"; // default
+
+        if (tokenUser?.role === "admin") {
+            creatorModel = "Admin";
+        }
+
+        if (!creatorId) {
+            throw new ApiError(401, "Unauthorized: Creator information missing");
+        }
+
+        // ✅ Create Dealer
         const dealer = new Dealer({
             name,
             phone,
@@ -58,24 +131,24 @@ export const createDealer = asyncHandler(async (req, res) => {
             branch,
             mouValidity,
             qaTests: mergedQaTests,
+            createdBy: creatorId,
+            createdByModel: creatorModel,
         });
 
         await dealer.save();
 
-        res.status(201).json({
-            success: true,
-            message: "Dealer created successfully",
-            dealer,
+        // ✅ Populate createdBy for response
+        const populatedDealer = await Dealer.findById(dealer._id).populate({
+            path: "createdBy",
+            select: "name email phone role technicianType",
         });
+
+        res.status(201).json(new ApiResponse(201, populatedDealer, "Dealer created successfully"));
     } catch (error) {
         console.error("❌ Dealer creation error:", error);
-        res.status(500).json({
-            success: false,
-            message: error.message || "Failed to create dealer",
-        });
+        throw new ApiError(error.statusCode || 500, error.message || "Failed to create dealer");
     }
 });
-
 
  const getById = asyncHandler(async (req, res) => {
     try {

@@ -10,44 +10,44 @@ import { clientValidationSchema } from "../../validators/clientValidators.js";
 import { handleDuplicateKeyError } from "../../utils/ErrorHandler.js";
 import User from "../../models/user.model.js";
 
-const create = asyncHandler(async (req, res) => {
-    const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
-    if (error) {
-        throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
-    }
+// const create = asyncHandler(async (req, res) => {
+//     const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
+//     if (error) {
+//         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
+//     }
 
-    const { name, phone, email, address, gstNo, hospitals } = value;
+//     const { name, phone, email, address, gstNo, hospitals } = value;
 
-    const validateReferences = async (Model, ids) => {
-        if (!ids) return [];
-        const found = await Model.find({ _id: { $in: ids } });
-        if (found.length !== ids.length) {
-            throw new ApiError(400, `Some ${Model.modelName} IDs are invalid.`);
-        }
-        return ids;
-    };
+//     const validateReferences = async (Model, ids) => {
+//         if (!ids) return [];
+//         const found = await Model.find({ _id: { $in: ids } });
+//         if (found.length !== ids.length) {
+//             throw new ApiError(400, `Some ${Model.modelName} IDs are invalid.`);
+//         }
+//         return ids;
+//     };
 
-    const validHospitals = await validateReferences(Hospital, hospitals);
+//     const validHospitals = await validateReferences(Hospital, hospitals);
 
-    try {
-        const newClient = await Client.create({
-            name,
-            phone,
-            email,
-            address,
-            gstNo,
-            hospitals: validHospitals,
-        });
+//     try {
+//         const newClient = await Client.create({
+//             name,
+//             phone,
+//             email,
+//             address,
+//             gstNo,
+//             hospitals: validHospitals,
+//         });
 
-        return res.status(201).json(new ApiResponse(201, newClient, 'Client created successfully'));
-    } catch (error) {
-        if (error.code === 11000) {
-            const message = handleDuplicateKeyError(error);
-            throw new ApiError(409, message);
-        }
-        throw new ApiError(error.statusCode || 500, error.message || 'Something went wrong');
-    }
-});
+//         return res.status(201).json(new ApiResponse(201, newClient, 'Client created successfully'));
+//     } catch (error) {
+//         if (error.code === 11000) {
+//             const message = handleDuplicateKeyError(error);
+//             throw new ApiError(409, message);
+//         }
+//         throw new ApiError(error.statusCode || 500, error.message || 'Something went wrong');
+//     }
+// });
 
 // const getAll = asyncHandler(async (req, res) => {
 //     const page = parseInt(req.query.page) || 1;
@@ -73,6 +73,76 @@ const create = asyncHandler(async (req, res) => {
 //     );
 // });
 
+const create = asyncHandler(async (req, res) => {
+    const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+        throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
+    }
+
+    const { name, phone, email, address, gstNo, hospitals } = value;
+
+    // ✅ Step 1: Validate references (if any)
+    const validateReferences = async (Model, ids) => {
+        if (!ids || ids.length === 0) return [];
+        const found = await Model.find({ _id: { $in: ids } });
+        if (found.length !== ids.length) {
+            throw new ApiError(400, `Some ${Model.modelName} IDs are invalid.`);
+        }
+        return ids;
+    };
+
+    const validHospitals = await validateReferences(Hospital, hospitals);
+
+    // ✅ Step 2: Detect who created it (Admin or Staff)
+    const tokenUser = req.admin || req.user; // whichever your middleware sets
+    const creatorId = tokenUser?.id;
+    let creatorModel = "User"; // default
+
+    if ( tokenUser?.role === "admin") {
+        creatorModel = "Admin";
+    }
+
+    console.log("🚀 ~ creatorId:", creatorId);
+    console.log("🚀 ~ creatorModel:", creatorModel);
+
+
+    if (!creatorId) {
+        throw new ApiError(401, "Unauthorized: Creator information missing");
+    }
+
+
+    // ✅ Step 3: Create the client record
+    try {
+        const newClient = await Client.create({
+            name,
+            phone,
+            email,
+            address,
+            gstNo,
+            hospitals: validHospitals,
+            createdBy: creatorId,
+            createdByModel: creatorModel,
+        });
+        const populatedClient = await Client.findById(newClient._id)
+            .populate({
+                path: "createdBy",
+                select: "name email phone role technicianType",
+            });
+
+        return res
+            .status(201)
+            .json(new ApiResponse(201, populatedClient, "Client created successfully"));
+    } catch (error) {
+        if (error.code === 11000) {
+            const message = handleDuplicateKeyError(error);
+            throw new ApiError(409, message);
+        }
+        throw new ApiError(
+            error.statusCode || 500,
+            error.message || "Something went wrong"
+        );
+    }
+});
 
 
 const getAll = asyncHandler(async (req, res) => {

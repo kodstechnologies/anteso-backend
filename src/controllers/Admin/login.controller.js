@@ -46,22 +46,86 @@ console.log("🚀 ~ JWT_REFRESH_SECRET:", JWT_REFRESH_SECRET)
 //         new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
 //     );
 // });
- const adminLogin = asyncHandler(async (req, res) => {
+
+
+
+//  const adminLogin = asyncHandler(async (req, res) => {
+//     // 1. Validate input
+//     const { error, value } = loginSchema.validate(req.body);
+//     console.log("🚀 ~ value:", value)
+//     if (error) {
+//         throw new ApiError(400, error.details[0].message);
+//     }
+//     const { email, password } = value;
+
+//     // 2. Try Admin login first
+//     const admin = await Admin.findOne({ email });
+//     if (admin) {
+//         const isPasswordValid = await bcrypt.compare(password, admin.password);
+//         if (!isPasswordValid) {
+//             throw new ApiError(401, "Invalid email or password");
+//         }
+
+//         const accessToken = jwt.sign(
+//             { id: admin._id, email: admin.email, role: 'admin' },
+//             process.env.JWT_SECRET,
+//             { expiresIn: '360d' }
+//         );
+//         const refreshToken = jwt.sign(
+//             { id: admin._id },
+//             process.env.JWT_REFRESH_SECRET,
+//             { expiresIn: '365d' }
+//         );
+
+//         return res.status(200).json(
+//             new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
+//         );
+//     }
+
+//     // 3. Check Employee (office-staff only)
+//     const employee = await Employee.findOne({ email, status: 'active', technicianType: 'office-staff' });
+//     console.log("🚀 ~ employee:", employee)
+//     if (employee) {
+//         const isPasswordValid = await bcrypt.compare(password, employee.password);
+//         console.log("🚀 ~ isPasswordValid:", isPasswordValid)
+//         if (!isPasswordValid) {
+//             throw new ApiError(401, "Invalid email or password");
+//         }
+
+//         const accessToken = jwt.sign(
+//             { id: employee._id, email: employee.email, role: 'staff' },
+//             process.env.JWT_SECRET,
+//             { expiresIn: '360d' }
+//         );
+//         console.log("🚀 ~ accessToken:", accessToken)
+//         const refreshToken = jwt.sign(
+//             { id: employee._id },
+//             process.env.JWT_REFRESH_SECRET,
+//             { expiresIn: '365d' }
+//         );
+//         console.log("🚀 ~ refreshToken:", refreshToken)
+
+//         return res.status(200).json(
+//             new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
+//         );
+//     }
+
+//     // 4. If neither admin nor active staff
+//     throw new ApiError(401, "Invalid email or password");
+// });
+
+const adminLogin = asyncHandler(async (req, res) => {
     // 1. Validate input
     const { error, value } = loginSchema.validate(req.body);
-    console.log("🚀 ~ value:", value)
-    if (error) {
-        throw new ApiError(400, error.details[0].message);
-    }
+    if (error) throw new ApiError(400, error.details[0].message);
+
     const { email, password } = value;
 
     // 2. Try Admin login first
     const admin = await Admin.findOne({ email });
     if (admin) {
         const isPasswordValid = await bcrypt.compare(password, admin.password);
-        if (!isPasswordValid) {
-            throw new ApiError(401, "Invalid email or password");
-        }
+        if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
         const accessToken = jwt.sign(
             { id: admin._id, email: admin.email, role: 'admin' },
@@ -81,26 +145,30 @@ console.log("🚀 ~ JWT_REFRESH_SECRET:", JWT_REFRESH_SECRET)
 
     // 3. Check Employee (office-staff only)
     const employee = await Employee.findOne({ email, status: 'active', technicianType: 'office-staff' });
-    console.log("🚀 ~ employee:", employee)
     if (employee) {
         const isPasswordValid = await bcrypt.compare(password, employee.password);
-        console.log("🚀 ~ isPasswordValid:", isPasswordValid)
-        if (!isPasswordValid) {
-            throw new ApiError(401, "Invalid email or password");
-        }
+        if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
         const accessToken = jwt.sign(
             { id: employee._id, email: employee.email, role: 'staff' },
             process.env.JWT_SECRET,
             { expiresIn: '360d' }
         );
-        console.log("🚀 ~ accessToken:", accessToken)
         const refreshToken = jwt.sign(
             { id: employee._id },
             process.env.JWT_REFRESH_SECRET,
             { expiresIn: '365d' }
         );
-        console.log("🚀 ~ refreshToken:", refreshToken)
+
+        // ✅ Mark staff as present for today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // normalize to start of day
+
+        await Attendance.findOneAndUpdate(
+            { employee: employee._id, date: today },
+            { employee: employee._id, date: today, status: 'Present' },
+            { upsert: true, new: true } // create if not exists
+        );
 
         return res.status(200).json(
             new ApiResponse(200, { accessToken, refreshToken }, "Login successful")

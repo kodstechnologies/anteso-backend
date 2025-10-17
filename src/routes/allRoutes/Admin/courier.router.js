@@ -8,7 +8,6 @@ router.get('/get-by-id/:id', CourierController.getCompanyById)
 router.put('/update-by-id/:id', CourierController.updateCourierById)
 router.delete('/delete-by-id/:id', CourierController.deleteCompanyById)
 
-
 router.post('/add-by-orderId/:orderId',CourierController.addByOrderId)
 router.get('/get-all-courier/:orderId',CourierController.getAllByOrderId)
 

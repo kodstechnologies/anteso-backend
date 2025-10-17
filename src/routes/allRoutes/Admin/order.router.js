@@ -82,7 +82,7 @@ router.put(
     orderController.updateAdditionalService
 );// router.get('/',)
 // router.post('/status-paid')
-
+router.get('/additional-service-report/:orderId/:additionalServiceId',orderController.getUpdatedAdditionalServiceReport)
 router.patch(
     "/edit-documents/:orderId/:serviceId/:technicianId/:workType",
     upload.fields([
@@ -108,4 +108,5 @@ router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.r
 
 router.get('/get-elora-report/:orderId/:serviceId/:eloraId', orderController.getEloraReport)
 router.get('/get-pdf/:orderId', orderController.getPdfForAcceptQuotation)
+router.get('/assigned-orders-for-staff',orderController.getAssignedOrdersForStaff)
 export default router

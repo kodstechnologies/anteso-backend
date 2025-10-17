@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import User from './user.model.js';
 import { generateReadableId } from '../utils/GenerateReadableId.js';
+import createdByPlugin from './plugins/createdBy.plugin.js';
 const { Schema } = mongoose;
 
 const clientSchema = new Schema({
@@ -34,6 +35,8 @@ const clientSchema = new Schema({
     ],
 
 });
+clientSchema.plugin(createdByPlugin);
+
 // Generate clientId like CL001 before saving
 clientSchema.pre('save', async function (next) {
     if (!this.clientId) {

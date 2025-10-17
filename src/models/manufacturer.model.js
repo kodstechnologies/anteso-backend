@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
+import createdByPlugin from "./plugins/createdBy.plugin.js";
 
 const { Schema } = mongoose;
 
@@ -55,6 +56,7 @@ const ManufacturerSchema = new Schema(
     },
     { timestamps: true }
 );
+ManufacturerSchema.plugin(createdByPlugin);
 
 const Manufacturer = User.discriminator("Manufacturer", ManufacturerSchema);
 

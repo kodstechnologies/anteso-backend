@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
+import createdByPlugin from "./plugins/createdBy.plugin.js";
 
 const courierSchema = new mongoose.Schema(
     {
         orderId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Order",
-            required: true,
         },
         courierCompanyName: {
             type: String,
@@ -24,12 +24,13 @@ const courierSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["Active", "Inactive"],
-            default: "Active",
+            enum: ["active", "inactive"],
+            default: "active",
         },
     },
     { timestamps: true }
 );
+courierSchema.plugin(createdByPlugin);
 
 const Courier = mongoose.model("Courier", courierSchema);
 

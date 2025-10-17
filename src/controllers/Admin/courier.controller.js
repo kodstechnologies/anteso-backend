@@ -5,23 +5,46 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import orderModel from "../../models/order.model.js";
 import mongoose from "mongoose";
 
-const addCourier = asyncHandler(async (req, res) => {
+ const addCourier = asyncHandler(async (req, res) => {
     console.log("📦 Payload received:", req.body);
 
     const { courierCompanyName, trackingId, trackingUrl, status } = req.body;
 
+    // ✅ Basic validation
     if (!courierCompanyName) {
         throw new ApiError(400, "Courier company name is required");
     }
 
+    // ✅ Identify creator
+    const tokenUser = req.admin || req.user; // Admin or Staff
+    const creatorId = tokenUser?._id || tokenUser?.id;
+    let creatorModel = "User"; // default
+
+    if (tokenUser?.role === "admin") {
+        creatorModel = "Admin";
+    }
+
+    if (!creatorId) {
+        throw new ApiError(401, "Unauthorized: Creator information missing");
+    }
+
+    // ✅ Create Courier
     const newCourier = await Courier.create({
         courierCompanyName,
         trackingId,
         trackingUrl,
         status: status || "Active",
+        createdBy: creatorId,
+        createdByModel: creatorModel,
     });
 
-    res.status(201).json(new ApiResponse(201, newCourier, "Courier company added successfully"));
+    // ✅ Populate createdBy for response
+    const populatedCourier = await Courier.findById(newCourier._id).populate({
+        path: "createdBy",
+        select: "name email phone role technicianType",
+    });
+
+    res.status(201).json(new ApiResponse(201, populatedCourier, "Courier company added successfully"));
 });
 
 

@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 import { generateReadableId } from '../utils/GenerateReadableId.js';
-
+import createdByPlugin from "../models/plugins/createdBy.plugin.js"
 const toolsSchema = new Schema(
     {
         toolId: {
@@ -74,5 +74,7 @@ toolsSchema.pre('save', async function (next) {
     }
     next();
 });
+toolsSchema.plugin(createdByPlugin);
+
 const Tools = mongoose.model('Tool', toolsSchema);
 export default Tools;

@@ -8,24 +8,78 @@ import Employee from "../../models/technician.model.js";
 import Tools from "../../models/tools.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
 
-const create = asyncHandler(async (req, res) => {
-    console.log(" Tool body submitted:", req.body);
+// const create = asyncHandler(async (req, res) => {
+//     console.log(" Tool body submitted:", req.body);
 
-    const { error, value } = createToolSchema.validate(req.body);
+//     const { error, value } = createToolSchema.validate(req.body);
+//     if (error) {
+//         throw new ApiError(400, error.details[0].message);
+//     }
+
+//     // Generate toolId manually
+//     const toolId = await generateReadableId("Tool", "TL");
+
+//     // Check for duplicates
+//     const exists = await Tools.findOne({ toolId });
+//     if (exists) {
+//         throw new ApiError(409, "Tool with this ID already exists");
+//     }
+
+//     // Handle file upload (certificate)
+//     let certificateUrl = null;
+//     if (req.file) {
+//         try {
+//             const { url } = await uploadToS3(req.file);
+//             certificateUrl = url;
+//         } catch (err) {
+//             console.error("S3 upload error:", err);
+//             throw new ApiError(500, "Failed to upload certificate file");
+//         }
+//     }
+
+//     const tool = await Tools.create({
+//         ...value,
+//         toolId,
+//         toolStatus: "unassigned", // default value
+//         certificate: certificateUrl,
+//     });
+
+//     res.status(201).json(new ApiResponse(201, tool, "Tool created successfully"));
+// });
+
+
+const create = asyncHandler(async (req, res) => {
+    console.log("Tool body submitted:", req.body);
+
+    // ✅ Validate request body
+    const { error, value } = createToolSchema.validate(req.body, { abortEarly: false });
     if (error) {
-        throw new ApiError(400, error.details[0].message);
+        throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
     }
 
-    // Generate toolId manually
+    // ✅ Identify creator
+    const tokenUser = req.admin || req.user; // either Admin or User
+    const creatorId = tokenUser?.id || tokenUser?._id;
+    let creatorModel = "User"; // default
+
+    if (tokenUser?.role === "admin") {
+        creatorModel = "Admin";
+    }
+
+    if (!creatorId) {
+        throw new ApiError(401, "Unauthorized: Creator information missing");
+    }
+
+    // ✅ Generate toolId manually (optional, pre-save also handles it)
     const toolId = await generateReadableId("Tool", "TL");
 
-    // Check for duplicates
+    // ✅ Check for duplicates
     const exists = await Tools.findOne({ toolId });
     if (exists) {
         throw new ApiError(409, "Tool with this ID already exists");
     }
 
-    // Handle file upload (certificate)
+    // ✅ Handle file upload (certificate)
     let certificateUrl = null;
     if (req.file) {
         try {
@@ -37,32 +91,70 @@ const create = asyncHandler(async (req, res) => {
         }
     }
 
-    const tool = await Tools.create({
+    // ✅ Create the tool
+    const newTool = await Tools.create({
         ...value,
         toolId,
-        toolStatus: "unassigned", // default value
+        toolStatus: "unassigned",
         certificate: certificateUrl,
+        createdBy: creatorId,
+        createdByModel: creatorModel,
     });
 
-    res.status(201).json(new ApiResponse(201, tool, "Tool created successfully"));
+    // ✅ Populate createdBy dynamically
+    const populatedTool = await Tools.findById(newTool._id)
+        .populate({
+            path: 'createdBy',
+            select: 'name email phone role technicianType',
+        });
+
+    res.status(201).json(new ApiResponse(201, populatedTool, "Tool created successfully"));
 });
+
+
+
+// const allTools = asyncHandler(async (req, res) => {
+//     try {
+//         // Fetch all tools sorted by newest first
+//         const tools = await Tool.find().sort({ createdAt: -1 });
+//         const totalCount = tools.length;
+
+//         res.status(200).json(
+//             new ApiResponse(200, {
+//                 tools,
+//                 totalCount
+//             }, "Tools fetched successfully")
+//         );
+//     } catch (error) {
+//         console.error("❌ Error fetching tools:", error);
+//         res.status(500).json(
+//             new ApiResponse(500, null, "Failed to fetch tools")
+//         );
+//     }
+// });
 
 const allTools = asyncHandler(async (req, res) => {
     try {
-        // Fetch all tools sorted by newest first
-        const tools = await Tool.find().sort({ createdAt: -1 });
-        const totalCount = tools.length;
+        // Fetch all tools and populate 'createdBy'
+        const tools = await Tools.find()
+            .sort({ createdAt: -1 })
+            .populate({
+                path: 'createdBy',
+                select: 'name email role technicianType', // select only required fields
+            });
 
-        res.status(200).json(
+        const totalTools = tools.length;
+
+        return res.status(200).json(
             new ApiResponse(200, {
                 tools,
-                totalCount
-            }, "Tools fetched successfully")
+                totalTools
+            }, 'Tools fetched successfully')
         );
     } catch (error) {
         console.error("❌ Error fetching tools:", error);
-        res.status(500).json(
-            new ApiResponse(500, null, "Failed to fetch tools")
+        return res.status(500).json(
+            new ApiResponse(500, null, 'Failed to fetch tools')
         );
     }
 });

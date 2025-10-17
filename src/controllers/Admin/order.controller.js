@@ -133,7 +133,7 @@ const getAdditionalServicesByOrderId = asyncHandler(async (req, res) => {
         // ✅ Populate only name & description from AdditionalService
         const order = await orderModel
             .findById(orderId)
-            .populate('additionalServices', 'name description remark status') // 👈 only these fields
+            .populate('additionalServices', 'name description remark status report') // 👈 only these fields
             .select('additionalServices specialInstructions');
 
         if (!order) {
@@ -875,7 +875,7 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
                 employee: technicianId,
                 date: new Date(),
                 status: 'Present',
-               
+
             });
             await attendance.save();
         } else {
@@ -3504,7 +3504,7 @@ export const editOrder = async (req, res) => {
 //         res.status(500).json({ message: "Server error", error: error.message });
 //     }
 // };
-export const updateAdditionalService = async (req, res) => {
+const updateAdditionalService = async (req, res) => {
     try {
         const { id } = req.params;
         const status = req.body?.status;
@@ -3548,6 +3548,49 @@ export const updateAdditionalService = async (req, res) => {
     }
 };
 
+
+
+const getUpdatedAdditionalServiceReport = asyncHandler(async (req, res) => {
+    try {
+        const { orderId, additionalServiceId } = req.params;
+
+        if (!orderId || !additionalServiceId) {
+            return res.status(400).json({ message: "Order ID and Additional Service ID are required" });
+        }
+
+        const order = await orderModel.findById(orderId).populate('additionalServices');
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const additionalService = order.additionalServices.find(
+            (service) => service._id.toString() === additionalServiceId
+        );
+        if (!additionalService) {
+            return res.status(404).json({ message: "Additional Service not found in this order" });
+        }
+
+        // ✅ Optionally fetch the latest version directly from DB for updated data
+        const updatedService = await AdditionalService.findById(additionalServiceId);
+        if (!updatedService) {
+            return res.status(404).json({ message: "Additional Service not found" });
+        }
+
+        // ✅ Return the updated report details
+        res.status(200).json({
+            message: "Fetched updated additional service report successfully",
+            data: {
+                orderId: order._id,
+                orderSrfNumber: order.srfNumber,
+                additionalService: updatedService,
+            },
+        });
+
+    } catch (error) {
+        console.error("Error fetching updated additional service report:", error);
+        res.status(500).json({ message: "Internal Server Error", error: error.message });
+    }
+});
 
 // const assignToOfficeStff
 
@@ -4031,7 +4074,7 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
                     select: "reportULRNumber report qaTestReportNumber reportStatus", // select the correct fields
                 },
             })
-            .populate("additionalServices", "name description totalAmount")
+            .populate("additionalServices", "name description totalAmount report")
             .populate("customer", "name email role")
             .populate("quotation", "quotationNumber status")
             .populate("payment")
@@ -4653,4 +4696,42 @@ const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation }
+
+
+const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
+    try {
+        const staffId = req.user.id;
+
+        // Step 1: Populate all services -> workTypeDetails -> QATest
+        const orders = await orderModel.find({})
+            .populate({
+                path: "services",
+                populate: {
+                    path: "workTypeDetails.QAtest",
+                    populate: { path: "officeStaff", select: "name email _id" }
+                }
+            })
+            .populate("customer hospital payment courierDetails quotation additionalServices");
+
+        // Step 2: Filter orders where the logged-in staff is assigned in QATest
+        const filteredOrders = orders
+            .map(order => {
+                const filteredServices = order.services.map(service => {
+                    const filteredWorkTypeDetails = service.workTypeDetails.filter(
+                        wt => wt.QAtest && wt.QAtest.officeStaff && wt.QAtest.officeStaff._id.toString() === staffId
+                    );
+                    return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
+                }).filter(s => s.workTypeDetails.length > 0); // keep only services with matching QATest
+
+                return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
+            })
+            .filter(o => o !== null);
+
+        res.status(200).json({ success: true, orders: filteredOrders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Server Error", error: error.message });
+    }
+});
+
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService,getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff }

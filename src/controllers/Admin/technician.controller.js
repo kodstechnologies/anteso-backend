@@ -1476,4 +1476,5 @@ export const getAttendanceSummary = asyncHandler(async (req, res) => {
 
 
 
+
 export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary };
