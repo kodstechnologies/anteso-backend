@@ -11,6 +11,8 @@ import advanceAccountModel from "../../models/advanceAccount.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
 import mongoose from "mongoose";
 import Attendance from "../../models/attendanceSchema.model.js"
+import bcrypt from "bcrypt";
+
 
 // const add = asyncHandler(async (req, res) => {
 //     try {
@@ -170,6 +172,88 @@ import Attendance from "../../models/attendanceSchema.model.js"
 //     }
 // });
 
+// const add = asyncHandler(async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             phone,
+//             email,
+//             technicianType,
+//             status,
+//             tools,
+//             designation,
+//             department,
+//             dateOfJoining,
+//             workingDays,
+//             password,
+//         } = req.body;
+
+//         // Basic validation
+//         if (!name || !phone || !email || !technicianType ||
+//             !designation || !department || !dateOfJoining || workingDays === undefined) {
+//             throw new ApiError(400, "All required fields must be provided");
+//         }
+
+//         // 🔹 Password required only for office-staff
+//         if (technicianType === "office-staff" && !password) {
+//             throw new ApiError(400, "Password is required for office staff");
+//         }
+
+//         // Engineer-specific tool validation
+//         if (technicianType === "engineer") {
+//             if (!tools || !Array.isArray(tools) || tools.length === 0) {
+//                 throw new ApiError(400, "Engineer must be assigned at least one tool.");
+//             }
+
+//             for (const t of tools) {
+//                 const toolDoc = await Tool.findById(t.toolId);
+//                 if (!toolDoc) {
+//                     throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
+//                 }
+//                 if (toolDoc.toolStatus === "assigned") {
+//                     throw new ApiError(400, `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`);
+//                 }
+//             }
+//         }
+
+//         // 🔹 Only office-staff password is saved (no hashing)
+//         const employeeData = {
+//             name,
+//             phone,
+//             email,
+//             technicianType,
+//             status,
+//             designation,
+//             department,
+//             dateOfJoining,
+//             workingDays,
+//             tools: technicianType === "engineer" ? tools : [],
+//         };
+//         if (technicianType === "office-staff") {
+//             employeeData.password = password;
+//         }
+
+//         // Create new employee
+//         const employee = new Employee(employeeData);
+//         await employee.save();
+
+//         // Update tool status if assigned
+//         if (technicianType === "engineer") {
+//             for (const t of tools) {
+//                 await Tool.findByIdAndUpdate(t.toolId, {
+//                     toolStatus: "assigned",
+//                     technician: employee._id
+//                 }, { new: true });
+//             }
+//         }
+
+//         return res.status(201).json(new ApiResponse(201, employee, "Employee created successfully"));
+//     } catch (error) {
+//         throw new ApiError(500, error.message || "Failed to create employee");
+//     }
+// });
+
+
 const add = asyncHandler(async (req, res) => {
     try {
         const {
@@ -186,18 +270,36 @@ const add = asyncHandler(async (req, res) => {
             password,
         } = req.body;
 
-        // Basic validation
-        if (!name || !phone || !email || !technicianType ||
-            !designation || !department || !dateOfJoining || workingDays === undefined) {
+        // ✅ Basic validation
+        if (
+            !name ||
+            !phone ||
+            !email ||
+            !technicianType ||
+            !designation ||
+            !department ||
+            !dateOfJoining ||
+            workingDays === undefined
+        ) {
             throw new ApiError(400, "All required fields must be provided");
         }
 
-        // 🔹 Password required only for office-staff
-        if (technicianType === "office-staff" && !password) {
-            throw new ApiError(400, "Password is required for office staff");
+        // ✅ Check duplicate email
+        const existingEmployee = await Employee.findOne({ email });
+        if (existingEmployee) {
+            throw new ApiError(400, "Employee with this email already exists");
         }
 
-        // Engineer-specific tool validation
+        // ✅ Password required for office-staff only
+        let hashedPassword = undefined;
+        if (technicianType === "office-staff") {
+            if (!password) {
+                throw new ApiError(400, "Password is required for office staff");
+            }
+            hashedPassword = await bcrypt.hash(password, 10);
+        }
+
+        // ✅ Engineer-specific tool validation
         if (technicianType === "engineer") {
             if (!tools || !Array.isArray(tools) || tools.length === 0) {
                 throw new ApiError(400, "Engineer must be assigned at least one tool.");
@@ -209,12 +311,15 @@ const add = asyncHandler(async (req, res) => {
                     throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
                 }
                 if (toolDoc.toolStatus === "assigned") {
-                    throw new ApiError(400, `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`);
+                    throw new ApiError(
+                        400,
+                        `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`
+                    );
                 }
             }
         }
 
-        // 🔹 Only office-staff password is saved (no hashing)
+        // ✅ Build employee data
         const employeeData = {
             name,
             phone,
@@ -227,29 +332,35 @@ const add = asyncHandler(async (req, res) => {
             workingDays,
             tools: technicianType === "engineer" ? tools : [],
         };
+
         if (technicianType === "office-staff") {
-            employeeData.password = password;
+            employeeData.password = hashedPassword;
         }
 
-        // Create new employee
+        // ✅ Create employee
         const employee = new Employee(employeeData);
+        console.log("🚀 ~ employee:", employee)
         await employee.save();
 
-        // Update tool status if assigned
+        // ✅ Update tool status if assigned
         if (technicianType === "engineer") {
             for (const t of tools) {
-                await Tool.findByIdAndUpdate(t.toolId, {
-                    toolStatus: "assigned",
-                    technician: employee._id
-                }, { new: true });
+                await Tool.findByIdAndUpdate(
+                    t.toolId,
+                    { toolStatus: "assigned", technician: employee._id },
+                    { new: true }
+                );
             }
         }
 
-        return res.status(201).json(new ApiResponse(201, employee, "Employee created successfully"));
+        return res
+            .status(201)
+            .json(new ApiResponse(201, employee, "Employee created successfully"));
     } catch (error) {
         throw new ApiError(500, error.message || "Failed to create employee");
     }
 });
+
 
 
 //not updated
@@ -884,10 +995,120 @@ const addExpenseByTechnicianAndTripId = asyncHandler(async (req, res) => {
 //     });
 // });
 
+// const addTripExpense = asyncHandler(async (req, res) => {
+//     const { tripId, technicianId } = req.params;
+//     const { requiredAmount, typeOfExpense, date, remarks } = req.body;
+//     console.log("🚀 ~ req.body:", req.body)
+//     const file = req.file;
+
+//     // Validate amount
+//     const amt = Number(requiredAmount);
+//     if (!amt || isNaN(amt) || amt <= 0) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "Please provide a valid amount (> 0)."
+//         });
+//     }
+
+//     // Find trip
+//     const trip = await tripModel.findById(tripId).populate("expenses");
+//     if (!trip) {
+//         return res.status(404).json({ success: false, message: "Trip not found." });
+//     }
+
+//     if (trip.tripstatus === "completed") {
+//         return res.status(400).json({ success: false, message: "Cannot add expenses to a completed trip." });
+//     }
+
+//     if (!trip.technician || trip.technician.toString() !== technicianId) {
+//         return res.status(400).json({ success: false, message: "Technician is not assigned to this trip." });
+//     }
+
+//     // ✅ Validate date range
+//     const expenseDate = new Date(date);
+//     const startDate = new Date(trip.startDate);
+//     const endDate = new Date(trip.endDate);
+
+//     // Normalize dates to YYYY-MM-DD (ignore time)
+//     const normalizeDate = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+//     const expDateOnly = normalizeDate(expenseDate);
+//     const startDateOnly = normalizeDate(startDate);
+//     const endDateOnly = normalizeDate(endDate);
+
+//     if (expDateOnly < startDateOnly || expDateOnly > endDateOnly) {
+//         return res.status(400).json({
+//             success: false,
+//             message: `Expense date must be between ${startDateOnly.toLocaleDateString("en-GB")} and ${endDateOnly.toLocaleDateString("en-GB")}.`
+//         });
+//     }
+
+//     // Find technician's advance account
+//     const account = await advanceAccountModel.findOne({ technician: technicianId });
+//     if (!account) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "No advance account found for this technician. Admin must add advanced amount first."
+//         });
+//     }
+
+//     // Check balance
+//     if (amt > account.balance) {
+//         return res.status(400).json({ success: false, message: "Not enough balance." });
+//     }
+
+//     // Upload screenshot if present
+//     let screenshotUrl = null;
+//     if (file) {
+//         const { url } = await uploadToS3(file);
+//         screenshotUrl = url;
+//     }
+
+//     // Update account totals
+//     account.totalExpense += amt;
+//     account.balance -= amt;
+//     await account.save();
+
+//     // Create expense linked to trip
+//     const expense = await expenseModel.create({
+//         trip: tripId,
+//         typeOfExpense,
+//         requiredAmount: amt,
+//         date: expenseDate,
+//         screenshot: screenshotUrl,
+//         remarks
+//     });
+
+//     // Attach expense to trip
+//     trip.expenses.push(expense._id);
+//     await trip.save();
+
+//     // Calculate total expense for this trip
+//     const tripExpenses = await expenseModel.find({ _id: { $in: trip.expenses } });
+//     const tripTotalExpense = tripExpenses.reduce((sum, exp) => sum + (exp.requiredAmount || 0), 0);
+
+//     return res.status(201).json({
+//         success: true,
+//         message: "Expense added successfully",
+//         data: {
+//             tripId: trip._id,
+//             expense,
+//             accountSummary: {
+//                 advancedAmount: account.advancedAmount,
+//                 totalExpense: account.totalExpense,
+//                 balance: account.balance
+//             },
+//             tripSummary: { tripTotalExpense },
+//             submittedData: { requiredAmount, typeOfExpense, date, remarks, screenshotUrl }
+//         }
+//     });
+// });
+
+
+
 const addTripExpense = asyncHandler(async (req, res) => {
     const { tripId, technicianId } = req.params;
     const { requiredAmount, typeOfExpense, date, remarks } = req.body;
-    console.log("🚀 ~ req.body:", req.body)
     const file = req.file;
 
     // Validate amount
@@ -918,7 +1139,6 @@ const addTripExpense = asyncHandler(async (req, res) => {
     const startDate = new Date(trip.startDate);
     const endDate = new Date(trip.endDate);
 
-    // Normalize dates to YYYY-MM-DD (ignore time)
     const normalizeDate = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
     const expDateOnly = normalizeDate(expenseDate);
@@ -972,13 +1192,35 @@ const addTripExpense = asyncHandler(async (req, res) => {
     trip.expenses.push(expense._id);
     await trip.save();
 
+    // ✅ Mark technician as present on expense date
+    const startOfDay = new Date(expenseDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(expenseDate.setHours(23, 59, 59, 999));
+
+    let attendance = await Attendance.findOne({
+        employee: technicianId,
+        date: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (!attendance) {
+        attendance = new Attendance({
+            employee: technicianId,
+            date: new Date(),
+            status: 'Present'
+        });
+        await attendance.save();
+    } else {
+        // If already exists (maybe Absent), update to Present
+        attendance.status = 'Present';
+        await attendance.save();
+    }
+
     // Calculate total expense for this trip
     const tripExpenses = await expenseModel.find({ _id: { $in: trip.expenses } });
     const tripTotalExpense = tripExpenses.reduce((sum, exp) => sum + (exp.requiredAmount || 0), 0);
 
     return res.status(201).json({
         success: true,
-        message: "Expense added successfully",
+        message: "Expense added successfully and technician marked as Present",
         data: {
             tripId: trip._id,
             expense,

@@ -3,7 +3,7 @@ import mongoose, { Schema } from 'mongoose';
 const attendanceSchema = new Schema({
     employee: {
         type: Schema.Types.ObjectId,
-        ref: 'User', // Employee collection
+        ref: 'User', 
         required: true,
     },
     date: {
@@ -13,10 +13,9 @@ const attendanceSchema = new Schema({
     status: {
         type: String,
         enum: ['Present', 'Absent'],
-        default: 'Absent', // default to absent, mark present on login
     },
     workingDays: {
-        type: Number, // Pull from employee.workingDay
+        type: Number, 
     },
     leave: {
         type: Schema.Types.ObjectId,

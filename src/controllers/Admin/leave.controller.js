@@ -1,9 +1,12 @@
+import mongoose from 'mongoose';
+import { LeaveAllocation } from '../../models/allocateLeaves.model.js';
 import Leave from '../../models/leave.model.js';
 import Employee from '../../models/technician.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { asyncHandler } from '../../utils/AsyncHandler.js';
 import { leaveValidationSchema } from '../../validators/leaveValidators.js';
+import Attendance from '../../models/attendanceSchema.model.js';
 
 const add = asyncHandler(async (req, res) => {
     // ✅ Validate input
@@ -44,7 +47,6 @@ const getLeaveById = asyncHandler(async (req, res) => {
         new ApiResponse(200, leave, "Leave fetched successfully")
     );
 });
-
 
 
 const getAllLeaves = asyncHandler(async (req, res) => {
@@ -317,5 +319,112 @@ const rejectLeave = asyncHandler(async (req, res) => {
 });
 
 
-export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave }
+const allocateLeaves = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+    const { year, totalLeaves } = req.body;
+
+    if (!employeeId || !year || totalLeaves === undefined) {
+        return res.status(400).json({ message: 'employeeId (params), year, and totalLeaves (body) are required' });
+    }
+
+    let leaveAllocation = await LeaveAllocation.findOne({ employee: employeeId, year });
+
+    if (leaveAllocation) {
+        leaveAllocation.totalLeaves = totalLeaves;
+        await leaveAllocation.save();
+        return res.status(200).json({ message: 'Leave allocation updated', leave: leaveAllocation });
+    } else {
+        leaveAllocation = await LeaveAllocation.create({
+            employee: employeeId,
+            year,
+            totalLeaves,
+            usedLeaves: 0,
+        });
+        return res.status(201).json({ message: 'Leave allocation created', leave: leaveAllocation });
+    }
+});
+
+const getLeaveAllocation = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+
+    if (!employeeId) {
+        return res.status(400).json({ message: 'employeeId (params) is required' });
+    }
+
+    // Fetch all leave allocations for the employee
+    const leaveAllocations = await LeaveAllocation.find({ employee: employeeId }).sort({ year: -1 });
+
+    if (!leaveAllocations || leaveAllocations.length === 0) {
+        return res.status(200).json([]); // Return empty array if none
+    }
+
+    // Map the allocations to a standard format
+    const formattedAllocations = leaveAllocations.map((allocation) => ({
+        year: allocation.year,
+        totalLeaves: allocation.totalLeaves,
+        usedLeaves: allocation.usedLeaves,
+        remainingLeaves: allocation.totalLeaves - allocation.usedLeaves,
+    }));
+
+    return res.status(200).json(formattedAllocations);
+});
+const attendanceSummary = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+
+    // Validate employeeId
+    if (!employeeId || !mongoose.Types.ObjectId.isValid(employeeId)) {
+        return res.status(400).json({ message: "Valid employeeId is required" });
+    }
+
+    try {
+        // Fetch employee details
+        const employee = await Employee.findById(employeeId);
+        if (!employee) {
+            return res.status(404).json({ message: "Employee not found" });
+        }
+
+        const totalWorkingDays = employee.workingDays || 0;
+
+        // Get attendance records
+        const attendanceRecords = await Attendance.find({ employee: employeeId });
+        const daysPresent = attendanceRecords.filter(a => a.status === "Present").length;
+
+        // Get approved leaves
+        const leaves = await Leave.find({ employee: employeeId, status: "Approved" });
+
+        // Calculate total leave days (including multi-day leaves)
+        let totalLeaveDays = 0;
+        const leaveTypeSummary = {};
+        leaves.forEach(leave => {
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+            const diffTime = Math.abs(end.getTime() - start.getTime());
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // include start day
+            totalLeaveDays += diffDays;
+
+            // Group by leave type
+            leaveTypeSummary[leave.leaveType] = (leaveTypeSummary[leave.leaveType] || 0) + diffDays;
+        });
+
+        // Calculate attendance rate
+        const attendanceRate =
+            totalWorkingDays > 0 ? ((daysPresent / totalWorkingDays) * 100).toFixed(2) : "0.00";
+
+        // Return summary
+        return res.status(200).json({
+            employeeId,
+            employeeName: employee.name,
+            totalWorkingDays,
+            daysPresent,
+            totalLeaveDays,
+            leaveTypeSummary,
+            attendanceRate: Number(attendanceRate),
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Failed to fetch attendance summary", error: error.message });
+    }
+});
+
+export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeaves, getLeaveAllocation, attendanceSummary }
 // export default {createLeave,getLeavesByEmployeeId,updateLeaveByEmployee,deleteLeaveByEmployee}

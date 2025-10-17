@@ -9,6 +9,9 @@ import Employee from "../../models/technician.model.js";
 const generateSalary = asyncHandler(async (req, res) => {
     const { employeeId } = req.params; // 👈 take employeeId from params
     const { date, basicSalary, incentive = 0 } = req.body;
+    console.log("🚀 ~ incentive:", incentive)
+    console.log("🚀 ~ basicSalary:", basicSalary)
+    console.log("🚀 ~ date:", date)
 
     if (!employeeId || !date || !basicSalary) {
         throw new ApiError(400, "Employee, date and basicSalary are required");
@@ -17,7 +20,6 @@ const generateSalary = asyncHandler(async (req, res) => {
     const salaryMonth = new Date(date).getMonth(); // 0-based
     const salaryYear = new Date(date).getFullYear();
 
-    // 🔍 Find Approved Leave Without Pay for that month
     const leaves = await Leave.find({
         employee: employeeId,
         status: "Approved",
@@ -29,6 +31,7 @@ const generateSalary = asyncHandler(async (req, res) => {
             },
         ],
     });
+    console.log("🚀 ~ leaves:", leaves)
 
     // Calculate total leave without pay days
     let leaveWithoutPayDays = 0;
@@ -67,7 +70,6 @@ const generateSalary = asyncHandler(async (req, res) => {
         .status(201)
         .json(new ApiResponse(201, salary, "Salary generated successfully"));
 });
-
 
 
 
@@ -173,4 +175,45 @@ export const deleteSalary = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, null, "Salary deleted successfully"));
 });
-export default { generateSalary, updateSalary, listSalaries, getSalaryDetails, deleteSalary }
+
+
+
+const paymentSummary = asyncHandler(async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+
+        if (!employeeId) {
+            throw new ApiError(400, "Employee ID is required");
+        }
+
+        // ✅ Fetch salary records for the employee
+        const salaries = await Salary.find({ employee: employeeId }).sort({ date: -1 });
+
+        // ✅ If no records found, return empty array (not an error)
+        if (!salaries || salaries.length === 0) {
+            return res
+                .status(200)
+                .json(new ApiResponse(200, [], "No payment records found for this employee"));
+        }
+
+        // ✅ Prepare structured summary
+        const summary = salaries.map((salary) => ({
+            month: salary.date.toLocaleString("default", { month: "long", year: "numeric" }),
+            basicSalary: salary.basicSalary,
+            incentive: salary.incentive,
+            leaveWithoutPayDays: salary.leaveWithoutPayDays,
+            leaveDeduction: salary.leaveDeduction,
+            totalPayable: salary.totalSalary,
+            status: salary.status,
+        }));
+
+        return res
+            .status(200)
+            .json(new ApiResponse(200, summary, "Payment summary fetched successfully"));
+    } catch (error) {
+        console.error("Error in paymentSummary:", error);
+        throw new ApiError(500, "Error fetching payment summary");
+    }
+});
+
+export default { generateSalary, updateSalary, listSalaries, getSalaryDetails, deleteSalary, paymentSummary }

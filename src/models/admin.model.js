@@ -14,6 +14,10 @@ const adminSchema = new Schema(
             required: true,
             minlength: 6,
         },
+        phoneNumber: {
+            type: String,
+            trim: true,
+        },
         role: {
             type: String,
             enum: ['admin', 'office-staff'], // add more roles as needed

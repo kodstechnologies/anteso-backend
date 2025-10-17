@@ -704,6 +704,117 @@ const getMachineDetails = asyncHandler(async (req, res) => {
 // });
 
 
+// const updateServiceWorkType = asyncHandler(async (req, res) => {
+//     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
+//     const { machineModel, serialNumber, remark, isSubmitted } = req.body;
+
+//     if (isSubmitted === undefined) {
+//         return res.status(400).json({ message: "isSubmitted is required" });
+//     }
+
+//     // ✅ Validate IDs
+//     if (
+//         !mongoose.Types.ObjectId.isValid(orderId) ||
+//         !mongoose.Types.ObjectId.isValid(serviceId) ||
+//         !mongoose.Types.ObjectId.isValid(technicianId)
+//     ) {
+//         return res.status(400).json({ message: "Invalid IDs" });
+//     }
+
+//     // ✅ Find order
+//     const order = await orderModel.findById(orderId).populate("services");
+//     if (!order) return res.status(404).json({ message: "Order not found" });
+
+//     // ✅ Find service
+//     const service = order.services.find(
+//         (s) => s.machineType === machineType && s._id.equals(serviceId)
+//     );
+//     if (!service) return res.status(404).json({ message: "Service not found in this order" });
+
+//     // ✅ Update service fields
+//     if (machineModel) service.machineModel = machineModel;
+//     if (serialNumber) service.serialNumber = serialNumber;
+//     if (remark !== undefined) service.remark = remark;
+
+//     // ✅ Find workTypeDetail for this technician
+//     const workTypeDetail = service.workTypeDetails.find(
+//         (wt) =>
+//             wt.workType === workType &&
+//             ((wt.engineer && wt.engineer.toString() === technicianId) ||
+//                 (wt.officeStaff && wt.officeStaff.toString() === technicianId))
+//     );
+
+//     if (!workTypeDetail) {
+//         return res.status(404).json({ message: "WorkTypeDetail not found for this technician" });
+//     }
+
+//     // ✅ Update isSubmitted
+//     workTypeDetail.isSubmitted = Boolean(isSubmitted);
+
+//     // ✅ Handle file uploads
+//     if (req.files) {
+//         if (req.files.uploadFile && req.files.uploadFile[0]) {
+//             const uploaded = await uploadToS3(req.files.uploadFile[0]);
+//             workTypeDetail.uploadFile = uploaded.url;
+//         }
+
+//         if (req.files.viewFile && req.files.viewFile.length > 0) {
+//             const urls = [];
+//             for (let file of req.files.viewFile) {
+//                 const uploaded = await uploadToS3(file);
+//                 urls.push(uploaded.url);
+//             }
+//             workTypeDetail.viewFile = urls;
+//         }
+//     }
+
+//     // ✅ Generate or update QATest Report with numbers
+//     const reportULRNumber = await generateULRReportNumber();
+//     const qaTestReportNumber = await generateQATestReportNumber();
+
+//     let qaTest;
+//     if (workTypeDetail.QAtest) {
+//         // Update existing QA Test
+//         qaTest = await QATest.findById(workTypeDetail.QAtest);
+//         if (qaTest) {
+//             qaTest.reportULRNumber = reportULRNumber;
+//             qaTest.qaTestReportNumber = qaTestReportNumber;
+//             await qaTest.save();
+//         } else {
+//             // fallback: create new QA Test if not found
+//             qaTest = new QATest({
+//                 officeStaff: technicianId,
+//                 reportULRNumber,
+//                 qaTestReportNumber,
+//             });
+//             await qaTest.save();
+//             workTypeDetail.QAtest = qaTest._id;
+//         }
+//     } else {
+//         // Create new QA Test
+//         qaTest = new QATest({
+//             officeStaff: technicianId,
+//             reportULRNumber,
+//             qaTestReportNumber,
+//         });
+//         await qaTest.save();
+//         workTypeDetail.QAtest = qaTest._id;
+//     }
+
+//     // ✅ Save service
+//     await service.save();
+
+//     res.status(200).json({
+//         success: true,
+//         message: "Service workType updated successfully",
+//         service,
+//         qaTestId: qaTest._id,
+//         reportULRNumber,
+//         qaTestReportNumber,
+//     });
+// });
+
+
 const updateServiceWorkType = asyncHandler(async (req, res) => {
     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
     const { machineModel, serialNumber, remark, isSubmitted } = req.body;
@@ -712,7 +823,7 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "isSubmitted is required" });
     }
 
-    // ✅ Validate IDs
+    // Validate IDs
     if (
         !mongoose.Types.ObjectId.isValid(orderId) ||
         !mongoose.Types.ObjectId.isValid(serviceId) ||
@@ -721,22 +832,18 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid IDs" });
     }
 
-    // ✅ Find order
     const order = await orderModel.findById(orderId).populate("services");
     if (!order) return res.status(404).json({ message: "Order not found" });
 
-    // ✅ Find service
     const service = order.services.find(
         (s) => s.machineType === machineType && s._id.equals(serviceId)
     );
     if (!service) return res.status(404).json({ message: "Service not found in this order" });
 
-    // ✅ Update service fields
     if (machineModel) service.machineModel = machineModel;
     if (serialNumber) service.serialNumber = serialNumber;
     if (remark !== undefined) service.remark = remark;
 
-    // ✅ Find workTypeDetail for this technician
     const workTypeDetail = service.workTypeDetails.find(
         (wt) =>
             wt.workType === workType &&
@@ -748,10 +855,37 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         return res.status(404).json({ message: "WorkTypeDetail not found for this technician" });
     }
 
-    // ✅ Update isSubmitted
+    // Update isSubmitted
     workTypeDetail.isSubmitted = Boolean(isSubmitted);
 
-    // ✅ Handle file uploads
+    // ✅ Mark attendance if isSubmitted = true
+    if (workTypeDetail.isSubmitted) {
+        const today = new Date();
+        const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+        // Check if attendance already exists
+        let attendance = await Attendance.findOne({
+            employee: technicianId,
+            date: { $gte: startOfDay, $lte: endOfDay }
+        });
+
+        if (!attendance) {
+            attendance = new Attendance({
+                employee: technicianId,
+                date: new Date(),
+                status: 'Present',
+               
+            });
+            await attendance.save();
+        } else {
+            // Optional: update status if previously marked Absent
+            attendance.status = 'Present';
+            await attendance.save();
+        }
+    }
+
+    // Handle file uploads
     if (req.files) {
         if (req.files.uploadFile && req.files.uploadFile[0]) {
             const uploaded = await uploadToS3(req.files.uploadFile[0]);
@@ -768,20 +902,18 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         }
     }
 
-    // ✅ Generate or update QATest Report with numbers
+    // Generate or update QA Test report
     const reportULRNumber = await generateULRReportNumber();
     const qaTestReportNumber = await generateQATestReportNumber();
 
     let qaTest;
     if (workTypeDetail.QAtest) {
-        // Update existing QA Test
         qaTest = await QATest.findById(workTypeDetail.QAtest);
         if (qaTest) {
             qaTest.reportULRNumber = reportULRNumber;
             qaTest.qaTestReportNumber = qaTestReportNumber;
             await qaTest.save();
         } else {
-            // fallback: create new QA Test if not found
             qaTest = new QATest({
                 officeStaff: technicianId,
                 reportULRNumber,
@@ -791,7 +923,6 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
             workTypeDetail.QAtest = qaTest._id;
         }
     } else {
-        // Create new QA Test
         qaTest = new QATest({
             officeStaff: technicianId,
             reportULRNumber,
@@ -801,7 +932,6 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         workTypeDetail.QAtest = qaTest._id;
     }
 
-    // ✅ Save service
     await service.save();
 
     res.status(200).json({

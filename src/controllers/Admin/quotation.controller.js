@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import Services from "../../models/Services.js";
 import AdditionalService from '../../models/additionalService.model.js'
 import { uploadToS3 } from "../../utils/s3Upload.js";
+import counterModel from "../../models/counter.model.js";
 
 
 // export const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
@@ -284,12 +285,146 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 //     }
 // });
 
+
+// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const {
+//             date,
+//             quotationNumber,
+//             customer,
+//             assignedEmployee,
+//             items,
+//             calculations,
+//             termsAndConditions,
+//             bankDetails,
+//             companyDetails,
+//         } = req.body;
+
+//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
+
+//         // Fetch enquiry
+//         const enquiry = await Enquiry.findById(id)
+//             .populate('services')
+//             .populate('additionalServices')
+//             .populate('customer');
+//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
+//         if (!enquiry.customer || !enquiry.customer._id)
+//             throw new ApiError(400, 'Customer info missing in enquiry');
+
+//         // Service snapshots
+//         const serviceSnapshots = items.services.map(s => ({
+//             id: s.id,
+//             machineType: s.machineType,
+//             equipmentNo: s.equipmentNo,
+//             machineModel: s.machineModel,
+//             serialNumber: s.serialNumber,
+//             remark: s.remark,
+//             totalAmount: s.totalAmount,
+//         }));
+
+//         const additionalServiceSnapshots = items.additionalServices.map(s => ({
+//             id: s.id,
+//             name: s.name,
+//             description: s.description,
+//             totalAmount: s.totalAmount,
+//         }));
+
+//         // 🧮 GST Calculations
+//         const subtotal = Number(calculations?.subtotal || 0);
+//         const discount = Number(calculations?.discountAmount || 0);
+//         const gstRate = 18;
+//         const gstAmount = ((subtotal - discount) * gstRate) / 100;
+//         const total = subtotal - discount + gstAmount;
+
+//         // 🧾 Create quotation
+//         // const quotation = await Quotation.create({
+//         //     date,
+//         //     quotationId: quotationNumber,
+//         //     enquiry: enquiry._id,
+//         //     // from: enquiry.customer._id,
+//         //     from: enquiry.hospital._id,
+
+//         //     customer,
+//         //     assignedEmployee,
+//         //     items: {
+//         //         services: serviceSnapshots,
+//         //         additionalServices: additionalServiceSnapshots,
+//         //     },
+//         //     subtotal,
+//         //     discount,
+//         //     gstRate,
+//         //     gstAmount,
+//         //     total,
+//         //     bankDetails,
+//         //     companyDetails,
+//         //     quotationStatus: 'Created',
+//         //     termsAndConditions,
+//         // });
+//         const quotation = await Quotation.create({
+//             date,
+//             quotationId: quotationNumber,
+//             enquiry: enquiry._id,
+//             from: enquiry.hospital._id,
+//             customer,
+//             assignedEmployee: assignedEmployee.id || assignedEmployee, // only the ObjectId
+//             items: {
+//                 services: serviceSnapshots,
+//                 additionalServices: additionalServiceSnapshots,
+//             },
+//             subtotal,
+//             discount,
+//             gstRate,
+//             gstAmount,
+//             total,
+//             bankDetails,
+//             companyDetails,
+//             quotationStatus: 'Created',
+//             termsAndConditions,
+//         });
+
+
+//         console.log("🚀 ~ quotation:", quotation)
+
+//         // Update totals in DB
+//         await Promise.all(serviceSnapshots
+//             .filter(s => mongoose.Types.ObjectId.isValid(s.id))
+//             .map(s => Services.findByIdAndUpdate(
+//                 s.id,
+//                 { $set: { totalAmount: s.totalAmount } },
+//                 { new: true }
+//             ))
+//         );
+
+//         await Promise.all(additionalServiceSnapshots
+//             .filter(s => s.id)
+//             .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
+//         );
+
+//         // 🧩 Update enquiry with totals and GST details
+//         await Enquiry.findByIdAndUpdate(enquiry._id, {
+//             quotationStatus: quotation.quotationStatus,
+//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
+//             subtotalAmount: subtotal,
+//             discount: discount,
+//             grandTotal: total,
+//         });
+
+//         return res.status(201).json(
+//             new ApiResponse(201, quotation, 'Quotation created successfully')
+//         );
+
+//     } catch (error) {
+//         console.error("Error creating quotation:", error);
+//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
+//     }
+// });
+
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
         const {
             date,
-            quotationNumber,
             customer,
             assignedEmployee,
             items,
@@ -335,37 +470,41 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         const gstAmount = ((subtotal - discount) * gstRate) / 100;
         const total = subtotal - discount + gstAmount;
 
-        // 🧾 Create quotation
-        // const quotation = await Quotation.create({
-        //     date,
-        //     quotationId: quotationNumber,
-        //     enquiry: enquiry._id,
-        //     // from: enquiry.customer._id,
-        //     from: enquiry.hospital._id,
+        // 🔢 Generate quotation number sequentially
+        let lastQuotation = await Quotation.findOne({})
+            .sort({ createdAt: -1 })
+            .select("quotationId")
+            .lean();
 
-        //     customer,
-        //     assignedEmployee,
-        //     items: {
-        //         services: serviceSnapshots,
-        //         additionalServices: additionalServiceSnapshots,
-        //     },
-        //     subtotal,
-        //     discount,
-        //     gstRate,
-        //     gstAmount,
-        //     total,
-        //     bankDetails,
-        //     companyDetails,
-        //     quotationStatus: 'Created',
-        //     termsAndConditions,
-        // });
+        let lastNumber = 0;
+
+        if (lastQuotation && lastQuotation.quotationId) {
+            // Extract the last sequence number from the previous quotationId
+            // Assuming format: QU + 4-digit random + 2-digit sequence
+            const seqPart = lastQuotation.quotationId.slice(-2);
+            lastNumber = parseInt(seqPart, 10);
+        }
+
+        // Increment sequence
+        const nextSequence = lastNumber + 1;
+
+        // Pad sequence to 2 digits
+        const paddedSequence = nextSequence.toString().padStart(2, "0");
+
+        // Generate random 4-digit part
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+
+        // Final quotation number
+        const quotationNumber = `QU${randomPart}${paddedSequence}`;
+
+        // 🧾 Create quotation
         const quotation = await Quotation.create({
             date,
             quotationId: quotationNumber,
             enquiry: enquiry._id,
             from: enquiry.hospital._id,
             customer,
-            assignedEmployee: assignedEmployee.id || assignedEmployee, // only the ObjectId
+            assignedEmployee: assignedEmployee.id || assignedEmployee,
             items: {
                 services: serviceSnapshots,
                 additionalServices: additionalServiceSnapshots,
@@ -380,7 +519,6 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             quotationStatus: 'Created',
             termsAndConditions,
         });
-
 
         console.log("🚀 ~ quotation:", quotation)
 
@@ -417,7 +555,6 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         throw new ApiError(500, 'Failed to create quotation', [error.message]);
     }
 });
-
 
 
 // const updateQuotationById = asyncHandler(async (req, res) => {
@@ -1718,4 +1855,34 @@ const getQuotationPdfUrl = asyncHandler(async (req, res) => {
 });
 
 
-export default { acceptQuotation, rejectQuotation, createQuotationByEnquiryId, getQuotationByEnquiryId, getQuotationByIds, acceptQuotationPDF, downloadQuotationPdf, shareQuotation, getQuotationPdfUrl, updateQuotationById }
+const getNextQuotationNumber = async (req, res) => {
+    try {
+        // 1️⃣ Increment the sequence for "quotation"
+        const counter = await counterModel.findOneAndUpdate(
+            { entity: "quotation" },      // use 'entity' field instead of 'name'
+            { $inc: { seq: 1 } },         // increment seq by 1
+            { new: true, upsert: true }   // create if doesn't exist, return updated doc
+        );
+
+        const sequenceNumber = counter.seq;
+
+        // 2️⃣ Generate 4-digit random part
+        const randomPart = Math.floor(1000 + Math.random() * 9000);
+
+        // 3️⃣ Pad sequence number to 1 digits
+        const paddedSequence = sequenceNumber.toString().padStart(1, "0");
+
+        // 4️⃣ Combine into final quotation number
+        const quotationNumber = `QU${randomPart}${paddedSequence}`;
+
+        // 5️⃣ Return the quotation number
+        res.json({ nextNumber: quotationNumber });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Failed to generate quotation number" });
+    }
+};
+
+
+export default { acceptQuotation, rejectQuotation, createQuotationByEnquiryId, getQuotationByEnquiryId, getQuotationByIds, acceptQuotationPDF, downloadQuotationPdf, shareQuotation, getQuotationPdfUrl, updateQuotationById, getNextQuotationNumber }

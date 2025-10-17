@@ -10,7 +10,7 @@ const leaveSchema = mongoose.Schema({
     },
     leaveType: {
         type: String,
-        enum: ['Sick Leave', 'Casual Leave', 'Maternity/Paternity', 'Leave without pay','Leave with pay'],
+        enum: ['Sick Leave', 'Casual Leave', 'Maternity/Paternity', 'Leave without pay', 'Leave with pay'],
         required: true
     },
     reason: {
@@ -23,10 +23,15 @@ const leaveSchema = mongoose.Schema({
         default: 'Pending',
         required: false
     },
+    year: {
+        type: Number,
+    },
+    
     employee: {
         type: Schema.Types.ObjectId,
         ref: "User"
     },
+
 }, { timestamps: true })
 const Leave = mongoose.model('Leave', leaveSchema)
 export default Leave

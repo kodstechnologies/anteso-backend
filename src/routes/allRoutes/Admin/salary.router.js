@@ -7,5 +7,5 @@ router.get("/get-salaries/:employeeId", SalaryController.listSalaries);
 router.put("/:id", SalaryController.updateSalary);
 router.get("/details/:salaryId", SalaryController.getSalaryDetails);
 router.delete("/delete/:id", SalaryController.deleteSalary);
-
+router.get('/payment-summary/:employeeId',SalaryController.paymentSummary)
 export default router

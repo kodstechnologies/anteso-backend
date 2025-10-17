@@ -27,7 +27,7 @@ import { authorizeRoles } from '../../../middlewares/authorizeRoles.js';
 const router = Router();
 router.use('/auth', AuthRouter)
 // router.use('/refresh', refreshAccessToken);
-router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Employee", "office-staff"))
+router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Employee", "staff"))
 
 router.use('/clients', ClientRoutes)
 router.use('/hospital', HospitalRoutes)

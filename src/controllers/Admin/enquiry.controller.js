@@ -2464,6 +2464,7 @@ const updateById = asyncHandler(async (req, res) => {
 //         return res.status(500).json({ message: "Server error" });
 //     }
 // };
+
 const getEnquiryDetailsById = async (req, res) => {
     try {
         const enquiryId = req.params.id;
@@ -2806,8 +2807,8 @@ const getAllEnquiriesByHospitalId = asyncHandler(async (req, res) => {
             .populate("hospital", "name email address")
             .populate("services", "machineType equipmentNo machineModel serialNumber totalAmount status")
             .populate("additionalServices", "name")
-            .populate("customer", "name email contactNumber"); // <-- populate customer
-
+            .populate("customer", "name email contactNumber") // <-- populate customer
+            .sort({ createdAt: -1 });
 
 
         console.log("🚀 ~ enquiries:", enquiries)

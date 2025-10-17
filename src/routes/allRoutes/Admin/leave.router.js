@@ -6,12 +6,14 @@ router.get('/get-by-id/:id', leaveController.getLeaveById)
 router.put('/update/:id', leaveController.updateLeaveById)
 router.get('/all-leaves', leaveController.getAllLeaves)
 router.delete('/delete/:id', leaveController.deleteLeaveById)
-
+router.post('/allocate-leaves/:employeeId', leaveController.allocateLeaves);
+router.get('/get-allocated-leaves/:employeeId', leaveController.getLeaveAllocation)
+router.get('/attendance-summary/:employeeId',leaveController.attendanceSummary)
+// router.get()
 // technician
 router.post('/apply-for-leave/:technicianId', leaveController.applyForLeave)
 router.get('/get-all-leaves/:technicianId', leaveController.getAllLeavesByCustomerId)
-router.post('/approve-leave/:employeeId/:leaveId',leaveController.approveLeave)
-router.post('/reject-leave/:employeeId/:leaveId',leaveController.rejectLeave)
-
+router.post('/approve-leave/:employeeId/:leaveId', leaveController.approveLeave)
+router.post('/reject-leave/:employeeId/:leaveId', leaveController.rejectLeave)
 
 export default router
