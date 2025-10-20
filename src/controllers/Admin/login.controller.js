@@ -6,6 +6,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import Employee from "../../models/technician.model.js";
+import Attendance from '../../models/attendanceSchema.model.js'
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("🚀 ~ JWT_SECRET:", JWT_SECRET)
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -120,9 +121,18 @@ const adminLogin = asyncHandler(async (req, res) => {
     if (error) throw new ApiError(400, error.details[0].message);
 
     const { email, password } = value;
+    console.log("🚀 ~ email, password:", email, password)
 
     // 2. Try Admin login first
     const admin = await Admin.findOne({ email });
+    if (!admin) {
+        console.log("Admin not found for email:", email);
+    } else {
+        console.log("Stored hash:", admin.password);
+        const isPasswordValid = await bcrypt.compare(password, admin.password);
+        console.log("Password valid?", isPasswordValid);
+        if (!isPasswordValid) console.log("Password mismatch!");
+    }
     if (admin) {
         const isPasswordValid = await bcrypt.compare(password, admin.password);
         if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");

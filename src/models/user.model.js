@@ -20,10 +20,7 @@ const userSchema = new Schema(
             unique: true,
             lowercase: true,
         },
-        address: {
-            type: String,
-            required: false,
-        },
+
     },
     {
         timestamps: true,

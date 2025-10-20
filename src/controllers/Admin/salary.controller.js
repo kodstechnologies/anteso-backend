@@ -6,59 +6,87 @@ import Leave from "../../models/leave.model.js";
 import Employee from "../../models/technician.model.js";
 
 // 1. Generate Salary
+// const generateSalary = asyncHandler(async (req, res) => {
+//     const { employeeId } = req.params; // 👈 take employeeId from params
+//     const { date, basicSalary, incentive = 0 } = req.body;
+//     console.log("🚀 ~ incentive:", incentive)
+//     console.log("🚀 ~ basicSalary:", basicSalary)
+//     console.log("🚀 ~ date:", date)
+
+//     if (!employeeId || !date || !basicSalary) {
+//         throw new ApiError(400, "Employee, date and basicSalary are required");
+//     }
+
+//     const salaryMonth = new Date(date).getMonth(); // 0-based
+//     const salaryYear = new Date(date).getFullYear();
+
+//     const leaves = await Leave.find({
+//         employee: employeeId,
+//         status: "Approved",
+//         leaveType: "Leave without pay",
+//         $or: [
+//             {
+//                 startDate: { $lte: new Date(salaryYear, salaryMonth + 1, 0) }, // before end of month
+//                 endDate: { $gte: new Date(salaryYear, salaryMonth, 1) },       // after start of month
+//             },
+//         ],
+//     });
+//     console.log("🚀 ~ leaves:", leaves)
+
+//     // Calculate total leave without pay days
+//     let leaveWithoutPayDays = 0;
+//     for (const leave of leaves) {
+//         const leaveStart = new Date(
+//             Math.max(leave.startDate, new Date(salaryYear, salaryMonth, 1))
+//         );
+//         const leaveEnd = new Date(
+//             Math.min(leave.endDate, new Date(salaryYear, salaryMonth + 1, 0))
+//         );
+//         const diffDays =
+//             Math.floor((leaveEnd - leaveStart) / (1000 * 60 * 60 * 24)) + 1;
+//         leaveWithoutPayDays += diffDays;
+//     }
+
+//     // Assume 30 days in a month for deduction calc
+//     const perDaySalary = basicSalary / 30;
+//     const leaveDeduction = leaveWithoutPayDays * perDaySalary;
+
+//     const totalSalary = basicSalary + incentive - leaveDeduction;
+
+//     const salary = new Salary({
+//         employee: employeeId,
+//         date: new Date(salaryYear, salaryMonth, 1), // store as first of month
+//         basicSalary,
+//         incentive,
+//         leaveWithoutPayDays,
+//         leaveDeduction,
+//         totalSalary,
+//         status: "Pending",
+//     });
+
+//     await salary.save();
+
+//     return res
+//         .status(201)
+//         .json(new ApiResponse(201, salary, "Salary generated successfully"));
+// });
+
 const generateSalary = asyncHandler(async (req, res) => {
     const { employeeId } = req.params; // 👈 take employeeId from params
-    const { date, basicSalary, incentive = 0 } = req.body;
-    console.log("🚀 ~ incentive:", incentive)
-    console.log("🚀 ~ basicSalary:", basicSalary)
-    console.log("🚀 ~ date:", date)
+    const { date, basicSalary, incentive = 0, leaveDeduction = 0, totalSalary } = req.body;
 
-    if (!employeeId || !date || !basicSalary) {
-        throw new ApiError(400, "Employee, date and basicSalary are required");
+    if (!employeeId || !date || !basicSalary || totalSalary === undefined) {
+        throw new ApiError(400, "Employee, date, basicSalary and totalSalary are required");
     }
 
     const salaryMonth = new Date(date).getMonth(); // 0-based
     const salaryYear = new Date(date).getFullYear();
-
-    const leaves = await Leave.find({
-        employee: employeeId,
-        status: "Approved",
-        leaveType: "Leave without pay",
-        $or: [
-            {
-                startDate: { $lte: new Date(salaryYear, salaryMonth + 1, 0) }, // before end of month
-                endDate: { $gte: new Date(salaryYear, salaryMonth, 1) },       // after start of month
-            },
-        ],
-    });
-    console.log("🚀 ~ leaves:", leaves)
-
-    // Calculate total leave without pay days
-    let leaveWithoutPayDays = 0;
-    for (const leave of leaves) {
-        const leaveStart = new Date(
-            Math.max(leave.startDate, new Date(salaryYear, salaryMonth, 1))
-        );
-        const leaveEnd = new Date(
-            Math.min(leave.endDate, new Date(salaryYear, salaryMonth + 1, 0))
-        );
-        const diffDays =
-            Math.floor((leaveEnd - leaveStart) / (1000 * 60 * 60 * 24)) + 1;
-        leaveWithoutPayDays += diffDays;
-    }
-
-    // Assume 30 days in a month for deduction calc
-    const perDaySalary = basicSalary / 30;
-    const leaveDeduction = leaveWithoutPayDays * perDaySalary;
-
-    const totalSalary = basicSalary + incentive - leaveDeduction;
 
     const salary = new Salary({
         employee: employeeId,
         date: new Date(salaryYear, salaryMonth, 1), // store as first of month
         basicSalary,
         incentive,
-        leaveWithoutPayDays,
         leaveDeduction,
         totalSalary,
         status: "Pending",
@@ -76,21 +104,24 @@ const generateSalary = asyncHandler(async (req, res) => {
 // 3. Update Salary (mark as Paid/Processed)
 const updateSalary = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const { status, incentive } = req.body;
+    const { status, incentive, leaveDeduction, totalSalary } = req.body;
 
     const salary = await Salary.findById(id);
     if (!salary) throw new ApiError(404, "Salary not found");
 
+    // ✅ Update only what’s provided
     if (status) salary.status = status;
-    if (incentive !== undefined) {
-        salary.incentive = incentive;
-        salary.totalSalary = salary.basicSalary + incentive - salary.leaveDeduction;
-    }
+    if (incentive !== undefined) salary.incentive = incentive;
+    if (leaveDeduction !== undefined) salary.leaveDeduction = leaveDeduction;
+    if (totalSalary !== undefined) salary.totalSalary = totalSalary;
 
     await salary.save();
 
-    return res.status(200).json(new ApiResponse(200, salary, "Salary updated successfully"));
+    return res
+        .status(200)
+        .json(new ApiResponse(200, salary, "Salary updated successfully"));
 });
+
 
 // 4. List All Salaries
 const listSalaries = asyncHandler(async (req, res) => {

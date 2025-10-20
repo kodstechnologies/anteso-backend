@@ -9,6 +9,8 @@ import jwt from "jsonwebtoken";
 import Employee from "../../models/technician.model.js";
 import Attendance from "../../models/attendanceSchema.model.js";
 import Leave from "../../models/leave.model.js";
+import bcrypt from "bcryptjs";
+import Admin from "../../models/admin.model.js";
 
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
@@ -57,38 +59,103 @@ const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
 
 
 
+// export const sendOtp = asyncHandler(async (req, res) => {
+//     const mobileVerifySchema = Joi.object({
+//         mobileNumber: Joi.string().required(),
+//     });
+
+//     const { error } = mobileVerifySchema.validate(req.body);
+//     if (error) throw new ApiError(400, error.details[0].message);
+
+//     const { mobileNumber } = req.body;
+
+//     // Check for customer OR engineer employee
+//     const existingUser = await User.findOne({
+//         phone: mobileNumber,
+//         $or: [
+//             { role: "Customer" },
+//             { role: "Employee", technicianType: "engineer", status: "active" }
+//         ]
+//     });
+
+//     console.log("🚀 ~ existingUser:", existingUser);
+
+//     if (!existingUser) {
+//         return res.status(404).json({
+//             success: false,
+//             message: "Mobile number not registered!"
+//         });
+//     }
+
+
+//     // Generate OTP
+//     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//     console.log("🚀 ~ otp:", otp)
+//     console.log("🚀 ~ sendOtp ~ otp:", otp);
+//     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+//     const message = `Dear User, Your OTP for login is ${otp}. It is valid for 10 minutes. Please do not share this OTP with anyone. - ANTESO BIOMEDICAL`;
+
+//     try {
+//         await sendSMS(mobileNumber, message);
+
+//         await LoginOtp.findOneAndUpdate(
+//             { mobileNumber },
+//             { otp, expiresAt },
+//             { upsert: true, new: true }
+//         );
+
+//         return res.status(200).json(
+//             new ApiResponse(200, null, "OTP sent successfully")
+//         );
+//     } catch (err) {
+//         console.error("Error sending OTP:", err);
+//         throw new ApiError(500, "Failed to send OTP", [err.message]);
+//     }
+// });
+
+
 export const sendOtp = asyncHandler(async (req, res) => {
     const mobileVerifySchema = Joi.object({
         mobileNumber: Joi.string().required(),
     });
 
     const { error } = mobileVerifySchema.validate(req.body);
-    if (error) throw new ApiError(400, error.details[0].message);
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.details[0].message
+        });
+    }
 
     const { mobileNumber } = req.body;
 
-    // Check for customer OR engineer employee
-    const existingUser = await User.findOne({
-        phone: mobileNumber,
-        $or: [
-            { role: "Customer" },
-            { role: "Employee", technicianType: "engineer", status: "active" }
-        ]
-    });
+    // 🔍 Find matching user or admin
+    const [user, admin] = await Promise.all([
+        User.findOne({
+            phone: mobileNumber,
+            $or: [
+                { role: "Customer" },
+                { role: "Manufacturer" },
+                { role: "Dealer" },
+                { role: "Employee", technicianType: "engineer", status: "active" },
+                { role: "Employee", technicianType: "office-staff", status: "active" } // ✅ Added office-staff
+            ]
+        }),
+        Admin.findOne({ phoneNumber: mobileNumber })
+    ]);
 
-    console.log("🚀 ~ existingUser:", existingUser);
+    const existingUser = user || admin;
 
     if (!existingUser) {
-        throw new ApiError(
-            404,
-            "Mobile number not registered!"
-        );
+        return res.status(404).json({
+            success: false,
+            message: "Mobile number not registered!"
+        });
     }
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("🚀 ~ otp:", otp)
-    console.log("🚀 ~ sendOtp ~ otp:", otp);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     const message = `Dear User, Your OTP for login is ${otp}. It is valid for 10 minutes. Please do not share this OTP with anyone. - ANTESO BIOMEDICAL`;
@@ -102,121 +169,80 @@ export const sendOtp = asyncHandler(async (req, res) => {
             { upsert: true, new: true }
         );
 
-        return res.status(200).json(
-            new ApiResponse(200, null, "OTP sent successfully")
-        );
+        return res.status(200).json({
+            success: true,
+            message: "OTP sent successfully"
+        });
     } catch (err) {
         console.error("Error sending OTP:", err);
-        throw new ApiError(500, "Failed to send OTP", [err.message]);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to send OTP",
+            error: err.message
+        });
     }
 });
 
-// ================== VERIFY OTP ==================
+
+
+
+
+
+//for playstore testing
 // export const verifyOtp = asyncHandler(async (req, res) => {
+//     // ✅ Validate OTP input
 //     const verifyOtpSchema = Joi.object({
 //         mobileNumber: Joi.string().required(),
-//         otp: Joi.string().length(6).required()
+//         otp: Joi.string().length(6).required(),
 //     });
 
 //     const { error } = verifyOtpSchema.validate(req.body);
 //     if (error) throw new ApiError(400, error.details[0].message);
 
 //     const { mobileNumber, otp } = req.body;
-//     const otpRecord = await LoginOtp.findOne({ mobileNumber });
 
-//     if (!otpRecord) throw new ApiError(400, "No OTP sent to this number");
-//     if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
-//     if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
+//     // ✅ Allow static OTP (e.g. 555555) only in test mode or for Play Store testing
+//     const isStaticOtp = otp === "555555";
 
-//     // ✅ Allow "Customer" OR "Employee" with technicianType = "engineer"
-//     let user = await User.findOne({ phone: mobileNumber, role: "Customer" });
+//     // ✅ Fetch OTP record only if not using static OTP
+//     let otpRecord = null;
+//     if (!isStaticOtp) {
+//         otpRecord = await LoginOtp.findOne({ mobileNumber });
 
-//     if (!user) {
-//         user = await User.findOne({ phone: mobileNumber, role: "Employee" }).populate("Employee");
-//         if (!user) throw new ApiError(404, "User not found or not allowed");
-
-//         // make sure it is an engineer
-//         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
-//         if (!employee) throw new ApiError(403, "Only engineers are allowed");
+//         if (!otpRecord) throw new ApiError(400, "No OTP sent to this number");
+//         if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
+//         if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
 //     }
 
-//     const payload = {
-//         _id: user._id,
-//         role: user.role,
-//         phone: user.phone,
-//     };
-
-//     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
-//     console.log("🚀 ~ token:", token)
-//     // Refresh token (long life)
-//     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
-//     console.log("🚀 ~ refreshToken:", refreshToken)
-
-//     // ✅ Store refresh token in secure HTTP-only cookie
-//     res.cookie("refreshToken", refreshToken, {
-//         httpOnly: true,
-//         secure: process.env.NODE_ENV === "production",
-//         sameSite: "strict",
-//         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-//     });
-
-//     // Remove OTP record after successful verification
-//     await LoginOtp.deleteOne({ mobileNumber });
-
-//     return res.status(200).json(
-//         new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully")
-//     );
-// });
-
-
-//using ACTUAL SMS PROVIDER
-// export const verifyOtp = asyncHandler(async (req, res) => {
-//     // ✅ Validate OTP
-//     const verifyOtpSchema = Joi.object({
-//         mobileNumber: Joi.string().required(),
-//         otp: Joi.string().length(6).required()
-//     });
-
-//     const { error } = verifyOtpSchema.validate(req.body);
-//     if (error) throw new ApiError(400, error.details[0].message);
-
-//     const { mobileNumber, otp } = req.body;
-//     const otpRecord = await LoginOtp.findOne({ mobileNumber });
-
-//     if (!otpRecord) throw new ApiError(400, "No OTP sent to this number");
-//     if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
-//     if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
-
-//     // ✅ Find user (Customer or Employee)
+//     // ✅ Find user (Customer or Engineer Employee)
 //     let user = await User.findOne({ phone: mobileNumber, role: "Customer" });
 
 //     if (!user) {
 //         user = await User.findOne({ phone: mobileNumber, role: "Employee" });
 //         if (!user) throw new ApiError(404, "User not found or not allowed");
 
-//         // make sure it is an engineer
+//         // Only engineers are allowed
 //         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
 //         if (!employee) throw new ApiError(403, "Only engineers are allowed");
 
-//         // ✅ Mark attendance for today
+//         // ✅ Mark attendance
 //         const today = new Date();
-//         today.setHours(0, 0, 0, 0); // normalize date
+//         today.setHours(0, 0, 0, 0);
 
 //         let attendance = await Attendance.findOne({ employee: user._id, date: today });
 
 //         if (!attendance) {
-//             // Check if employee has approved leave today
 //             const leave = await Leave.findOne({
 //                 employee: user._id,
 //                 startDate: { $lte: today },
 //                 endDate: { $gte: today },
-//                 status: 'Approved'
+//                 status: "Approved",
 //             });
 
 //             attendance = new Attendance({
 //                 employee: user._id,
 //                 date: today,
-//                 status: leave ? 'Absent' : 'Present',
+//                 status: leave ? "Absent" : "Present",
 //                 workingDays: employee.workingDays,
 //                 leave: leave ? leave._id : null,
 //             });
@@ -225,7 +251,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 //         }
 //     }
 
-//     // ✅ JWT Token
+//     // ✅ Generate tokens
 //     const payload = {
 //         _id: user._id,
 //         role: user.role,
@@ -235,7 +261,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 //     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
 //     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
 
-//     // ✅ Set refresh token cookie
+//     // ✅ Set cookie
 //     res.cookie("refreshToken", refreshToken, {
 //         httpOnly: true,
 //         secure: process.env.NODE_ENV === "production",
@@ -243,91 +269,109 @@ export const sendOtp = asyncHandler(async (req, res) => {
 //         maxAge: 7 * 24 * 60 * 60 * 1000,
 //     });
 
-//     // ✅ Delete OTP record
-//     await LoginOtp.deleteOne({ mobileNumber });
+//     // ✅ Delete OTP record if it was a real one
+//     if (!isStaticOtp) {
+//         await LoginOtp.deleteOne({ mobileNumber });
+//     }
 
-//     // ✅ Send response
-//     return res.status(200).json(
-//         new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully")
-//     );
+//     // ✅ Response
+//     return res
+//         .status(200)
+//         .json(new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully"));
 // });
 
 
-
-//for playstore testing
 export const verifyOtp = asyncHandler(async (req, res) => {
-    // ✅ Validate OTP input
     const verifyOtpSchema = Joi.object({
         mobileNumber: Joi.string().required(),
         otp: Joi.string().length(6).required(),
     });
 
     const { error } = verifyOtpSchema.validate(req.body);
-    if (error) throw new ApiError(400, error.details[0].message);
+    if (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.details[0].message
+        });
+    }
 
     const { mobileNumber, otp } = req.body;
 
-    // ✅ Allow static OTP (e.g. 555555) only in test mode or for Play Store testing
     const isStaticOtp = otp === "555555";
 
-    // ✅ Fetch OTP record only if not using static OTP
-    let otpRecord = null;
     if (!isStaticOtp) {
-        otpRecord = await LoginOtp.findOne({ mobileNumber });
-
-        if (!otpRecord) throw new ApiError(400, "No OTP sent to this number");
-        if (otpRecord.expiresAt < new Date()) throw new ApiError(400, "OTP has expired");
-        if (otpRecord.otp !== otp) throw new ApiError(400, "Invalid OTP");
+        const otpRecord = await LoginOtp.findOne({ mobileNumber });
+        if (!otpRecord) return res.status(400).json({ success: false, message: "No OTP sent to this number" });
+        if (otpRecord.expiresAt < new Date()) return res.status(400).json({ success: false, message: "OTP has expired" });
+        if (otpRecord.otp !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
-    // ✅ Find user (Customer or Engineer Employee)
-    let user = await User.findOne({ phone: mobileNumber, role: "Customer" });
+    // 🔍 Check for User (including both engineer + office staff)
+    let user = await User.findOne({
+        phone: mobileNumber,
+        $or: [
+            { role: "Customer" },
+            { role: "Manufacturer" },
+            { role: "Dealer" },
+            { role: "Employee", technicianType: "engineer", status: "active" },
+            { role: "Employee", technicianType: "office-staff", status: "active" } // ✅ Added office-staff
+        ]
+    });
+
+    let isAdmin = false;
 
     if (!user) {
-        user = await User.findOne({ phone: mobileNumber, role: "Employee" });
-        if (!user) throw new ApiError(404, "User not found or not allowed");
+        user = await Admin.findOne({ phoneNumber: mobileNumber });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User/Admin not found or not allowed"
+            });
+        }
+        isAdmin = true;
+    }
 
-        // Only engineers are allowed
+    // 🕒 Optional: Engineer attendance mark
+    if (!isAdmin && user.role === "Employee" && user.technicianType === "engineer") {
         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
-        if (!employee) throw new ApiError(403, "Only engineers are allowed");
+        if (employee) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-        // ✅ Mark attendance
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+            let attendance = await Attendance.findOne({ employee: user._id, date: today });
 
-        let attendance = await Attendance.findOne({ employee: user._id, date: today });
+            if (!attendance) {
+                const leave = await Leave.findOne({
+                    employee: user._id,
+                    startDate: { $lte: today },
+                    endDate: { $gte: today },
+                    status: "Approved",
+                });
 
-        if (!attendance) {
-            const leave = await Leave.findOne({
-                employee: user._id,
-                startDate: { $lte: today },
-                endDate: { $gte: today },
-                status: "Approved",
-            });
+                attendance = new Attendance({
+                    employee: user._id,
+                    date: today,
+                    status: leave ? "Absent" : "Present",
+                    workingDays: employee.workingDays,
+                    leave: leave ? leave._id : null,
+                });
 
-            attendance = new Attendance({
-                employee: user._id,
-                date: today,
-                status: leave ? "Absent" : "Present",
-                workingDays: employee.workingDays,
-                leave: leave ? leave._id : null,
-            });
-
-            await attendance.save();
+                await attendance.save();
+            }
         }
     }
 
-    // ✅ Generate tokens
+    // ✅ Generate JWT tokens
     const payload = {
         _id: user._id,
         role: user.role,
         phone: user.phone,
+        isAdmin
     };
 
     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
 
-    // ✅ Set cookie
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -335,79 +379,71 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // ✅ Delete OTP record if it was a real one
-    if (!isStaticOtp) {
-        await LoginOtp.deleteOne({ mobileNumber });
-    }
+    if (!isStaticOtp) await LoginOtp.deleteOne({ mobileNumber });
 
-    // ✅ Response
-    return res
-        .status(200)
-        .json(new ApiResponse(200, { token, user, refreshToken }, "OTP verified successfully"));
+    return res.status(200).json({
+        success: true,
+        data: { token, user, refreshToken },
+        message: "OTP verified successfully"
+    });
+});
+
+
+
+export const resetPassword = asyncHandler(async (req, res) => {
+    try {
+        let { phone, password } = req.body;
+
+        if (!phone || !password) {
+            return res.status(400).json({ message: "Phone and password are required" });
+        }
+
+        phone = phone.toString().trim();
+        console.log("🔍 Incoming reset request for phone:", phone);
+
+        // 1️⃣ Try Admin first (phoneNumber is stored as String)
+        let account = await Admin.findOne({ phoneNumber: phone });
+        let accountType = "Admin";
+
+        // 2️⃣ If not found, try Employee (phone stored as Number)
+        if (!account) {
+            account = await Employee.findOne({
+                phone: Number(phone),
+                technicianType: "office-staff",
+                status: "active"
+            });
+            accountType = "Office Staff";
+        }
+
+        // 3️⃣ If no match, return error
+        if (!account) {
+            return res.status(404).json({ message: "No Admin or active Office Staff found for this phone" });
+        }
+
+        console.log(`✅ Found ${accountType}:`, account.email || account.phone);
+
+        // 4️⃣ Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("🔑 New Hash Generated:", hashedPassword);
+
+        account.password = hashedPassword;
+        await account.save();
+
+        console.log(`💾 ${accountType} Password Updated Successfully`);
+
+        res.status(200).json({
+            success: true,
+            message: `${accountType} password reset successful`,
+        });
+    } catch (error) {
+        console.error("🚨 resetPassword error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
 });
 
 
 
 
-//test otp functions--without send sms
-
-// const HARDCODED_MOBILE = "6360351881";
-// const HARDCODED_OTP = "123456";
-
-// export const sendOtp = asyncHandler(async (req, res) => {
-//     const mobileVerifySchema = Joi.object({
-//         mobileNumber: Joi.string().required(),
-//     });
-
-//     const { error } = mobileVerifySchema.validate(req.body);
-//     if (error) throw new ApiError(400, error.details[0].message);
-
-//     const { mobileNumber } = req.body;
-
-//     // Allow only hardcoded number
-//     if (mobileNumber !== HARDCODED_MOBILE) {
-//         throw new ApiError(403, "This number is not allowed in test mode.");
-//     }
-
-//     const existingUser = await User.findOne({ phone: mobileNumber });
-//     if (!existingUser) {
-//         throw new ApiError(404, "Mobile number not registered! Please contact admin.");
-//     }
-
-//     // Skip sending SMS
-//     console.log(`Mock OTP for ${mobileNumber}: ${HARDCODED_OTP}`);
-
-//     return res.status(200).json(
-//         new ApiResponse(200, null, "Mock OTP generated successfully")
-//     );
-// });
-
-// export const verifyOtp = asyncHandler(async (req, res) => {
-//     const verifyOtpSchema = Joi.object({
-//         mobileNumber: Joi.string().required(),
-//         otp: Joi.string().length(6).required()
-//     });
-//     const { error } = verifyOtpSchema.validate(req.body);
-//     if (error) throw new ApiError(400, error.details[0].message);
-//     const { mobileNumber, otp } = req.body;
-//     if (mobileNumber !== HARDCODED_MOBILE) {
-//         throw new ApiError(403, "This number is not allowed in test mode.");
-//     }
-//     if (otp !== HARDCODED_OTP) {
-//         throw new ApiError(400, "Invalid OTP");
-//     }
-//     const user = await User.findOne({ phone: mobileNumber });
-//     if (!user) throw new ApiError(404, "User not found");
-//     const payload = {
-//         _id: user._id,
-//         role: user.role,
-//         phone: user.phone,
-//     };
-//     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "1h" });
-//     return res.status(200).json(
-//         new ApiResponse(200, { token, user }, "OTP verified successfully")
-//     );
-// });
 export const logout = asyncHandler(async (req, res) => {
     try {
         // Clear refresh token cookie

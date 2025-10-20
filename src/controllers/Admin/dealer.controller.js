@@ -1,16 +1,16 @@
 import mongoose from "mongoose";
 import Dealer from "../../models/dealer.model.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
-import {ApiResponse} from "../../utils/ApiResponse.js"
+import { ApiResponse } from "../../utils/ApiResponse.js"
 
-const FIXED_QA_TESTS = [
-    { testName: "FIXED X RAY", price: 3500 },
-    { testName: "MOBILE X RAY", price: 2500 },
-    { testName: "C ARM", price: 3000 },
-    { testName: "MAMMOGRAPH", price: 4000 },
-    { testName: "CATH LAB", price: 5000 },
-    { testName: "CT SCAN", price: 600 },
-];
+// const FIXED_QA_TESTS = [
+//     { testName: "FIXED X RAY", price: 3500 },
+//     { testName: "MOBILE X RAY", price: 2500 },
+//     { testName: "C ARM", price: 3000 },
+//     { testName: "MAMMOGRAPH", price: 4000 },
+//     { testName: "CATH LAB", price: 5000 },
+//     { testName: "CT SCAN", price: 600 },
+// ];
 
 // export const createDealer = asyncHandler(async (req, res) => {
 //     try {
@@ -95,21 +95,10 @@ export const createDealer = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Name, phone, and email are required");
         }
 
-        // ✅ Merge fixed + provided tests without duplicates
-        const mergedQaTests = [
-            ...FIXED_QA_TESTS,
-            ...qaTests
-        ].reduce((acc, curr) => {
-            if (!acc.find(test => test.testName.toLowerCase() === curr.testName.toLowerCase())) {
-                acc.push(curr);
-            }
-            return acc;
-        }, []);
-
-        // ✅ Identify creator
-        const tokenUser = req.admin || req.user; // Admin or Staff
+        // ✅ Identify creator (Admin or Staff)
+        const tokenUser = req.admin || req.user;
         const creatorId = tokenUser?.id || tokenUser?._id;
-        let creatorModel = "User"; // default
+        let creatorModel = "User";
 
         if (tokenUser?.role === "admin") {
             creatorModel = "Admin";
@@ -119,7 +108,7 @@ export const createDealer = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Unauthorized: Creator information missing");
         }
 
-        // ✅ Create Dealer
+        // ✅ Create Dealer (no fixed QA tests)
         const dealer = new Dealer({
             name,
             phone,
@@ -130,7 +119,7 @@ export const createDealer = asyncHandler(async (req, res) => {
             pincode,
             branch,
             mouValidity,
-            qaTests: mergedQaTests,
+            qaTests, // ✅ Only user-provided QA tests
             createdBy: creatorId,
             createdByModel: creatorModel,
         });
@@ -143,14 +132,20 @@ export const createDealer = asyncHandler(async (req, res) => {
             select: "name email phone role technicianType",
         });
 
-        res.status(201).json(new ApiResponse(201, populatedDealer, "Dealer created successfully"));
+        res
+            .status(201)
+            .json(new ApiResponse(201, populatedDealer, "Dealer created successfully"));
     } catch (error) {
         console.error("❌ Dealer creation error:", error);
-        throw new ApiError(error.statusCode || 500, error.message || "Failed to create dealer");
+        throw new ApiError(
+            error.statusCode || 500,
+            error.message || "Failed to create dealer"
+        );
     }
 });
 
- const getById = asyncHandler(async (req, res) => {
+
+const getById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -255,4 +250,4 @@ const editById = asyncHandler(async (req, res) => {
 
 
 
-export default { createDealer, getAll,getById,editById,deleteById }
+export default { createDealer, getAll, getById, editById, deleteById }

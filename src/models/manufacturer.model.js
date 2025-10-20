@@ -27,6 +27,9 @@ const ManufacturerSchema = new Schema(
         pincode: {
             type: String,
         },
+        address:{
+            type:String
+        },
         branch: {
             type: String,
         },
@@ -35,14 +38,7 @@ const ManufacturerSchema = new Schema(
         },
         qaTests: {
             type: [qaTestSchema],
-            default: [
-                { testName: "FIXED X RAY", price: 3500 },
-                { testName: "MOBILE X RAY", price: 2500 },
-                { testName: "C ARM", price: 3000 },
-                { testName: "MAMMOGRAPH", price: 4000 },
-                { testName: "CATH LAB", price: 5000 },
-                { testName: "CT SCAN", price: 600 },
-            ],
+            default: [],
         },
         services: {
             type: [String], // e.g. ["Installation", "Maintenance", "Support"]
@@ -51,8 +47,11 @@ const ManufacturerSchema = new Schema(
         travelCost: {
             type: String,
             enum: ["Actual Cost", "Fixed Cost"],
-            default: "Actual Cost",
         },
+        cost: {
+            type: Number, // ✅ optional cost field
+            required: false,
+        }, 
     },
     { timestamps: true }
 );

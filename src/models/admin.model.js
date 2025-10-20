@@ -23,6 +23,7 @@ const adminSchema = new Schema(
             enum: ['admin', 'office-staff'], // add more roles as needed
             default: 'admin',
         },
+        
     },
     {
         timestamps: true,

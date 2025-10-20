@@ -4,70 +4,70 @@ import { ApiError } from '../../utils/ApiError.js';
 
 import { asyncHandler } from '../../utils/AsyncHandler.js'
 
-const addManufacturer = asyncHandler(async (req, res) => {
-    try {
-        const {
-            name,
-            email,
-            phone,
-            password,
-            contactPersonName,
-            city,
-            state,
-            pincode,
-            branch,
-            mouValidity,
-            qaTests,
-            services,
-            travelCost,
-            
-        } = req.body;
-        const tokenUser = req.admin || req.user; // Admin or Staff
-        const creatorId = tokenUser?._id || tokenUser?.id;
-        let creatorModel = "User"; // default
+// const addManufacturer = asyncHandler(async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             email,
+//             phone,
+//             password,
+//             contactPersonName,
+//             city,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests,
+//             services,
+//             travelCost,
 
-        if (tokenUser?.role === "admin") {
-            creatorModel = "Admin";
-        }
+//         } = req.body;
+//         const tokenUser = req.admin || req.user; // Admin or Staff
+//         const creatorId = tokenUser?._id || tokenUser?.id;
+//         let creatorModel = "User"; // default
 
-        if (!creatorId) {
-            throw new ApiError(401, "Unauthorized: Creator information missing");
-        }
-        const manufacturer = new Manufacturer({
-            name,
-            email,
-            phone,
-            password, // make sure you hash password if required
-            city,
-            contactPersonName,
-            state,
-            pincode,
-            branch,
-            mouValidity,
-            qaTests,
-            services,
-            travelCost,
-            createdBy: creatorId,
-            createdByModel: creatorModel,
-            role: "Manufacturer", // optional if you want to distinguish
-        });
+//         if (tokenUser?.role === "admin") {
+//             creatorModel = "Admin";
+//         }
 
-        await manufacturer.save();
+//         if (!creatorId) {
+//             throw new ApiError(401, "Unauthorized: Creator information missing");
+//         }
+//         const manufacturer = new Manufacturer({
+//             name,
+//             email,
+//             phone,
+//             password, // make sure you hash password if required
+//             city,
+//             contactPersonName,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests,
+//             services,
+//             travelCost,
+//             createdBy: creatorId,
+//             createdByModel: creatorModel,
+//             role: "Manufacturer", // optional if you want to distinguish
+//         });
 
-        res.status(201).json({
-            success: true,
-            message: "Manufacturer created successfully",
-            data: manufacturer,
-        });
-    } catch (error) {
-        console.error("Error creating manufacturer:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to create manufacturer",
-            error: error.message,
-        });
-    }
-});
+//         await manufacturer.save();
+
+//         res.status(201).json({
+//             success: true,
+//             message: "Manufacturer created successfully",
+//             data: manufacturer,
+//         });
+//     } catch (error) {
+//         console.error("Error creating manufacturer:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to create manufacturer",
+//             error: error.message,
+//         });
+//     }
+// });
 
 // const addManufacturer = asyncHandler(async (req, res) => {
 //     try {
@@ -147,6 +147,183 @@ const addManufacturer = asyncHandler(async (req, res) => {
 //         throw new ApiError(error.statusCode || 500, error.message || "Failed to create manufacturer");
 //     }
 // });
+
+
+
+
+// export const addManufacturer = asyncHandler(async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             email,
+//             phone,
+//             password,
+//             contactPersonName,
+//             city,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests = [],
+//             services = [],
+//             travelCost,
+//             cost, // ✅ optional
+//         } = req.body;
+
+//         // ✅ Basic validation
+//         if (!name || !email || !phone) {
+//             throw new ApiError(400, "Name, Email, and Phone are required");
+//         }
+
+//         // ✅ Identify creator (Admin or Staff)
+//         const tokenUser = req.admin || req.user;
+//         const creatorId = tokenUser?._id || tokenUser?.id;
+//         let creatorModel = "User";
+
+//         if (tokenUser?.role === "admin") {
+//             creatorModel = "Admin";
+//         }
+
+//         if (!creatorId) {
+//             throw new ApiError(401, "Unauthorized: Creator information missing");
+//         }
+
+//         // ✅ Handle cost logic
+//         let finalCost = undefined;
+//         if (travelCost === "Fixed Cost") {
+//             if (!cost) {
+//                 throw new ApiError(400, "Cost is required when travel cost type is Fixed Cost");
+//             }
+//             finalCost = cost;
+//         }
+
+//         // ✅ Create manufacturer
+//         const manufacturer = new Manufacturer({
+//             name,
+//             email,
+//             phone,
+//             password, // ⚠️ Hash before saving if used for auth
+//             contactPersonName,
+//             city,
+//             state,
+//             pincode,
+//             branch,
+//             mouValidity,
+//             qaTests,
+//             services,
+//             travelCost,
+//             cost: finalCost, // ✅ Only added when "Fixed Cost"
+//             createdBy: creatorId,
+//             createdByModel: creatorModel,
+//             role: "Manufacturer",
+//         });
+
+//         await manufacturer.save();
+
+//         // ✅ Populate createdBy for cleaner response
+//         const populatedManufacturer = await Manufacturer.findById(manufacturer._id).populate({
+//             path: "createdBy",
+//             select: "name email phone role technicianType",
+//         });
+
+//         res
+//             .status(201)
+//             .json(new ApiResponse(201, populatedManufacturer, "Manufacturer created successfully"));
+//     } catch (error) {
+//         console.error("❌ Error creating manufacturer:", error);
+//         throw new ApiError(500, error.message || "Failed to create manufacturer");
+//     }
+// });
+
+
+export const addManufacturer = asyncHandler(async (req, res) => {
+    try {
+        const {
+            name,
+            email,
+            phone,
+            address, // ✅ make sure to include address here
+            password,
+            contactPersonName,
+            city,
+            state,
+            pincode,
+            branch,
+            mouValidity,
+            qaTests = [],
+            services = [],
+            travelCost,
+            cost, // ✅ optional
+        } = req.body;
+
+        console.log("🚀 ~ req.body:", req.body);
+
+        // ✅ Basic validation
+        if (!name || !email || !phone) {
+            throw new ApiError(400, "Name, Email, and Phone are required");
+        }
+
+        // ✅ Identify creator (Admin or Staff)
+        const tokenUser = req.admin || req.user;
+        const creatorId = tokenUser?._id || tokenUser?.id;
+        let creatorModel = "User";
+
+        if (tokenUser?.role === "admin") {
+            creatorModel = "Admin";
+        }
+
+        if (!creatorId) {
+            throw new ApiError(401, "Unauthorized: Creator information missing");
+        }
+
+        // ✅ Handle cost logic
+        let finalCost = undefined;
+        if (travelCost === "Fixed Cost") {
+            if (!cost) {
+                throw new ApiError(400, "Cost is required when travel cost type is Fixed Cost");
+            }
+            finalCost = cost;
+        }
+
+        // ✅ Create manufacturer
+        const manufacturer = new Manufacturer({
+            name,
+            email,
+            phone,
+            address, // ✅ added
+            password, // ⚠️ make sure you hash it before saving if used for login
+            contactPersonName,
+            city,
+            state,
+            pincode,
+            branch,
+            mouValidity,
+            qaTests,
+            services,
+            travelCost,
+            cost: finalCost, // ✅ only if Fixed Cost
+            createdBy: creatorId,
+            createdByModel: creatorModel,
+            role: "Manufacturer",
+        });
+
+        await manufacturer.save();
+
+        // ✅ Populate creator details for response clarity
+        const populatedManufacturer = await Manufacturer.findById(manufacturer._id).populate({
+            path: "createdBy",
+            select: "name email phone role technicianType",
+        });
+
+        res.status(201).json(
+            new ApiResponse(201, populatedManufacturer, "Manufacturer created successfully")
+        );
+    } catch (error) {
+        console.error("❌ Error creating manufacturer:", error);
+        throw new ApiError(500, error.message || "Failed to create manufacturer");
+    }
+});
+
 
 const getManufacturerById = asyncHandler(async (req, res) => {
     try {
