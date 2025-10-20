@@ -12,6 +12,7 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 import mongoose from "mongoose";
 import Attendance from "../../models/attendanceSchema.model.js"
 import bcrypt from "bcrypt";
+import Leave from "../../models/leave.model.js";
 
 
 // const add = asyncHandler(async (req, res) => {
@@ -1474,7 +1475,93 @@ export const getAttendanceSummary = asyncHandler(async (req, res) => {
     }
 });
 
+const getAttendanceStatus = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+    const { date } = req.query; // ex: "2025-10-20"
 
+    if (!employeeId || !date) {
+        return res.status(400).json({ success: false, message: "Employee ID and date are required" });
+    }
 
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
 
-export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary };
+    // Check if attendance exists for that day
+    const attendance = await Attendance.findOne({
+        employee: employeeId,
+        date: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    let status = "Absent"; // default
+
+    if (attendance) {
+        status = attendance.status; // "Present", "Absent", etc.
+    } else {
+        // Check if it's a leave day
+        const leave = await Leave.findOne({
+            employee: employeeId,
+            startDate: { $lte: startOfDay },
+            endDate: { $gte: endOfDay },
+            status: "Approved",
+        });
+        if (leave) {
+            status = "On Leave";
+        } else if (startOfDay.getDay() === 0) {
+            status = "Holiday";
+        }
+    }
+
+    res.status(200).json({ success: true, status });
+});
+
+const getPaymentDetails = asyncHandler(async (req, res) => {
+    try {
+        const { employeeId } = req.params;
+        const { date } = req.query;
+
+        if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+            return res.status(400).json({ message: "Invalid employee ID" });
+        }
+
+        if (!date) {
+            return res.status(400).json({ message: "Date query parameter is required" });
+        }
+
+        const targetDate = new Date(date);
+        if (isNaN(targetDate.getTime())) {
+            return res.status(400).json({ message: "Invalid date format" });
+        }
+
+        // Find salary record for that employee and date
+        // Matching the month and year of targetDate
+        const salary = await Salary.findOne({
+            employee: employeeId,
+            date: {
+                $gte: new Date(targetDate.getFullYear(), targetDate.getMonth(), 1),
+                $lte: new Date(targetDate.getFullYear(), targetDate.getMonth(), 31),
+            },
+        });
+
+        if (!salary) {
+            return res.status(404).json({ message: "Salary not found for this date" });
+        }
+
+        return res.status(200).json({
+            employee: salary.employee,
+            date: salary.date,
+            basicSalary: salary.basicSalary,
+            incentive: salary.incentive,
+            leaveWithoutPayDays: salary.leaveWithoutPayDays,
+            leaveDeduction: salary.leaveDeduction,
+            totalSalary: salary.totalSalary,
+            status: salary.status,
+        });
+    } catch (error) {
+        console.error("Error fetching salary:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus,getPaymentDetails };

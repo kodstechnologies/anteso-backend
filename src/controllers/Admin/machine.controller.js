@@ -263,6 +263,7 @@ const add = asyncHandler(async (req, res) => {
 const getAllMachinesByHospitalId = asyncHandler(async (req, res) => {
     try {
         const { hospitalId } = req.params;
+        console.log("🚀 ~ hospitalId:", hospitalId)
 
         if (!hospitalId) {
             return res.status(400).json({ success: false, message: "Hospital ID is required" });
@@ -271,6 +272,7 @@ const getAllMachinesByHospitalId = asyncHandler(async (req, res) => {
         // Find machines linked to this hospital
         const machines = await Machine.find({ hospital: hospitalId })
             .populate('hospital', 'name gstNo');
+        console.log("🚀 ~ machines:", machines)
 
         if (!machines || machines.length === 0) {
             return res.status(200).json(new ApiResponse(200, [], "No machines found for this hospital"));

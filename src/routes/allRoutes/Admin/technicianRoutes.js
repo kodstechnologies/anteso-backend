@@ -33,5 +33,7 @@ router.get('/get-transaction-logs/:technicianId/:tripId', technicianController.g
 router.get('/get-trip/:technicianId/:tripId',technicianController.getTripByTechnicianAndTrip)
 
 router.get('/attendance-summary/:empId',technicianController.getAttendanceSummary)
-
+// router.get('/attendence-status/:employeeId',technicianController.getAttendanceStatus)
+router.get('/attendence-status/:employeeId',technicianController.getAttendanceStatus)
+router.get('/get-payment-details/:employeeId',technicianController.getPaymentDetails)
 export default router

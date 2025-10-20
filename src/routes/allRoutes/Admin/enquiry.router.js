@@ -9,7 +9,8 @@ router.get('/get-all', EnquiryController.getAll)
 router.get("/all-states", EnquiryController.getAllStates)
 
 //enquiry creation after choosing leadowner
-router.post('/create-direct-order-from-enquiry', EnquiryController.createDirectOrder)//--2--done
+router.post("/create-direct-order-from-enquiry", upload.single("attachment"), EnquiryController.createDirectOrder);
+
 router.get('/get-by-id/:id', EnquiryController.getEnquiryDetailsById)//--3--done
 router.put('/update/:id', EnquiryController.updateById)//--4
 router.delete('/delete-by-id/:id', EnquiryController.deleteById)//--5

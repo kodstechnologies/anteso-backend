@@ -15,6 +15,7 @@ import { getFileUrl, getMultipleFileUrls } from "../../utils/s3Fetch.js";
 import AdditionalService from "../../models/additionalService.model.js";
 import QATest from "../../models/QATest.model.js";
 import Elora from "../../models/elora.model.js";
+import Attendance from "../../models/attendanceSchema.model.js"
 
 // const getAllOrders = asyncHandler(async (req, res) => {
 //     try {

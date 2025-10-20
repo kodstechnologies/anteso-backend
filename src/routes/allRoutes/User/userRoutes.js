@@ -15,7 +15,7 @@ router.post("/logout", logout);
 //     next();
 // }, refreshAccessToken);
 
-router.use(authenticate, authorizeRoles("Admin", "Customer", ""))
+router.use(authenticate, authorizeRoles("admin", "Customer", "Employee"))
 // router.post('/machines', machineRoutes)
 router.use('/machines', machineRoutes)
 // router.use('/logout')
