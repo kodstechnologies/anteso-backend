@@ -243,7 +243,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
       .populate("additionalServices")
       .populate({
         path: "quotation",
-        select: "total discount", // only total (grand total) from quotation
+        select: "total discount subtotal gstRate gstAmount", // only total (grand total) from quotation
       })
       .lean();
 

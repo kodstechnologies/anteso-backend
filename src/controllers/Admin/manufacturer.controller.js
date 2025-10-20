@@ -242,7 +242,7 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             name,
             email,
             phone,
-            address, // ✅ make sure to include address here
+            address,
             password,
             contactPersonName,
             city,
@@ -253,14 +253,35 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             qaTests = [],
             services = [],
             travelCost,
-            cost, // ✅ optional
+            cost,
         } = req.body;
 
         console.log("🚀 ~ req.body:", req.body);
 
         // ✅ Basic validation
         if (!name || !email || !phone) {
-            throw new ApiError(400, "Name, Email, and Phone are required");
+            return res
+                .status(200)
+                .json(new ApiResponse(400, null, "Name, Email, and Phone are required"));
+        }
+
+        // ✅ Check for duplicates first
+        const existingManufacturer = await Manufacturer.findOne({
+            $or: [{ phone }, { email }],
+        });
+
+        if (existingManufacturer) {
+            const duplicateField =
+                existingManufacturer.phone === phone ? "phone number" : "email";
+            return res
+                .status(200)
+                .json(
+                    new ApiResponse(
+                        400,
+                        null,
+                        `Manufacturer with this ${duplicateField} already exists`
+                    )
+                );
         }
 
         // ✅ Identify creator (Admin or Staff)
@@ -273,14 +294,20 @@ export const addManufacturer = asyncHandler(async (req, res) => {
         }
 
         if (!creatorId) {
-            throw new ApiError(401, "Unauthorized: Creator information missing");
+            return res
+                .status(200)
+                .json(
+                    new ApiResponse(401, null, "Unauthorized: Creator information missing")
+                );
         }
 
         // ✅ Handle cost logic
         let finalCost = undefined;
         if (travelCost === "Fixed Cost") {
             if (!cost) {
-                throw new ApiError(400, "Cost is required when travel cost type is Fixed Cost");
+                return res
+                    .status(200)
+                    .json(new ApiResponse(400, null, "Cost is required for Fixed Cost"));
             }
             finalCost = cost;
         }
@@ -290,8 +317,8 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             name,
             email,
             phone,
-            address, // ✅ added
-            password, // ⚠️ make sure you hash it before saving if used for login
+            address,
+            password,
             contactPersonName,
             city,
             state,
@@ -301,7 +328,7 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             qaTests,
             services,
             travelCost,
-            cost: finalCost, // ✅ only if Fixed Cost
+            cost: finalCost,
             createdBy: creatorId,
             createdByModel: creatorModel,
             role: "Manufacturer",
@@ -315,12 +342,35 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             select: "name email phone role technicianType",
         });
 
-        res.status(201).json(
-            new ApiResponse(201, populatedManufacturer, "Manufacturer created successfully")
-        );
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    201,
+                    populatedManufacturer,
+                    "Manufacturer created successfully"
+                )
+            );
     } catch (error) {
         console.error("❌ Error creating manufacturer:", error);
-        throw new ApiError(500, error.message || "Failed to create manufacturer");
+
+        // ✅ Handle MongoDB duplicate key error cleanly
+        if (error.code === 11000) {
+            const duplicateField = Object.keys(error.keyPattern)[0];
+            return res
+                .status(200)
+                .json(
+                    new ApiResponse(
+                        400,
+                        null,
+                        `This ${duplicateField} already exists`
+                    )
+                );
+        }
+
+        return res
+            .status(200)
+            .json(new ApiResponse(500, null, error.message || "Failed to create manufacturer"));
     }
 });
 

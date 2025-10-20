@@ -18,7 +18,7 @@ const enquirySchema = new mongoose.Schema({
     contactPerson: { type: String, required: true },
     emailAddress: { type: String, required: true },
     contactNumber: { type: String, required: true },
-    designation: { type: String, required: true },
+    designation: { type: String, required: true },  
     services: [
         {
             type: mongoose.Schema.Types.ObjectId,

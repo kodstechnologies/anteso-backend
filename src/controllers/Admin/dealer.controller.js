@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Dealer from "../../models/dealer.model.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js"
-
+import { ApiError } from "../../utils/ApiError.js"
 // const FIXED_QA_TESTS = [
 //     { testName: "FIXED X RAY", price: 3500 },
 //     { testName: "MOBILE X RAY", price: 2500 },
@@ -92,7 +92,27 @@ export const createDealer = asyncHandler(async (req, res) => {
 
         // ✅ Basic validation
         if (!name || !phone || !email) {
-            throw new ApiError(400, "Name, phone, and email are required");
+            return res
+                .status(200)
+                .json(new ApiResponse(400, null, "Name, phone, and email are required"));
+        }
+
+        // ✅ Check for existing phone or email
+        const existingDealer = await Dealer.findOne({
+            $or: [{ phone }, { email }],
+        });
+
+        if (existingDealer) {
+            if (existingDealer.phone === phone) {
+                return res
+                    .status(200)
+                    .json(new ApiResponse(400, null, "Dealer with this phone number already exists"));
+            }
+            if (existingDealer.email === email) {
+                return res
+                    .status(200)
+                    .json(new ApiResponse(400, null, "Dealer with this email already exists"));
+            }
         }
 
         // ✅ Identify creator (Admin or Staff)
@@ -105,10 +125,12 @@ export const createDealer = asyncHandler(async (req, res) => {
         }
 
         if (!creatorId) {
-            throw new ApiError(401, "Unauthorized: Creator information missing");
+            return res
+                .status(200)
+                .json(new ApiResponse(401, null, "Unauthorized: Creator information missing"));
         }
 
-        // ✅ Create Dealer (no fixed QA tests)
+        // ✅ Create Dealer
         const dealer = new Dealer({
             name,
             phone,
@@ -119,7 +141,7 @@ export const createDealer = asyncHandler(async (req, res) => {
             pincode,
             branch,
             mouValidity,
-            qaTests, // ✅ Only user-provided QA tests
+            qaTests,
             createdBy: creatorId,
             createdByModel: creatorModel,
         });
@@ -129,18 +151,17 @@ export const createDealer = asyncHandler(async (req, res) => {
         // ✅ Populate createdBy for response
         const populatedDealer = await Dealer.findById(dealer._id).populate({
             path: "createdBy",
-            select: "name email phone role technicianType",
+            select: "name email address phone role technicianType",
         });
 
-        res
-            .status(201)
+        return res
+            .status(200)
             .json(new ApiResponse(201, populatedDealer, "Dealer created successfully"));
     } catch (error) {
         console.error("❌ Dealer creation error:", error);
-        throw new ApiError(
-            error.statusCode || 500,
-            error.message || "Failed to create dealer"
-        );
+        return res
+            .status(200)
+            .json(new ApiResponse(500, null, "Failed to create dealer"));
     }
 });
 
@@ -156,6 +177,7 @@ const getById = asyncHandler(async (req, res) => {
 
         // find dealer by id
         const dealer = await Dealer.findById(id);
+        console.log("🚀 ~ dealer:", dealer)
 
         if (!dealer) {
             return res.status(404).json({ message: "Dealer not found" });

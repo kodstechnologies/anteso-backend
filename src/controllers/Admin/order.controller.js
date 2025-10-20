@@ -3657,14 +3657,22 @@ const editDocuments = asyncHandler(async (req, res) => {
         }
 
         // ✅ Update fields
+        // if (uploadFileUrl) {
+        //     workTypeDetail.uploadFile = uploadFileUrl;
+        // }
+        // if (viewFileUrls.length > 0) {
+        //     workTypeDetail.viewFile = [
+        //         ...(workTypeDetail.viewFile || []),
+        //         ...viewFileUrls,
+        //     ];
+        // }
+
+        // ✅ Update fields
         if (uploadFileUrl) {
-            workTypeDetail.uploadFile = uploadFileUrl;
+            workTypeDetail.uploadFile = uploadFileUrl; // replace existing uploadFile
         }
         if (viewFileUrls.length > 0) {
-            workTypeDetail.viewFile = [
-                ...(workTypeDetail.viewFile || []),
-                ...viewFileUrls,
-            ];
+            workTypeDetail.viewFile = viewFileUrls; // overwrite existing viewFile
         }
 
         await service.save();
@@ -4735,4 +4743,4 @@ const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService,getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff }
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff }

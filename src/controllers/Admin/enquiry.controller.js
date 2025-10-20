@@ -1744,6 +1744,8 @@ const add = asyncHandler(async (req, res) => {
 //         throw new ApiError(500, "Failed to create direct order", [error.message]);
 //     }
 // });
+
+
 export const createDirectOrder = asyncHandler(async (req, res) => {
     try {
         console.log("🚀 ~ Raw body:", req.body);
@@ -1798,6 +1800,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
 
         let customerDoc = null;
         let customerId = customer;
+        console.log("🚀 ~ customerId:", customerId)
 
         if (!customerId) {
             customerDoc = await User.findOne({ $or: [{ email: emailAddress }, { phone: contactNumber }], role: "Customer" });
@@ -1812,6 +1815,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
             customerId = customerDoc._id;
         } else {
             customerDoc = await User.findById(customerId);
+            console.log("🚀 ~ customerDoc:", customerDoc)
         }
 
         if (!customerDoc) {

@@ -14,6 +14,10 @@ const clientSchema = new Schema({
         type: String,
         unique: true,
     },
+    address:{
+        type:String
+        
+    },
     hospitals: [
         {
             type: Schema.Types.ObjectId,

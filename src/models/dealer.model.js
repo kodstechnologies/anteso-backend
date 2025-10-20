@@ -37,6 +37,10 @@ const DealerSchema = new Schema(
             type: [qaTestSchema],
             default: [],
         },
+        address: {
+            type: String
+
+        },
     },
     { timestamps: true }
 );

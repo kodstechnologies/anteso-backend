@@ -98,12 +98,10 @@ const create = asyncHandler(async (req, res) => {
     const creatorId = tokenUser?.id;
     let creatorModel = "User"; // default
 
-    if ( tokenUser?.role === "admin") {
+    if (tokenUser?.role === "admin") {
         creatorModel = "Admin";
     }
 
-    console.log("🚀 ~ creatorId:", creatorId);
-    console.log("🚀 ~ creatorModel:", creatorModel);
 
 
     if (!creatorId) {
@@ -126,7 +124,7 @@ const create = asyncHandler(async (req, res) => {
         const populatedClient = await Client.findById(newClient._id)
             .populate({
                 path: "createdBy",
-                select: "name email phone role technicianType",
+                select: "name email phone address role technicianType",
             });
 
         return res
@@ -188,9 +186,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const updateById = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    console.log("🚀 ~ id:", id)
     const { error, value } = clientValidationSchema.validate(req.body, { abortEarly: false });
-    console.log("🚀 ~ value:", value)
 
     if (error) {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
