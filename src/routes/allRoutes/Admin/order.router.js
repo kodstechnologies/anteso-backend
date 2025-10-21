@@ -101,7 +101,7 @@ router.get('/get-order-by-hospitalId-orderId/:hospitalId/:orderId', orderControl
 router.put('/assign-staff-by-elora/:orderId/:serviceId/:officeStaffId/:workType/:status', orderController.assignStaffByElora)
 
 //mobile APIs
-router.get('/get-qa-report/:technicianId', orderController.getQaReportsByTechnician)
+router.get('/get-qa-report/:technicianId', orderController.getQaReportsByTechnician)    
 router.get('/get-report-by-id/:orderId/:serviceId/:qaReportId', orderController.getReportById)
 router.patch('/accept-report/:orderId/:serviceId/:qaReportId', orderController.acceptQAReport)
 router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.rejectQAReport)

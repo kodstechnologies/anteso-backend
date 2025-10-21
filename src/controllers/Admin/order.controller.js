@@ -3192,6 +3192,42 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                 }
 
                 // --- Update or create linked report ---
+                // if (fileUrl) {
+                //     if (normalizedReportType === "qatest") {
+                //         if (existingReport && existingReport.reportStatus === "rejected") {
+                //             newReportDoc = await QATest.findByIdAndUpdate(
+                //                 existingReport._id,
+                //                 { report: fileUrl, reportStatus: "reuploaded" },
+                //                 { new: true }
+                //             );
+                //         } else {
+                //             newReportDoc = await QATest.create({
+                //                 officeStaff: staffId,
+                //                 report: fileUrl,
+                //                 reportStatus: "pending",
+                //             });
+                //             work.QAtest = newReportDoc._id;
+                //         }
+                //         reportFor = "qatest";
+                //     } else if (normalizedReportType === "elora") {
+                //         // ✅ Elora: always allow re-upload, ignore status
+                //         if (existingReport) {
+                //             newReportDoc = await Elora.findByIdAndUpdate(
+                //                 existingReport._id,
+                //                 { report: fileUrl },
+                //                 { new: true }
+                //             );
+                //         } else {
+                //             newReportDoc = await Elora.create({
+                //                 officeStaff: staffId,
+                //                 report: fileUrl,
+                //                 reportStatus: "pending",
+                //             });
+                //             work.elora = newReportDoc._id;
+                //         }
+                //         reportFor = "elora";
+                //     }
+                // }
                 if (fileUrl) {
                     if (normalizedReportType === "qatest") {
                         if (existingReport && existingReport.reportStatus === "rejected") {
@@ -3209,29 +3245,11 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                             work.QAtest = newReportDoc._id;
                         }
                         reportFor = "qatest";
-                    } else if (normalizedReportType === "elora") {
-                        // ✅ Elora: always allow re-upload, ignore status
-                        if (existingReport) {
-                            newReportDoc = await Elora.findByIdAndUpdate(
-                                existingReport._id,
-                                { report: fileUrl },
-                                { new: true }
-                            );
-                        } else {
-                            newReportDoc = await Elora.create({
-                                officeStaff: staffId,
-                                report: fileUrl,
-                                reportStatus: "pending",
-                            });
-                            work.elora = newReportDoc._id;
-                        }
-                        reportFor = "elora";
                     }
-                }
 
-                updated = true;
-                return work;
-            })
+                    updated = true;
+                    return work;
+                })
         );
 
         if (!updated) {
