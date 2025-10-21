@@ -25,7 +25,6 @@ const hospitalSchema = new Schema(
         },
         gstNo: {
             type: String,
-            unique: true,
         },
         machines:
         {
@@ -58,8 +57,11 @@ const hospitalSchema = new Schema(
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "QAReport", // assuming QAReport is a model
-            }
-        ]
+            },
+
+        ],
+        customer: { type: Schema.Types.ObjectId, ref: 'User' }, // ✅ added
+
     },
     { timestamps: true }
 );
