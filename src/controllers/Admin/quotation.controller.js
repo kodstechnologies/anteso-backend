@@ -420,6 +420,142 @@ import counterModel from "../../models/counter.model.js";
 //     }
 // });
 
+// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const {
+//             date,
+//             customer,
+//             assignedEmployee,
+//             items,
+//             calculations,
+//             termsAndConditions,
+//             bankDetails,
+//             companyDetails,
+//         } = req.body;
+
+//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
+
+//         // Fetch enquiry
+//         const enquiry = await Enquiry.findById(id)
+//             .populate('services')
+//             .populate('additionalServices')
+//             .populate('customer');
+//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
+//         if (!enquiry.customer || !enquiry.customer._id)
+//             throw new ApiError(400, 'Customer info missing in enquiry');
+
+//         // Service snapshots
+//         const serviceSnapshots = items.services.map(s => ({
+//             id: s.id,
+//             machineType: s.machineType,
+//             equipmentNo: s.equipmentNo,
+//             machineModel: s.machineModel,
+//             serialNumber: s.serialNumber,
+//             remark: s.remark,
+//             totalAmount: s.totalAmount,
+//         }));
+
+//         const additionalServiceSnapshots = items.additionalServices.map(s => ({
+//             id: s.id,
+//             name: s.name,
+//             description: s.description,
+//             totalAmount: s.totalAmount,
+//         }));
+
+//         // 🧮 GST Calculations
+//         const subtotal = Number(calculations?.subtotal || 0);
+//         const discount = Number(calculations?.discountAmount || 0);
+//         const gstRate = 18;
+//         const gstAmount = ((subtotal - discount) * gstRate) / 100;
+//         const total = subtotal - discount + gstAmount;
+
+//         // 🔢 Generate quotation number sequentially
+//         let lastQuotation = await Quotation.findOne({})
+//             .sort({ createdAt: -1 })
+//             .select("quotationId")
+//             .lean();
+
+//         let lastNumber = 0;
+
+//         if (lastQuotation && lastQuotation.quotationId) {
+//             // Extract the last sequence number from the previous quotationId
+//             // Assuming format: QU + 4-digit random + 2-digit sequence
+//             const seqPart = lastQuotation.quotationId.slice(-2);
+//             lastNumber = parseInt(seqPart, 10);
+//         }
+
+//         // Increment sequence
+//         const nextSequence = lastNumber + 1;
+
+//         // Pad sequence to 2 digits
+//         const paddedSequence = nextSequence.toString().padStart(2, "0");
+
+//         // Generate random 4-digit part
+//         const randomPart = Math.floor(1000 + Math.random() * 9000);
+
+//         // Final quotation number
+//         const quotationNumber = `QU${randomPart}${paddedSequence}`;
+
+//         // 🧾 Create quotation
+//         const quotation = await Quotation.create({
+//             date,
+//             quotationId: quotationNumber,
+//             enquiry: enquiry._id,
+//             from: enquiry.hospital._id,
+//             customer,
+//             assignedEmployee: assignedEmployee.id || assignedEmployee,
+//             items: {
+//                 services: serviceSnapshots,
+//                 additionalServices: additionalServiceSnapshots,
+//             },
+//             subtotal,
+//             discount,
+//             gstRate,
+//             gstAmount,
+//             total,
+//             bankDetails,
+//             companyDetails,
+//             quotationStatus: 'Created',
+//             termsAndConditions,
+//         });
+
+//         console.log("🚀 ~ quotation:", quotation)
+
+//         // Update totals in DB
+//         await Promise.all(serviceSnapshots
+//             .filter(s => mongoose.Types.ObjectId.isValid(s.id))
+//             .map(s => Services.findByIdAndUpdate(
+//                 s.id,
+//                 { $set: { totalAmount: s.totalAmount } },
+//                 { new: true }
+//             ))
+//         );
+
+//         await Promise.all(additionalServiceSnapshots
+//             .filter(s => s.id)
+//             .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
+//         );
+
+//         // 🧩 Update enquiry with totals and GST details
+//         await Enquiry.findByIdAndUpdate(enquiry._id, {
+//             quotationStatus: quotation.quotationStatus,
+//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
+//             subtotalAmount: subtotal,
+//             discount: discount,
+//             grandTotal: total,
+//         });
+
+//         return res.status(201).json(
+//             new ApiResponse(201, quotation, 'Quotation created successfully')
+//         );
+
+//     } catch (error) {
+//         console.error("Error creating quotation:", error);
+//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
+//     }
+// });
+
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
@@ -432,7 +568,9 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             termsAndConditions,
             bankDetails,
             companyDetails,
+            quotationNumber: frontendQuotationNumber, // Optional: Use if you want to honor frontend
         } = req.body;
+        console.log("🚀 ~ req.body:", req.body)
 
         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
 
@@ -440,7 +578,8 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         const enquiry = await Enquiry.findById(id)
             .populate('services')
             .populate('additionalServices')
-            .populate('customer');
+            .populate('customer')
+            .populate('hospital'); // ✅ Add if enquiry.hospital is a ref
         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
         if (!enquiry.customer || !enquiry.customer._id)
             throw new ApiError(400, 'Customer info missing in enquiry');
@@ -465,10 +604,11 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
 
         // 🧮 GST Calculations
         const subtotal = Number(calculations?.subtotal || 0);
-        const discount = Number(calculations?.discountAmount || 0);
+        const discountPercentage = Number(calculations?.discount || 0); // ✅ % from frontend
+        const discountAmount = Number(calculations?.discountAmount || 0); // Amount for computation
         const gstRate = 18;
-        const gstAmount = ((subtotal - discount) * gstRate) / 100;
-        const total = subtotal - discount + gstAmount;
+        const gstAmount = ((subtotal - discountAmount) * gstRate) / 100;
+        const total = subtotal - discountAmount + gstAmount;
 
         // 🔢 Generate quotation number sequentially
         let lastQuotation = await Quotation.findOne({})
@@ -479,30 +619,21 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         let lastNumber = 0;
 
         if (lastQuotation && lastQuotation.quotationId) {
-            // Extract the last sequence number from the previous quotationId
-            // Assuming format: QU + 4-digit random + 2-digit sequence
             const seqPart = lastQuotation.quotationId.slice(-2);
             lastNumber = parseInt(seqPart, 10);
         }
 
-        // Increment sequence
         const nextSequence = lastNumber + 1;
-
-        // Pad sequence to 2 digits
         const paddedSequence = nextSequence.toString().padStart(2, "0");
-
-        // Generate random 4-digit part
         const randomPart = Math.floor(1000 + Math.random() * 9000);
-
-        // Final quotation number
         const quotationNumber = `QU${randomPart}${paddedSequence}`;
 
-        // 🧾 Create quotation
+        // 🧾 Create quotation (use discountPercentage for storage)
         const quotation = await Quotation.create({
             date,
-            quotationId: quotationNumber,
+            quotationId: quotationNumber, // Or use frontendQuotationNumber if preferred
             enquiry: enquiry._id,
-            from: enquiry.hospital._id,
+            from: enquiry.hospital?._id || null, // ✅ Safe access
             customer,
             assignedEmployee: assignedEmployee.id || assignedEmployee,
             items: {
@@ -510,7 +641,8 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
                 additionalServices: additionalServiceSnapshots,
             },
             subtotal,
-            discount,
+            discount: discountPercentage, // ✅ Store % here
+            discountAmount, // ✅ Optional: Add if schema supports separate field
             gstRate,
             gstAmount,
             total,
@@ -520,29 +652,35 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             termsAndConditions,
         });
 
-        console.log("🚀 ~ quotation:", quotation)
+        console.log("🚀 ~ quotation:", quotation);
 
-        // Update totals in DB
-        await Promise.all(serviceSnapshots
-            .filter(s => mongoose.Types.ObjectId.isValid(s.id))
-            .map(s => Services.findByIdAndUpdate(
-                s.id,
-                { $set: { totalAmount: s.totalAmount } },
-                { new: true }
-            ))
+        // Update totals in DB (with validation for both)
+        await Promise.all(
+            serviceSnapshots
+                .filter(s => mongoose.Types.ObjectId.isValid(s.id))
+                .map(s => Services.findByIdAndUpdate(
+                    s.id,
+                    { $set: { totalAmount: s.totalAmount } },
+                    { new: true }
+                ))
         );
 
-        await Promise.all(additionalServiceSnapshots
-            .filter(s => s.id)
-            .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
+        await Promise.all(
+            additionalServiceSnapshots
+                .filter(s => mongoose.Types.ObjectId.isValid(s.id)) // ✅ Add validation
+                .map(s => AdditionalService.findByIdAndUpdate(
+                    s.id,
+                    { totalAmount: s.totalAmount }, // No $set needed for single field
+                    { new: true } // ✅ Consistent
+                ))
         );
 
-        // 🧩 Update enquiry with totals and GST details
+        // 🧩 Update enquiry with totals and GST details (store % in discount)
         await Enquiry.findByIdAndUpdate(enquiry._id, {
             quotationStatus: quotation.quotationStatus,
             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
             subtotalAmount: subtotal,
-            discount: discount,
+            discount: discountPercentage, // ✅ Store %
             grandTotal: total,
         });
 
@@ -555,7 +693,6 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         throw new ApiError(500, 'Failed to create quotation', [error.message]);
     }
 });
-
 
 // const updateQuotationById = asyncHandler(async (req, res) => {
 //     try {

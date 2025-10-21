@@ -16,6 +16,7 @@ import AdditionalService from "../../models/additionalService.model.js";
 import QATest from "../../models/QATest.model.js";
 import Elora from "../../models/elora.model.js";
 import Attendance from "../../models/attendanceSchema.model.js"
+import Invoice from "../../models/invoice.model.js";
 
 // const getAllOrders = asyncHandler(async (req, res) => {
 //     try {
@@ -4051,6 +4052,94 @@ const getAllOrdersByHospitalId = asyncHandler(async (req, res) => {
 //     }
 // });
 
+
+
+
+// const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
+//     try {
+//         const { hospitalId, orderId } = req.params;
+
+//         if (!hospitalId || !orderId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Hospital ID and Order ID are required",
+//             });
+//         }
+
+//         // Validate hospital exists
+//         const hospital = await Hospital.findById(hospitalId);
+//         if (!hospital) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Hospital not found",
+//             });
+//         }
+
+//         // Find order by _id AND hospital
+//         const order = await orderModel.findOne({
+//             _id: orderId,
+//             hospital: hospitalId,
+//         })
+//             .populate({
+//                 path: "services",
+//                 populate: {
+//                     path: "workTypeDetails.QAtest",
+//                     select: "reportULRNumber report qaTestReportNumber reportStatus", // select the correct fields
+//                 },
+//             })
+//             .populate("additionalServices", "name description totalAmount report")
+//             .populate("customer", "name email role")
+//             .populate("quotation", "quotationNumber status")
+//             .populate("payment")
+//             .populate("courierDetails")
+//             .populate("hospital", "name branch phone email");
+
+//         if (!order) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Order not found for this hospital",
+//             });
+//         }
+
+//         // Map services to inject qaReportUrl inside QAtest
+//         const servicesWithReports = order.services.map(service => {
+//             const workDetails = service.workTypeDetails.map(wt => {
+//                 if (wt.QAtest) {
+//                     // Inject qaReportUrl inside QAtest
+//                     wt.QAtest = {
+//                         ...wt.QAtest.toObject(),
+//                         qaReportUrl: wt.QAtest.reportULRNumber || wt.QAtest.report || null,
+//                     };
+//                 }
+//                 return wt;
+//             });
+
+//             return {
+//                 ...service.toObject(),
+//                 workTypeDetails: workDetails,
+//             };
+//         });
+
+//         const orderResponse = {
+//             ...order.toObject(),
+//             services: servicesWithReports,
+//         };
+
+//         res.status(200).json({
+//             success: true,
+//             order: orderResponse,
+//         });
+//     } catch (error) {
+//         console.error("Error fetching order by hospitalId + orderId:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Server error fetching order",
+//             error: error.message,
+//         });
+//     }
+// });
+
+
 const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
     try {
         const { hospitalId, orderId } = req.params;
@@ -4062,7 +4151,7 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             });
         }
 
-        // Validate hospital exists
+        // ✅ Validate hospital exists
         const hospital = await Hospital.findById(hospitalId);
         if (!hospital) {
             return res.status(404).json({
@@ -4071,16 +4160,17 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             });
         }
 
-        // Find order by _id AND hospital
-        const order = await orderModel.findOne({
-            _id: orderId,
-            hospital: hospitalId,
-        })
+        // ✅ Find order by _id AND hospital
+        const order = await orderModel
+            .findOne({
+                _id: orderId,
+                hospital: hospitalId,
+            })
             .populate({
                 path: "services",
                 populate: {
                     path: "workTypeDetails.QAtest",
-                    select: "reportULRNumber report qaTestReportNumber reportStatus", // select the correct fields
+                    select: "reportULRNumber report qaTestReportNumber reportStatus",
                 },
             })
             .populate("additionalServices", "name description totalAmount report")
@@ -4097,11 +4187,10 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             });
         }
 
-        // Map services to inject qaReportUrl inside QAtest
+        // ✅ Map services to inject qaReportUrl
         const servicesWithReports = order.services.map(service => {
             const workDetails = service.workTypeDetails.map(wt => {
                 if (wt.QAtest) {
-                    // Inject qaReportUrl inside QAtest
                     wt.QAtest = {
                         ...wt.QAtest.toObject(),
                         qaReportUrl: wt.QAtest.reportULRNumber || wt.QAtest.report || null,
@@ -4116,9 +4205,14 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             };
         });
 
+        // ✅ Fetch invoice details related to this order
+        const invoice = await Invoice.findOne({ order: orderId }).select("invoiceuploaded invoicePdf");
+
         const orderResponse = {
             ...order.toObject(),
             services: servicesWithReports,
+            invoiceuploaded: invoice ? invoice.invoiceuploaded : false,
+            invoicePdf: invoice ? invoice.invoicePdf : null,
         };
 
         res.status(200).json({
@@ -4126,7 +4220,7 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             order: orderResponse,
         });
     } catch (error) {
-        console.error("Error fetching order by hospitalId + orderId:", error);
+        console.error("❌ Error fetching order by hospitalId + orderId:", error);
         res.status(500).json({
             success: false,
             message: "Server error fetching order",
@@ -4134,6 +4228,7 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
         });
     }
 });
+
 
 
 // const getQaReportsByTechnician = async (req, res) => {

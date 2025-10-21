@@ -62,6 +62,10 @@ const invoiceSchema = new Schema(
         },
         invoicePdf: {
             type: String
+        },
+        invoiceuploaded:{
+            type:Boolean,
+            default:false
         }
     },
     { timestamps: true }

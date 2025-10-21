@@ -501,42 +501,89 @@ const createInvoice = asyncHandler(async (req, res) => {
 //   }
 // });
 
-const getInvoiceById = asyncHandler(async (req, res) => {
+
+
+
+// const getInvoiceById = asyncHandler(async (req, res) => {
+//   try {
+//     const { invoiceId } = req.params;
+//     console.log("🚀 ~ invoiceId:", invoiceId)
+
+//     // Validate invoiceId
+//     if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+//       return res.status(400).json({ success: false, message: "Invalid invoice ID" });
+//     }
+
+//     // Fetch invoice with optional population of enquiry and order
+//     const invoice = await Invoice.findById(invoiceId)
+//       .populate("enquiry")
+//       .populate("order"); // ✅ populate order to get orderId and other details
+//     console.log("🚀 ~ invoice:", invoice)
+
+//     if (!invoice) {
+//       return res.status(404).json({ success: false, message: "Invoice not found" });
+//     }
+
+//     // If you want to return orderId only
+//     const invoiceData = {
+//       ...invoice.toObject(),
+//       orderId: invoice.order?._id, // add orderId explicitly
+//     };
+
+//     res.status(200).json({ success: true, data: invoiceData });
+//   } catch (error) {
+//     console.error("Error fetching invoice:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error?.message || "Failed to fetch invoice",
+//     });
+//   }
+// });
+
+
+export const getInvoiceById = asyncHandler(async (req, res) => {
   try {
     const { invoiceId } = req.params;
-    console.log("🚀 ~ invoiceId:", invoiceId)
+    console.log("🚀 ~ invoiceId:", invoiceId);
 
-    // Validate invoiceId
+    // ✅ Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
       return res.status(400).json({ success: false, message: "Invalid invoice ID" });
     }
 
-    // Fetch invoice with optional population of enquiry and order
+    // ✅ Populate invoice → order → services, additionalServices, hospital
     const invoice = await Invoice.findById(invoiceId)
       .populate("enquiry")
-      .populate("order"); // ✅ populate order to get orderId and other details
-    console.log("🚀 ~ invoice:", invoice)
+      .populate({
+        path: "order",
+        populate: [
+          { path: "services", model: "Service" },
+          { path: "additionalServices", model: "AdditionalService" },
+          { path: "hospital", model: "Hospital" }, // ✅ populate hospital details too
+        ],
+      });
+
+    console.log("🚀 ~ invoice:", invoice);
 
     if (!invoice) {
       return res.status(404).json({ success: false, message: "Invoice not found" });
     }
 
-    // If you want to return orderId only
+    // ✅ Attach orderId for frontend
     const invoiceData = {
       ...invoice.toObject(),
-      orderId: invoice.order?._id, // add orderId explicitly
+      orderId: invoice.order?._id,
     };
 
     res.status(200).json({ success: true, data: invoiceData });
   } catch (error) {
-    console.error("Error fetching invoice:", error);
+    console.error("❌ Error fetching invoice:", error);
     res.status(500).json({
       success: false,
       message: error?.message || "Failed to fetch invoice",
     });
   }
 });
-
 
 const getAllInvoices = asyncHandler(async (req, res) => {
   try {
@@ -601,6 +648,46 @@ const deleteInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+// const uploadInvoicePdf = asyncHandler(async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+//     const file = req.file;
+
+//     if (!orderId) {
+//       return res.status(400).json({ success: false, message: "orderId is required" });
+//     }
+
+//     if (!file) {
+//       return res.status(400).json({ success: false, message: "invoicePdf file is required" });
+//     }
+
+//     // Find invoice by orderId
+//     const invoice = await Invoice.findOne({ order: orderId });
+//     if (!invoice) {
+//       return res.status(404).json({ success: false, message: "Invoice not found for this orderId" });
+//     }
+
+//     // Upload file to S3
+//     const { url } = await uploadToS3(file);
+
+//     // Save S3 URL in invoice
+//     invoice.invoicePdf = url;
+//     await invoice.save();
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Invoice PDF uploaded to S3 successfully",
+//       data: invoice,
+//     });
+//   } catch (error) {
+//     console.error("Error uploading invoice PDF:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error?.message || "Failed to upload invoice PDF",
+//     });
+//   }
+// });
+
 const uploadInvoicePdf = asyncHandler(async (req, res) => {
   try {
     const { orderId } = req.params;
@@ -614,32 +701,34 @@ const uploadInvoicePdf = asyncHandler(async (req, res) => {
       return res.status(400).json({ success: false, message: "invoicePdf file is required" });
     }
 
-    // Find invoice by orderId
+    // 🔍 Find invoice by orderId
     const invoice = await Invoice.findOne({ order: orderId });
     if (!invoice) {
       return res.status(404).json({ success: false, message: "Invoice not found for this orderId" });
     }
 
-    // Upload file to S3
+    // 📤 Upload file to S3
     const { url } = await uploadToS3(file);
 
-    // Save S3 URL in invoice
+    // ✅ Update invoice fields
     invoice.invoicePdf = url;
+    invoice.invoiceuploaded = true; // <-- Mark as uploaded
     await invoice.save();
 
     res.status(200).json({
       success: true,
-      message: "Invoice PDF uploaded to S3 successfully",
+      message: "Invoice PDF uploaded and marked as uploaded successfully",
       data: invoice,
     });
   } catch (error) {
-    console.error("Error uploading invoice PDF:", error);
+    console.error("❌ Error uploading invoice PDF:", error);
     res.status(500).json({
       success: false,
       message: error?.message || "Failed to upload invoice PDF",
     });
   }
 });
+
 
 const getInvoicePdf = asyncHandler(async (req, res) => {
   try {

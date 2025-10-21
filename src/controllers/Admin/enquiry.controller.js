@@ -603,6 +603,163 @@ import Client from "../../models/client.model.js";
 //     }
 // });
 
+// const add = asyncHandler(async (req, res) => {
+//     try {
+//         console.log("🚀 ~ req.file:", req.file); // single file
+//         console.log("🚀 ~ req.body:", req.body); // other form fields
+
+//         // ✅ Step 1: Preprocess services & additionalServices
+//         let body = { ...req.body };
+
+//         if (typeof body.services === "string") {
+//             try {
+//                 body.services = JSON.parse(body.services);
+//             } catch (err) {
+//                 throw new ApiError(400, "Invalid JSON format in services");
+//             }
+//         }
+
+//         if (typeof body.additionalServices === "string") {
+//             try {
+//                 body.additionalServices = JSON.parse(body.additionalServices);
+//             } catch (err) {
+//                 throw new ApiError(400, "Invalid JSON format in additionalServices");
+//             }
+//         }
+
+//         // ✅ Step 2: Validate input with Joi
+//         const { error, value } = enquirySchema.validate(body, {
+//             abortEarly: false,
+//         });
+
+//         if (error) {
+//             const errorMessages = error.details.map((err) => err.message);
+//             throw new ApiError(400, "Validation failed", errorMessages);
+//         }
+
+//         let customerId = value.customer;
+
+//         // ✅ Step 3: Customer handling
+//         if (!customerId) {
+//             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
+
+//             let existingCustomer = null;
+//             if (contactNumber) {
+//                 existingCustomer = await User.findOne({ phone: contactNumber });
+//             }
+
+//             if (existingCustomer) {
+//                 return res.status(200).json(
+//                     new ApiResponse(
+//                         200,
+//                         { existingCustomer },
+//                         "Customer already exists. Please enquire via mobile app."
+//                     )
+//                 );
+//             }
+
+//             // Create Customer
+//             const newCustomer = await User.create({
+//                 name: contactPerson,
+//                 email: emailAddress,
+//                 phone: contactNumber,
+//                 role: "Customer",
+//             });
+
+//             customerId = newCustomer._id;
+//             value.customer = customerId;
+
+//             // Create Hospital for this customer
+//             const newHospital = await Hospital.create({
+//                 name: hospitalName,
+//                 email: emailAddress,
+//                 address: fullAddress,
+//                 branch: branch,
+//                 phone: contactNumber,
+//             });
+
+//             // Link hospital back to customer
+//             await Client.findByIdAndUpdate(customerId, {
+//                 $push: { hospitals: newHospital._id },
+//             });
+//             value.hospital = newHospital._id;
+//         }
+
+//         // ✅ Step 4: Handle file uploads to S3
+//         let attachments = [];
+//         // ✅ Step 4: Handle single file upload to S3
+//         if (req.file) {
+//             const { url } = await uploadToS3(req.file);
+//             value.attachment = url; // matches your schema
+//         }
+
+//         value.attachments = attachments;
+
+//         // ✅ Step 5: Create Services
+//         let serviceIds = [];
+//         if (value.services && value.services.length > 0) {
+//             const transformedServices = value.services.map((s) => ({
+//                 machineType: s.machineType,
+//                 equipmentNo: s.equipmentNo,
+//                 machineModel: s.machineModel,
+//                 serialNumber: s.serialNumber || "",
+//                 remark: s.remark || "",
+//                 workTypeDetails: (s.workType || []).map((wt) => ({
+//                     workType: wt,
+//                     status: "pending",
+//                 })),
+//             }));
+//             const createdServices = await Service.insertMany(transformedServices);
+//             serviceIds = createdServices.map((s) => s._id);
+//         }
+
+//         // ✅ Step 6: Create Additional Services
+//         let additionalServiceIds = [];
+//         if (value.additionalServices && Object.keys(value.additionalServices).length > 0) {
+//             const createdAdditionalServices = await AdditionalService.insertMany(
+//                 Object.entries(value.additionalServices).map(([name, data]) => ({
+//                     name,
+//                     description: data.description || "",
+//                     totalAmount: data.totalAmount || 0,
+//                 }))
+//             );
+//             additionalServiceIds = createdAdditionalServices.map((a) => a._id);
+//         }
+
+//         const { additionalServices, services, ...rest } = value;
+
+//         // ✅ Step 7: Create Enquiry
+//         const newEnquiry = await Enquiry.create({
+//             ...rest,
+//             services: serviceIds,
+//             additionalServices: additionalServiceIds,
+//             enquiryStatusDates: { enquiredOn: new Date() },
+//             attachment: value.attachment, // single file URL
+
+//         });
+
+//         // ✅ Step 8: Link enquiry to customer
+//         await User.findByIdAndUpdate(customerId, {
+//             $push: { enquiries: newEnquiry._id },
+//         });
+
+//         // ✅ Step 9: Link enquiry to hospital
+//         if (value.hospital) {
+//             await Hospital.findByIdAndUpdate(value.hospital, {
+//                 $push: { enquiries: newEnquiry._id },
+//             });
+//         }
+
+//         console.log("🚀 ~ newEnquiry:", newEnquiry);
+//         return res
+//             .status(201)
+//             .json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
+//     } catch (error) {
+//         console.error("Create Enquiry Error:", error);
+//         throw new ApiError(500, "Failed to create enquiry", [error.message]);
+//     }
+// });
+
 const add = asyncHandler(async (req, res) => {
     try {
         console.log("🚀 ~ req.file:", req.file); // single file
@@ -643,7 +800,23 @@ const add = asyncHandler(async (req, res) => {
         if (!customerId) {
             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
 
+            // ✅ Check for existing customer by email first (unique index)
+            if (emailAddress) {
+                const existingByEmail = await User.findOne({ email: emailAddress });
+                if (existingByEmail) {
+                    return res.status(400).json(
+                        new ApiResponse(
+                            400,
+                            { existingByEmail },
+                            "Email already exists. Please enter another email."
+                        )
+                    );
+                }
+            }
+
             let existingCustomer = null;
+
+            // If no match by email, check by phone
             if (contactNumber) {
                 existingCustomer = await User.findOne({ phone: contactNumber });
             }
@@ -679,7 +852,7 @@ const add = asyncHandler(async (req, res) => {
             });
 
             // Link hospital back to customer
-            await Client.findByIdAndUpdate(customerId, {
+            await User.findByIdAndUpdate(customerId, {  // ✅ Fixed: was Client, assuming User model
                 $push: { hospitals: newHospital._id },
             });
             value.hospital = newHospital._id;
@@ -702,7 +875,7 @@ const add = asyncHandler(async (req, res) => {
                 machineType: s.machineType,
                 equipmentNo: s.equipmentNo,
                 machineModel: s.machineModel,
-                serialNumber: s.serialNumber || "",
+                serialNumber: s.equipmentNo || "",  // ✅ Assuming serialNumber from equipmentNo if not provided
                 remark: s.remark || "",
                 workTypeDetails: (s.workType || []).map((wt) => ({
                     workType: wt,
@@ -759,8 +932,6 @@ const add = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create enquiry", [error.message]);
     }
 });
-
-
 
 // const createDirectOrder = asyncHandler(async (req, res) => {
 
@@ -1823,6 +1994,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
         }
 
         let hospitalDoc = await Hospital.findOne({ name: hospitalName, phone: contactNumber, email: emailAddress });
+        console.log("🚀 ~ hospitalDoc:", hospitalDoc)
         if (!hospitalDoc) {
             hospitalDoc = await Hospital.create({
                 name: hospitalName,
