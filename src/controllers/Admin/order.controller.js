@@ -4361,6 +4361,71 @@ const getQaReportsByTechnician = async (req, res) => {
     }
 };
 
+// const getQaReportsByTechnician = async (req, res) => {
+//     try {
+//         const { technicianId } = req.params;
+
+//         if (!mongoose.Types.ObjectId.isValid(technicianId)) {
+//             return res.status(400).json({ success: false, message: "Invalid technicianId" });
+//         }
+
+//         const services = await Services.find({
+//             "workTypeDetails.engineer": technicianId,
+//         });
+
+//         if (!services.length) {
+//             return res.status(404).json({ success: false, message: "No QA reports found" });
+//         }
+
+//         // 1️⃣ Collect all QAtest IDs
+//         const qaTestIds = [];
+//         services.forEach(service => {
+//             service.workTypeDetails.forEach(wt => {
+//                 if (wt.engineer?.toString() === technicianId && wt.QAtest) {
+//                     qaTestIds.push(wt.QAtest);
+//                 }
+//             });
+//         });
+
+//         // 2️⃣ Fetch all QATest documents at once
+//         const qaTests = await QATest.find({ _id: { $in: qaTestIds } });
+
+//         // 3️⃣ Collect reports
+//         const reports = [];
+
+//         services.forEach(service => {
+//             service.workTypeDetails.forEach(wt => {
+//                 if (wt.engineer?.toString() === technicianId && wt.QAtest) {
+//                     const qaTest = qaTests.find(q => q._id.equals(wt.QAtest));
+//                     if (qaTest && ["pending", "reuploaded"].includes(qaTest.reportStatus)) {
+//                         reports.push({
+//                             serviceId: service._id,
+//                             machineType: service.machineType,
+//                             qaReportId: qaTest._id,
+//                             report: qaTest.report,
+//                             reportULRNumber: qaTest.reportULRNumber,
+//                             qaTestReportNumber: qaTest.qaTestReportNumber,
+//                             uploadedAt: qaTest.createdAt,
+//                             reportStatus: qaTest.reportStatus
+//                         });
+//                     }
+//                 }
+//             });
+//         });
+
+//         return res.status(200).json({
+//             success: true,
+//             technicianId,
+//             totalReports: reports.length,
+//             reports
+//         });
+//     } catch (error) {
+//         console.error("❌ Error in getQaReportsByTechnician:", error);
+//         res.status(500).json({ success: false, message: "Server error", error: error.message });
+//     }
+// };
+
+
 
 
 // GET /admin/orders/:orderId/:serviceId/:qaReportId
