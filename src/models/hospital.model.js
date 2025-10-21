@@ -60,7 +60,7 @@ const hospitalSchema = new Schema(
             },
 
         ],
-        // customer: { type: Schema.Types.ObjectId, ref: 'User' }, // ✅ added
+        customer: { type: Schema.Types.ObjectId, ref: 'User' }, // ✅ added
 
     },
     { timestamps: true }
