@@ -4,7 +4,7 @@ import upload from "../../../middlewares/upload.js";
 const router = Router();
 router.post('/add', technicianController.add)
 router.get('/get-by-id/:id', technicianController.getById)
-router.get('/get-all', technicianController.getAll) 
+router.get('/get-all', technicianController.getAll)
 router.get('/all-employees', technicianController.getAllEmployees)
 router.put('/update-by-id/:id', technicianController.updateById)
 router.delete('/delete-by-id/:id', technicianController.deleteById)
@@ -26,14 +26,15 @@ router.post(
 
 router.get('/get-trips-per-technician/:technicianId', technicianController.getTripsWithExpensesByTechnician)
 
-router.get('/get-trip-expenses/:technicianId/:tripId/:expenseId',technicianController.getTripExpenseByTechnicianTripExpenseId)
+router.get('/get-trip-expenses/:technicianId/:tripId/:expenseId', technicianController.getTripExpenseByTechnicianTripExpenseId)
 
 router.get('/get-transaction-logs/:technicianId/:tripId', technicianController.getTransactionLogs)
 
-router.get('/get-trip/:technicianId/:tripId',technicianController.getTripByTechnicianAndTrip)
+router.get('/get-trip/:technicianId/:tripId', technicianController.getTripByTechnicianAndTrip)
 
-router.get('/attendance-summary/:empId',technicianController.getAttendanceSummary)
+router.get('/attendance-summary/:empId', technicianController.getAttendanceSummary)
 // router.get('/attendence-status/:employeeId',technicianController.getAttendanceStatus)
-router.get('/attendence-status/:employeeId',technicianController.getAttendanceStatus)
-router.get('/get-payment-details/:employeeId',technicianController.getPaymentDetails)
+router.get('/attendence-status/:employeeId', technicianController.getAttendanceStatus)
+router.get('/get-payment-details/:employeeId', technicianController.getPaymentDetails)
+router.get('/get-advanced-amount/:employeeId',technicianController.getAdvanceAccountByTechnician)
 export default router

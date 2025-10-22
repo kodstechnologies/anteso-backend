@@ -2402,9 +2402,11 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
 
         // ✅ File upload
         let attachmentUrl = "";
+        console.log("🚀 ~ req.file:", req.file)
         if (req.file) {
             const uploadedFile = await uploadToS3(req.file);
             attachmentUrl = uploadedFile.url;
+            console.log("🚀 ~ attachmentUrl:", attachmentUrl)
         }
 
         // ✅ Services creation

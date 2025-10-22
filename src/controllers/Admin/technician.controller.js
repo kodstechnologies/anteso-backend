@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import Attendance from "../../models/attendanceSchema.model.js"
 import bcrypt from "bcrypt";
 import Leave from "../../models/leave.model.js";
+import Salary from "../../models/salary.model.js"
 
 
 // const add = asyncHandler(async (req, res) => {
@@ -1604,6 +1605,7 @@ export const getAttendanceSummary = asyncHandler(async (req, res) => {
 const getAttendanceStatus = asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
     const { date } = req.query; // ex: "2025-10-20"
+    console.log("🚀 ~ req.query:", req.query)
 
     if (!employeeId || !date) {
         return res.status(400).json({ success: false, message: "Employee ID and date are required" });
@@ -1642,6 +1644,53 @@ const getAttendanceStatus = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, status });
 });
 
+// const getPaymentDetails = asyncHandler(async (req, res) => {
+//     try {
+//         const { employeeId } = req.params;
+//         const { date } = req.query;
+
+//         if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+//             return res.status(400).json({ message: "Invalid employee ID" });
+//         }
+
+//         if (!date) {
+//             return res.status(400).json({ message: "Date query parameter is required" });
+//         }
+
+//         const targetDate = new Date(date);
+//         if (isNaN(targetDate.getTime())) {
+//             return res.status(400).json({ message: "Invalid date format" });
+//         }
+
+//         // Find salary record for that employee and date
+//         // Matching the month and year of targetDate
+//         const salary = await Salary.findOne({
+//             employee: employeeId,
+//             date: {
+//                 $gte: new Date(targetDate.getFullYear(), targetDate.getMonth(), 1),
+//                 $lte: new Date(targetDate.getFullYear(), targetDate.getMonth(), 31),
+//             },
+//         });
+
+//         if (!salary) {
+//             return res.status(404).json({ message: "Salary not found for this date" });
+//         }
+
+//         return res.status(200).json({
+//             employee: salary.employee,
+//             date: salary.date,
+//             basicSalary: salary.basicSalary,
+//             incentive: salary.incentive,
+//             leaveWithoutPayDays: salary.leaveWithoutPayDays,
+//             leaveDeduction: salary.leaveDeduction,
+//             totalSalary: salary.totalSalary,
+//             status: salary.status,
+//         });
+//     } catch (error) {
+//         console.error("Error fetching salary:", error);
+//         res.status(500).json({ message: "Server error" });
+//     }
+// });
 const getPaymentDetails = asyncHandler(async (req, res) => {
     try {
         const { employeeId } = req.params;
@@ -1690,4 +1739,34 @@ const getPaymentDetails = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails };
+
+
+
+const getAdvanceAccountByTechnician = asyncHandler(async (req, res) => {
+    const { technicianId } = req.params;
+
+    // Check if technician exists
+    const technician = await Employee.findById(technicianId);
+    if (!technician) {
+        return res.status(404).json({ message: "Technician not found" });
+    }
+
+    // Find advance account
+    const advanceAccount = await AdvanceAccount.findOne({ technician: technicianId });
+
+    if (!advanceAccount) {
+        return res.status(404).json({ message: "No advance account found for this technician" });
+    }
+
+    res.status(200).json({
+        technician: technician.empId,
+        advancedAmount: advanceAccount.advancedAmount,
+        totalExpense: advanceAccount.totalExpense,
+        balance: advanceAccount.balance,
+        logs: advanceAccount.logs
+    });
+});
+
+
+
+export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails, getAdvanceAccountByTechnician };
