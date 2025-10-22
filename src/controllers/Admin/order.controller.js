@@ -3272,13 +3272,26 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
         }
 
         // Normalize reportType
+        // let normalizedReportType = reportType?.toLowerCase().trim();
+        // if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
+        //     normalizedReportType = "qatest";
+        //     console.log("🚀 ~ normalizedReportType:", normalizedReportType)
+        // } else if (["License for Operation","Decommissioning","Decommissioning and Recommissioning"].includes(normalizedReportType)) {
+        //     normalizedReportType = "elora";
+        //     console.log("🚀 ~ normalizedReportType:", normalizedReportType)
+        // }
         let normalizedReportType = reportType?.toLowerCase().trim();
         if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
             normalizedReportType = "qatest";
-        } else if (["elora"].includes(normalizedReportType)) {
-            normalizedReportType = "elora";
+            console.log("🚀 ~ normalizedReportType:", normalizedReportType)
+        } else {
+            // ✅ Fix: Lowercase the check array for case-insensitive matching
+            const eloraTypes = ["license for operation", "decommissioning", "decommissioning and recommissioning"];
+            if (eloraTypes.includes(normalizedReportType)) {
+                normalizedReportType = "elora";
+                console.log("🚀 ~ normalizedReportType:", normalizedReportType)
+            }
         }
-
         const service = await Services.findById(serviceId);
         if (!service) return res.status(404).json({ message: "Service not found" });
 
@@ -3311,6 +3324,7 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                 // ✅ Upload file to S3 (if provided)
                 let fileUrl = null;
+                console.log("🚀 ~ req.file:", req.file)
                 if (req.file) {
                     try {
                         const uploaded = await uploadToS3(req.file);
@@ -3359,8 +3373,10 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                 // ✅ Handle Elora report logic
                 else if (normalizedReportType === "elora") {
+                    console.log("🚀 ~ existingReport:", existingReport)
                     if (existingReport) {
                         const updateData = {};
+                        console.log("🚀 ~ fileUrl:", fileUrl)
                         if (fileUrl) updateData.report = fileUrl;
                         newReportDoc = await Elora.findByIdAndUpdate(
                             existingReport._id,
@@ -3373,6 +3389,7 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                             report: fileUrl,
                             reportStatus: "pending",
                         });
+                        console.log("🚀 ~ newReportDoc:", newReportDoc)
                         work.elora = newReportDoc._id;
                     }
 

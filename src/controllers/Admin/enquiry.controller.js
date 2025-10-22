@@ -832,11 +832,16 @@ const add = asyncHandler(async (req, res) => {
             }
 
             // Create Customer
-            const newCustomer = await User.create({
+            // const newCustomer = await User.create({
+            //     name: contactPerson,
+            //     email: emailAddress,
+            //     phone: contactNumber,
+            //     role: "Customer",
+            // });
+            const newCustomer = await Client.create({
                 name: contactPerson,
                 email: emailAddress,
                 phone: contactNumber,
-                role: "Customer",
             });
 
             customerId = newCustomer._id;
@@ -3511,6 +3516,7 @@ const getByHospitalIdEnquiryId = async (req, res) => {
                 model: "AdditionalService",
                 select: "name description totalAmount",
             });
+        console.log("🚀 ~ getByHospitalIdEnquiryId ~ enquiry:", enquiry)
 
         if (!enquiry) {
             return res.status(404).json({

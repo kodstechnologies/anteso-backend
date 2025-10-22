@@ -426,5 +426,150 @@ const attendanceSummary = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeaves, getLeaveAllocation, attendanceSummary }
+
+const applyForLeaveByStaff = asyncHandler(async (req, res) => {
+    try {
+        const { staffId, startDate, endDate, leaveType, reason } = req.body;
+
+        if (!staffId || !startDate || !endDate || !leaveType || !reason) {
+            throw new ApiError(400, "All leave details must be provided");
+        }
+
+        const validLeaveTypes = [
+            "Sick Leave",
+            "Casual Leave",
+            "Maternity/Paternity",
+            "Leave without pay",
+            "Leave with pay"
+        ];
+
+        if (!validLeaveTypes.includes(leaveType)) {
+            throw new ApiError(400, "Invalid leave type");
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            throw new ApiError(400, "Start date cannot be after end date");
+        }
+
+        const leave = new Leave({
+            startDate,
+            endDate,
+            leaveType,
+            reason,
+            employee: staffId, // using employee field for consistency
+        });
+
+        await leave.save();
+
+        return res
+            .status(201)
+            .json(new ApiResponse(201, leave, "Leave applied successfully"));
+    } catch (error) {
+        throw new ApiError(500, error.message || "Failed to apply for leave");
+    }
+});
+
+// ✅ Get All Leaves (Staff)
+const getAllLeavesByStaffId = asyncHandler(async (req, res) => {
+    try {
+        const { staffId } = req.params;
+        if (!staffId) {
+            return res.status(400).json({ message: "Staff ID is required" });
+        }
+
+        const leaves = await Leave.find({ employee: staffId })
+            .populate("employee", "name email empId")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: leaves.length,
+            data: leaves
+        });
+    } catch (error) {
+        console.error("Error fetching leaves:", error);
+        res.status(500).json({ message: "Failed to fetch staff leave records" });
+    }
+});
+
+// ✅ Edit Leave (Staff)
+const editLeaveByStaffId = asyncHandler(async (req, res) => {
+    try {
+        const { staffId, leaveId } = req.params;
+        const { startDate, endDate, leaveType, reason } = req.body;
+
+        if (!staffId || !leaveId) {
+            throw new ApiError(400, "Staff ID and Leave ID are required");
+        }
+
+        // Find leave by leaveId and staffId
+        const leave = await Leave.findOne({ _id: leaveId, employee: staffId });
+        if (!leave) {
+            throw new ApiError(404, "Leave record not found for this staff");
+        }
+
+        // Validation
+        if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            throw new ApiError(400, "Start date cannot be after end date");
+        }
+
+        if (leaveType) {
+            const validLeaveTypes = [
+                "Sick Leave",
+                "Casual Leave",
+                "Maternity/Paternity",
+                "Leave without pay",
+                "Leave with pay"
+            ];
+            if (!validLeaveTypes.includes(leaveType)) {
+                throw new ApiError(400, "Invalid leave type");
+            }
+        }
+
+        // Update fields
+        if (startDate) leave.startDate = startDate;
+        if (endDate) leave.endDate = endDate;
+        if (leaveType) leave.leaveType = leaveType;
+        if (reason) leave.reason = reason;
+
+        await leave.save();
+
+        res.status(200).json(new ApiResponse(200, leave, "Leave updated successfully"));
+    } catch (error) {
+        throw new ApiError(500, error.message || "Failed to update leave");
+    }
+});
+const getStaffLeaveById = asyncHandler(async (req, res) => {
+    try {
+        const { staffId, leaveId } = req.params;
+
+        // Validate staffId and leaveId
+        if (!mongoose.Types.ObjectId.isValid(staffId)) {
+            return res.status(400).json({ success: false, message: 'Invalid staff ID' });
+        }
+        if (!mongoose.Types.ObjectId.isValid(leaveId)) {
+            return res.status(400).json({ success: false, message: 'Invalid leave ID' });
+        }
+
+        // Fetch the leave for this staff
+        const leave = await Leave.findOne({ _id: leaveId, employee: staffId });
+
+        if (!leave) {
+            return res.status(404).json({ success: false, message: 'Leave not found' });
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: leave,
+        });
+    } catch (error) {
+        console.error('Error fetching staff leave:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Server Error',
+        });
+    }
+});
+
+export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeaves, getLeaveAllocation, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById }
 // export default {createLeave,getLeavesByEmployeeId,updateLeaveByEmployee,deleteLeaveByEmployee}

@@ -23,7 +23,7 @@ router.post(
 );
 router.get('/get-all-enquiries-by-hospital/:hospitalId', EnquiryController.getAllEnquiriesByHospitalId)
 router.get('/get-by-enquiryId-hospitalId/:enquiryId/:hospitalId', EnquiryController.getByHospitalIdEnquiryId)//--7-done need testing
-
+    
 export default router
 
 //demo push
