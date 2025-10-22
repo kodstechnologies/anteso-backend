@@ -762,16 +762,16 @@ import Client from "../../models/client.model.js";
 
 const add = asyncHandler(async (req, res) => {
     try {
-        console.log("🚀 ~ req.file:", req.file); // single file
-        console.log("🚀 ~ req.body:", req.body); // other form fields
+        console.log("🚀 ~ req.file:", req.file);
+        console.log("🚀 ~ req.body:", req.body);
 
-        // ✅ Step 1: Preprocess services & additionalServices
+        // ✅ Step 1: Parse services & additionalServices
         let body = { ...req.body };
 
         if (typeof body.services === "string") {
             try {
                 body.services = JSON.parse(body.services);
-            } catch (err) {
+            } catch {
                 throw new ApiError(400, "Invalid JSON format in services");
             }
         }
@@ -779,16 +779,13 @@ const add = asyncHandler(async (req, res) => {
         if (typeof body.additionalServices === "string") {
             try {
                 body.additionalServices = JSON.parse(body.additionalServices);
-            } catch (err) {
+            } catch {
                 throw new ApiError(400, "Invalid JSON format in additionalServices");
             }
         }
 
-        // ✅ Step 2: Validate input with Joi
-        const { error, value } = enquirySchema.validate(body, {
-            abortEarly: false,
-        });
-
+        // ✅ Step 2: Validate with Joi
+        const { error, value } = enquirySchema.validate(body, { abortEarly: false });
         if (error) {
             const errorMessages = error.details.map((err) => err.message);
             throw new ApiError(400, "Validation failed", errorMessages);
@@ -796,11 +793,11 @@ const add = asyncHandler(async (req, res) => {
 
         let customerId = value.customer;
 
-        // ✅ Step 3: Customer handling
+        // ✅ Step 3: Customer Handling
         if (!customerId) {
             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
 
-            // ✅ Check for existing customer by email first (unique index)
+            // Check existing by email
             if (emailAddress) {
                 const existingByEmail = await User.findOne({ email: emailAddress });
                 if (existingByEmail) {
@@ -814,9 +811,8 @@ const add = asyncHandler(async (req, res) => {
                 }
             }
 
+            // Check existing by phone
             let existingCustomer = null;
-
-            // If no match by email, check by phone
             if (contactNumber) {
                 existingCustomer = await User.findOne({ phone: contactNumber });
             }
@@ -831,13 +827,7 @@ const add = asyncHandler(async (req, res) => {
                 );
             }
 
-            // Create Customer
-            // const newCustomer = await User.create({
-            //     name: contactPerson,
-            //     email: emailAddress,
-            //     phone: contactNumber,
-            //     role: "Customer",
-            // });
+            // ✅ Create Customer using the correct discriminator (Client)
             const newCustomer = await Client.create({
                 name: contactPerson,
                 email: emailAddress,
@@ -847,31 +837,29 @@ const add = asyncHandler(async (req, res) => {
             customerId = newCustomer._id;
             value.customer = customerId;
 
-            // Create Hospital for this customer
+            // ✅ Create Hospital linked to this Customer
             const newHospital = await Hospital.create({
                 name: hospitalName,
                 email: emailAddress,
                 address: fullAddress,
-                branch: branch,
+                branch,
                 phone: contactNumber,
+                customer: newCustomer._id, // Link back
             });
 
-            // Link hospital back to customer
-            await User.findByIdAndUpdate(customerId, {  // ✅ Fixed: was Client, assuming User model
+            // ✅ Push hospital to Customer (MUST use Client, not User)
+            await Client.findByIdAndUpdate(customerId, {
                 $push: { hospitals: newHospital._id },
             });
+
             value.hospital = newHospital._id;
         }
 
-        // ✅ Step 4: Handle file uploads to S3
-        let attachments = [];
-        // ✅ Step 4: Handle single file upload to S3
+        // ✅ Step 4: Handle file upload
         if (req.file) {
             const { url } = await uploadToS3(req.file);
-            value.attachment = url; // matches your schema
+            value.attachment = url;
         }
-
-        value.attachments = attachments;
 
         // ✅ Step 5: Create Services
         let serviceIds = [];
@@ -880,7 +868,7 @@ const add = asyncHandler(async (req, res) => {
                 machineType: s.machineType,
                 equipmentNo: s.equipmentNo,
                 machineModel: s.machineModel,
-                serialNumber: s.equipmentNo || "",  // ✅ Assuming serialNumber from equipmentNo if not provided
+                serialNumber: s.equipmentNo || "",
                 remark: s.remark || "",
                 workTypeDetails: (s.workType || []).map((wt) => ({
                     workType: wt,
@@ -912,12 +900,11 @@ const add = asyncHandler(async (req, res) => {
             services: serviceIds,
             additionalServices: additionalServiceIds,
             enquiryStatusDates: { enquiredOn: new Date() },
-            attachment: value.attachment, // single file URL
-
+            attachment: value.attachment,
         });
 
-        // ✅ Step 8: Link enquiry to customer
-        await User.findByIdAndUpdate(customerId, {
+        // ✅ Step 8: Link enquiry to customer (use Client model)
+        await Client.findByIdAndUpdate(customerId, {
             $push: { enquiries: newEnquiry._id },
         });
 
@@ -929,9 +916,7 @@ const add = asyncHandler(async (req, res) => {
         }
 
         console.log("🚀 ~ newEnquiry:", newEnquiry);
-        return res
-            .status(201)
-            .json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
+        return res.status(201).json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
     } catch (error) {
         console.error("Create Enquiry Error:", error);
         throw new ApiError(500, "Failed to create enquiry", [error.message]);
