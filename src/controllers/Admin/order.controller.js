@@ -3767,9 +3767,123 @@ const getUpdatedAdditionalServiceReport = asyncHandler(async (req, res) => {
 // const assignToOfficeStff
 
 // PATCH controller
+// const editDocuments = asyncHandler(async (req, res) => {
+//     try {
+//         const { orderId, serviceId, technicianId, workType } = req.params;
+
+//         // ✅ Upload files to S3
+//         let uploadFileUrl = null;
+//         let viewFileUrls = [];
+
+//         if (req.files?.uploadFile?.[0]) {
+//             const uploaded = await uploadToS3(req.files.uploadFile[0]);
+//             uploadFileUrl = uploaded.url;
+//         }
+
+//         if (req.files?.viewFile?.length > 0) {
+//             const uploads = await Promise.all(
+//                 req.files.viewFile.map((file) => uploadToS3(file))
+//             );
+//             viewFileUrls = uploads.map((u) => u.url);
+//         }
+
+//         if (!uploadFileUrl && viewFileUrls.length === 0) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "No files uploaded",
+//             });
+//         }
+
+//         // ✅ Ensure order exists
+//         const order = await orderModel.findById(orderId).populate("services");
+//         if (!order) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Order not found",
+//             });
+//         }
+
+//         // ✅ Ensure service exists
+//         const service = await Services.findById(serviceId);
+//         if (!service) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Service not found",
+//             });
+//         }
+
+//         // ✅ Find workTypeDetails matching workType & technician
+//         const workTypeDetail = service.workTypeDetails.find(
+//             (wt) =>
+//                 wt.workType === workType &&
+//                 (wt.engineer?.toString() === technicianId ||
+//                     wt.officeStaff?.toString() === technicianId)
+//         );
+
+//         if (!workTypeDetail) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Work type detail not found for this technician",
+//             });
+//         }
+
+//         // ✅ Update fields
+//         // if (uploadFileUrl) {
+//         //     workTypeDetail.uploadFile = uploadFileUrl;
+//         // }
+//         // if (viewFileUrls.length > 0) {
+//         //     workTypeDetail.viewFile = [
+//         //         ...(workTypeDetail.viewFile || []),
+//         //         ...viewFileUrls,
+//         //     ];
+//         // }
+
+//         // ✅ Update fields
+//         if (uploadFileUrl) {
+//             workTypeDetail.uploadFile = uploadFileUrl; // replace existing uploadFile
+//         }
+//         if (viewFileUrls.length > 0) {
+//             workTypeDetail.viewFile = viewFileUrls; // overwrite existing viewFile
+//         }
+
+//         await service.save();
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Documents updated successfully",
+//             data: workTypeDetail,
+//         });
+//     } catch (error) {
+//         console.error("Error in editDocuments:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Server error while updating documents",
+//             error: error.message,
+//         });
+//     }
+// });
+
 const editDocuments = asyncHandler(async (req, res) => {
     try {
         const { orderId, serviceId, technicianId, workType } = req.params;
+        const { action = 'add', targetIndex } = req.body; // Default to 'add' for viewFile
+
+        // Validate action
+        const validActions = ['add', 'replace_all', 'replace', 'delete'];
+        if (!validActions.includes(action)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid action. Must be one of: add, replace_all, replace, delete",
+            });
+        }
+
+        // Validate targetIndex if required
+        if ((action === 'replace' || action === 'delete') && (!targetIndex || isNaN(parseInt(targetIndex)))) {
+            return res.status(400).json({
+                success: false,
+                message: "targetIndex is required and must be a valid number for replace/delete actions",
+            });
+        }
 
         // ✅ Upload files to S3
         let uploadFileUrl = null;
@@ -3787,10 +3901,10 @@ const editDocuments = asyncHandler(async (req, res) => {
             viewFileUrls = uploads.map((u) => u.url);
         }
 
-        if (!uploadFileUrl && viewFileUrls.length === 0) {
+        if (!uploadFileUrl && viewFileUrls.length === 0 && action !== 'delete') {
             return res.status(400).json({
                 success: false,
-                message: "No files uploaded",
+                message: "No files uploaded for add/replace actions",
             });
         }
 
@@ -3827,23 +3941,57 @@ const editDocuments = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Update fields
-        // if (uploadFileUrl) {
-        //     workTypeDetail.uploadFile = uploadFileUrl;
-        // }
-        // if (viewFileUrls.length > 0) {
-        //     workTypeDetail.viewFile = [
-        //         ...(workTypeDetail.viewFile || []),
-        //         ...viewFileUrls,
-        //     ];
-        // }
-
-        // ✅ Update fields
+        // ✅ Update uploadFile (always replace if provided)
         if (uploadFileUrl) {
-            workTypeDetail.uploadFile = uploadFileUrl; // replace existing uploadFile
+            workTypeDetail.uploadFile = uploadFileUrl;
         }
-        if (viewFileUrls.length > 0) {
-            workTypeDetail.viewFile = viewFileUrls; // overwrite existing viewFile
+
+        // ✅ Update viewFile based on action
+        if (viewFileUrls.length > 0 || action === 'delete') {
+            let currentViewFiles = workTypeDetail.viewFile || [];
+            const index = parseInt(targetIndex);
+
+            switch (action) {
+                case 'add':
+                    // Append new files to existing array
+                    workTypeDetail.viewFile = [...currentViewFiles, ...viewFileUrls];
+                    break;
+
+                case 'replace_all':
+                    // Overwrite entire array with new files
+                    workTypeDetail.viewFile = viewFileUrls;
+                    break;
+
+                case 'replace':
+                    // Replace specific file at index (if index exists and new files provided)
+                    if (index >= 0 && index < currentViewFiles.length && viewFileUrls.length > 0) {
+                        currentViewFiles[index] = viewFileUrls[0]; // Assume single file for replace; extend if needed
+                        workTypeDetail.viewFile = currentViewFiles;
+                    } else {
+                        return res.status(400).json({
+                            success: false,
+                            message: "Invalid index or no new file provided for replace",
+                        });
+                    }
+                    break;
+
+                case 'delete':
+                    // Remove file at specific index (no new files needed)
+                    if (index >= 0 && index < currentViewFiles.length) {
+                        currentViewFiles.splice(index, 1);
+                        workTypeDetail.viewFile = currentViewFiles;
+                    } else {
+                        return res.status(400).json({
+                            success: false,
+                            message: "Invalid index for delete",
+                        });
+                    }
+                    break;
+
+                default:
+                    // Should not reach here due to earlier validation
+                    break;
+            }
         }
 
         await service.save();
@@ -3862,8 +4010,6 @@ const editDocuments = asyncHandler(async (req, res) => {
         });
     }
 });
-
-
 const deleteDocument = asyncHandler(async (req, res) => {
     try {
         const { orderId, serviceId, technicianId, workType } = req.params;

@@ -9,6 +9,7 @@ import mongoose from "mongoose";
     console.log("📦 Payload received:", req.body);
 
     const { courierCompanyName, trackingId, trackingUrl, status } = req.body;
+    console.log("🚀 ~ req.body:", req.body)
 
     // ✅ Basic validation
     if (!courierCompanyName) {
@@ -107,6 +108,7 @@ const updateCourierById = asyncHandler(async (req, res) => {
 const addByOrderId = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
     const { courierCompanyName, trackingId, trackingUrl, status } = req.body || {};
+    console.log("🚀 ~  req.body:",  req.body)
 
     if (!req.body) {
         return res.status(400).json({
@@ -137,7 +139,7 @@ const addByOrderId = asyncHandler(async (req, res) => {
         courierCompanyName,
         trackingId: trackingId || null,
         trackingUrl: trackingUrl || null,
-        status: status || "Active",
+        status: status || "active",
     });
 
     // Optionally, save courier reference in order
