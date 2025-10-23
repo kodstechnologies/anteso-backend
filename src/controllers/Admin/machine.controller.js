@@ -271,7 +271,8 @@ const getAllMachinesByHospitalId = asyncHandler(async (req, res) => {
 
         // Find machines linked to this hospital
         const machines = await Machine.find({ hospital: hospitalId })
-            .populate('hospital', 'name gstNo');
+            .populate('hospital', 'name gstNo')
+            .sort({ createdAt: -1 });
         console.log("🚀 ~ machines:", machines)
 
         if (!machines || machines.length === 0) {
