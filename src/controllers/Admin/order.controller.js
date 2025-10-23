@@ -1069,11 +1069,239 @@ const getReportNumbers = asyncHandler(async (req, res) => {
 
 //create order--by admin
 
-const createOrder = asyncHandler(async (req, res) => {
+// const createOrder = asyncHandler(async (req, res) => {
+//     try {
+//         console.log("hi---📥 req body:", req.body);
+//         const {
+//             leadOwner, // userId from frontend
+//             hospitalName,
+//             fullAddress,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//             branchName,
+//             contactPersonName,
+//             emailAddress,
+//             contactNumber,
+//             designation,
+//             advanceAmount,
+//             workOrderCopy,
+//             partyCodeOrSysId,
+//             procNoOrPoNo,
+//             procExpiryDate,
+//             urgency,
+//             services,
+//             additionalServices, // will handle as references
+//             specialInstructions,
+//             courierDetails,
+//             reportULRNumber,
+//             qaTestReportNumber,
+//             rawFile,
+//             rawPhoto,
+//         } = req.body;
+
+//         // ✅ Validate required fields
+//         if (
+//             !leadOwner ||
+//             !hospitalName ||
+//             !fullAddress ||
+//             !city ||
+//             !district ||
+//             !state ||
+//             !pinCode ||
+//             !branchName ||
+//             !contactPersonName ||
+//             !emailAddress ||
+//             !contactNumber
+//         ) {
+//             throw new ApiError(400, "Missing required fields");
+//         }
+
+//         // ✅ Find lead owner user
+//         const leadOwnerUser = await User.findById(leadOwner).select("name role");
+//         if (!leadOwnerUser) {
+//             throw new ApiError(404, "Lead owner not found");
+//         }
+
+//         // ✅ Step 1: Find or create client by phone
+//         let client = await Client.findOne({ phone: contactNumber });
+//         if (!client) {
+//             client = await Client.create({
+//                 name: contactPersonName,
+//                 phone: contactNumber,
+//                 email: emailAddress,
+//                 address: fullAddress,
+//                 role: "Customer",
+//             });
+//         }
+
+//         // ✅ Step 2: Create hospital and link to client
+//         const hospital = await Hospital.create({
+//             name: hospitalName,
+//             email: emailAddress,
+//             address: fullAddress,
+//             branch: branchName,
+//             phone: contactNumber,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//         });
+
+//         if (!client.hospitals.includes(hospital._id)) {
+//             client.hospitals.push(hospital._id);
+//             await client.save();
+//         }
+
+//         // ✅ Step 3: Parse services (if stringified)
+//         let parsedServices = [];
+//         if (services) {
+//             if (typeof services === "string") {
+//                 try {
+//                     parsedServices = JSON.parse(services);
+//                 } catch (err) {
+//                     throw new ApiError(400, "Invalid services format, must be JSON array");
+//                 }
+//             } else {
+//                 parsedServices = services;
+//             }
+//         }
+
+//         // ✅ Step 4: Transform workType → workTypeDetails
+//         let transformedServices = parsedServices.map((s) => ({
+//             ...s,
+//             workTypeDetails: (s.workType || []).map((wt) => ({
+//                 workType: wt,
+//                 status: "pending",
+//             })),
+//         }));
+
+//         console.log("🚀 ~ transformedServices:", transformedServices);
+
+//         // ✅ Step 5: Save services to DB and map ObjectIds
+//         let serviceDocs = [];
+//         if (transformedServices.length > 0) {
+//             serviceDocs = await Services.insertMany(transformedServices);
+//             console.log("🚀 ~ serviceDocs:", serviceDocs);
+//         }
+
+//         // ✅ Step 6: Parse and upsert additionalServices
+//         let parsedAdditional = [];
+//         if (additionalServices) {
+//             if (typeof additionalServices === "string") {
+//                 try {
+//                     parsedAdditional = JSON.parse(additionalServices);
+//                 } catch (err) {
+//                     throw new ApiError(400, "Invalid additionalServices format, must be JSON array");
+//                 }
+//             } else {
+//                 parsedAdditional = additionalServices;
+//             }
+//         }
+
+//         // Expected format: [{ name: "INSTITUTE REGISTRATION", description: "", totalAmount: 1000 }]
+//         let additionalServiceDocs = [];
+//         if (Array.isArray(parsedAdditional) && parsedAdditional.length > 0) {
+//             additionalServiceDocs = await Promise.all(
+//                 parsedAdditional.map(async (svc) => {
+//                     let existing = await AdditionalService.findOne({ name: svc.name });
+//                     if (!existing) {
+//                         existing = await AdditionalService.create({
+//                             name: svc.name,
+//                             description: svc.description || "",
+//                             totalAmount: svc.totalAmount || 0,
+//                         });
+//                     }
+//                     return existing._id;
+//                 })
+//             );
+//         }
+
+//         // ✅ Step 7: Create order
+//         // const order = await orderModel.create({
+//         //     leadOwner: leadOwnerUser.name, // store name instead of ID
+//         //     // leadOwner: leadOwnerUser._id,
+//         //     hospitalName,
+//         //     fullAddress,
+//         //     city,
+//         //     district,
+//         //     state,
+//         //     pinCode,
+//         //     branchName,
+//         //     contactPersonName,
+//         //     emailAddress,
+//         //     contactNumber,
+//         //     designation,
+//         //     advanceAmount,
+//         //     workOrderCopy,
+//         //     partyCodeOrSysId,
+//         //     procNoOrPoNo,
+//         //     procExpiryDate,
+//         //     customer: client._id,
+//         //     urgency,
+//         //     services: serviceDocs.map((s) => s._id),
+//         //     additionalServices: additionalServiceDocs, // ✅ only ObjectIds here
+//         //     specialInstructions,
+//         //     courierDetails,
+//         //     reportULRNumber,
+//         //     qaTestReportNumber,
+//         //     rawFile,
+//         //     rawPhoto,
+
+//         // });
+//         const order = await orderModel.create({
+//             leadOwner: leadOwnerUser.name,
+//             hospitalName,
+//             fullAddress,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//             branchName,
+//             contactPersonName,
+//             emailAddress,
+//             contactNumber,
+//             designation,
+//             advanceAmount,
+//             workOrderCopy,
+//             partyCodeOrSysId,
+//             procNoOrPoNo,
+//             procExpiryDate,
+//             customer: client._id,
+//             urgency,
+//             services: serviceDocs.map((s) => s._id),
+//             additionalServices: additionalServiceDocs,
+//             specialInstructions,
+//             courierDetails,
+//             reportULRNumber,
+//             qaTestReportNumber,
+//             rawFile,
+//             rawPhoto,
+//             hospital: hospital._id, 
+//         });
+
+
+//         console.log("🚀 ~ order:", order);
+
+//         return res
+//             .status(201)
+//             .json(new ApiResponse(201, order, "Order created successfully"));
+//     } catch (error) {
+//         console.error("❌ Error creating order:", error);
+//         throw new ApiError(500, "Failed to create order", [error.message]);
+//     }
+// });
+
+
+
+export const createOrder = asyncHandler(async (req, res) => {
     try {
-        console.log("hi---📥 req body:", req.body);
+        console.log("📥 req.body:", req.body);
+        console.log("📎 req.file:", req.file);
+
         const {
-            leadOwner, // userId from frontend
+            leadOwner,
             hospitalName,
             fullAddress,
             city,
@@ -1086,13 +1314,12 @@ const createOrder = asyncHandler(async (req, res) => {
             contactNumber,
             designation,
             advanceAmount,
-            workOrderCopy,
             partyCodeOrSysId,
             procNoOrPoNo,
             procExpiryDate,
             urgency,
             services,
-            additionalServices, // will handle as references
+            additionalServices,
             specialInstructions,
             courierDetails,
             reportULRNumber,
@@ -1120,11 +1347,21 @@ const createOrder = asyncHandler(async (req, res) => {
 
         // ✅ Find lead owner user
         const leadOwnerUser = await User.findById(leadOwner).select("name role");
-        if (!leadOwnerUser) {
-            throw new ApiError(404, "Lead owner not found");
+        if (!leadOwnerUser) throw new ApiError(404, "Lead owner not found");
+
+        // ✅ Check if email already exists (in Client collection)
+        const existingClient = await Client.findOne({ email: emailAddress });
+        if (existingClient) {
+            return res.status(400).json(
+                new ApiResponse(
+                    400,
+                    null,
+                    `A client with email "${emailAddress}" already exists`
+                )
+            );
         }
 
-        // ✅ Step 1: Find or create client by phone
+        // ✅ Step 1: Find or create client
         let client = await Client.findOne({ phone: contactNumber });
         if (!client) {
             client = await Client.create({
@@ -1136,7 +1373,7 @@ const createOrder = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Step 2: Create hospital and link to client
+        // ✅ Step 2: Create hospital
         const hospital = await Hospital.create({
             name: hospitalName,
             email: emailAddress,
@@ -1154,21 +1391,20 @@ const createOrder = asyncHandler(async (req, res) => {
             await client.save();
         }
 
-        // ✅ Step 3: Parse services (if stringified)
-        let parsedServices = [];
-        if (services) {
-            if (typeof services === "string") {
-                try {
-                    parsedServices = JSON.parse(services);
-                } catch (err) {
-                    throw new ApiError(400, "Invalid services format, must be JSON array");
-                }
-            } else {
-                parsedServices = services;
-            }
+        // ✅ Step 3: Upload file to S3 (if provided)
+        let workOrderCopyUrl = "";
+        if (req.file) {
+            const { url } = await uploadToS3(req.file);
+            workOrderCopyUrl = url;
         }
 
-        // ✅ Step 4: Transform workType → workTypeDetails
+        // ✅ Step 4: Parse services
+        let parsedServices = [];
+        if (services) {
+            parsedServices =
+                typeof services === "string" ? JSON.parse(services) : services;
+        }
+
         let transformedServices = parsedServices.map((s) => ({
             ...s,
             workTypeDetails: (s.workType || []).map((wt) => ({
@@ -1177,30 +1413,20 @@ const createOrder = asyncHandler(async (req, res) => {
             })),
         }));
 
-        console.log("🚀 ~ transformedServices:", transformedServices);
-
-        // ✅ Step 5: Save services to DB and map ObjectIds
         let serviceDocs = [];
         if (transformedServices.length > 0) {
             serviceDocs = await Services.insertMany(transformedServices);
-            console.log("🚀 ~ serviceDocs:", serviceDocs);
         }
 
-        // ✅ Step 6: Parse and upsert additionalServices
+        // ✅ Step 5: Parse & upsert additionalServices
         let parsedAdditional = [];
         if (additionalServices) {
-            if (typeof additionalServices === "string") {
-                try {
-                    parsedAdditional = JSON.parse(additionalServices);
-                } catch (err) {
-                    throw new ApiError(400, "Invalid additionalServices format, must be JSON array");
-                }
-            } else {
-                parsedAdditional = additionalServices;
-            }
+            parsedAdditional =
+                typeof additionalServices === "string"
+                    ? JSON.parse(additionalServices)
+                    : additionalServices;
         }
 
-        // Expected format: [{ name: "INSTITUTE REGISTRATION", description: "", totalAmount: 1000 }]
         let additionalServiceDocs = [];
         if (Array.isArray(parsedAdditional) && parsedAdditional.length > 0) {
             additionalServiceDocs = await Promise.all(
@@ -1218,38 +1444,7 @@ const createOrder = asyncHandler(async (req, res) => {
             );
         }
 
-        // ✅ Step 7: Create order
-        // const order = await orderModel.create({
-        //     leadOwner: leadOwnerUser.name, // store name instead of ID
-        //     // leadOwner: leadOwnerUser._id,
-        //     hospitalName,
-        //     fullAddress,
-        //     city,
-        //     district,
-        //     state,
-        //     pinCode,
-        //     branchName,
-        //     contactPersonName,
-        //     emailAddress,
-        //     contactNumber,
-        //     designation,
-        //     advanceAmount,
-        //     workOrderCopy,
-        //     partyCodeOrSysId,
-        //     procNoOrPoNo,
-        //     procExpiryDate,
-        //     customer: client._id,
-        //     urgency,
-        //     services: serviceDocs.map((s) => s._id),
-        //     additionalServices: additionalServiceDocs, // ✅ only ObjectIds here
-        //     specialInstructions,
-        //     courierDetails,
-        //     reportULRNumber,
-        //     qaTestReportNumber,
-        //     rawFile,
-        //     rawPhoto,
-
-        // });
+        // ✅ Step 6: Create order with hospital reference + S3 file URL
         const order = await orderModel.create({
             leadOwner: leadOwnerUser.name,
             hospitalName,
@@ -1264,7 +1459,7 @@ const createOrder = asyncHandler(async (req, res) => {
             contactNumber,
             designation,
             advanceAmount,
-            workOrderCopy,
+            workOrderCopy: workOrderCopyUrl, // ✅ uploaded file URL
             partyCodeOrSysId,
             procNoOrPoNo,
             procExpiryDate,
@@ -1278,11 +1473,10 @@ const createOrder = asyncHandler(async (req, res) => {
             qaTestReportNumber,
             rawFile,
             rawPhoto,
-            hospital: hospital._id, 
+            hospital: hospital._id, // ✅ store reference
         });
 
-
-        console.log("🚀 ~ order:", order);
+        console.log("✅ Order created:", order);
 
         return res
             .status(201)
@@ -1292,6 +1486,7 @@ const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create order", [error.message]);
     }
 });
+
 
 //check this one also
 //mobile--get the order by customerId orderId and status--if status is inprogress then only show that order details
@@ -5303,4 +5498,36 @@ const deleteOrderAndReports = asyncHandler(async (req, res) => {
         message: 'Order and all related reports deleted successfully',
     });
 });
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports }
+
+const getWorkOrderCopy = asyncHandler(async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        // ✅ Validate orderId
+        if (!orderId) {
+            throw new ApiError(400, "Order ID is required");
+        }
+
+        // ✅ Find order by ID
+        const order = await orderModel.findById(orderId).select("workOrderCopy");
+
+        if (!order) {
+            throw new ApiError(404, "Order not found");
+        }
+
+        // ✅ Check if file exists
+        if (!order.workOrderCopy) {
+            throw new ApiError(404, "No Work Order Copy found for this order");
+        }
+
+        // ✅ Return the file URL (or you could stream/download if required)
+        return res
+            .status(200)
+            .json(new ApiResponse(200, { workOrderCopy: order.workOrderCopy }, "Work Order Copy fetched successfully"));
+    } catch (error) {
+        console.error("❌ Error fetching work order copy:", error);
+        throw new ApiError(500, "Failed to fetch Work Order Copy", [error.message]);
+    }
+});
+
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy }

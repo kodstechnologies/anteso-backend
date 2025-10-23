@@ -75,14 +75,14 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 
 //has to be changed--changed
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
-router.post('/create-order', orderController.createOrder)
+router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
 router.put(
     "/update-additional-service/:id",
     upload.single("file"), // single file key: 'file'
     orderController.updateAdditionalService
 );// router.get('/',)
 // router.post('/status-paid')
-router.get('/additional-service-report/:orderId/:additionalServiceId',orderController.getUpdatedAdditionalServiceReport)
+router.get('/additional-service-report/:orderId/:additionalServiceId', orderController.getUpdatedAdditionalServiceReport)
 router.patch(
     "/edit-documents/:orderId/:serviceId/:technicianId/:workType",
     upload.fields([
@@ -101,13 +101,14 @@ router.get('/get-order-by-hospitalId-orderId/:hospitalId/:orderId', orderControl
 router.put('/assign-staff-by-elora/:orderId/:serviceId/:officeStaffId/:workType/:status', orderController.assignStaffByElora)
 
 //mobile APIs
-router.get('/get-qa-report/:technicianId', orderController.getQaReportsByTechnician)    
+router.get('/get-qa-report/:technicianId', orderController.getQaReportsByTechnician)
 router.get('/get-report-by-id/:orderId/:serviceId/:qaReportId', orderController.getReportById)
 router.patch('/accept-report/:orderId/:serviceId/:qaReportId', orderController.acceptQAReport)
 router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.rejectQAReport)
 
 router.get('/get-elora-report/:orderId/:serviceId/:eloraId', orderController.getEloraReport)
 router.get('/get-pdf/:orderId', orderController.getPdfForAcceptQuotation)
-router.get('/assigned-orders-for-staff',orderController.getAssignedOrdersForStaff)
-router.delete('/delete-order/:orderId',orderController.deleteOrderAndReports)
+router.get('/assigned-orders-for-staff', orderController.getAssignedOrdersForStaff)
+router.delete('/delete-order/:orderId', orderController.deleteOrderAndReports)
+router.get('/get-work-order-copy/:orderId', orderController.getWorkOrderCopy)
 export default router
