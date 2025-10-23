@@ -109,4 +109,5 @@ router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.r
 router.get('/get-elora-report/:orderId/:serviceId/:eloraId', orderController.getEloraReport)
 router.get('/get-pdf/:orderId', orderController.getPdfForAcceptQuotation)
 router.get('/assigned-orders-for-staff',orderController.getAssignedOrdersForStaff)
+router.delete('/delete-order/:orderId',orderController.deleteOrderAndReports)
 export default router

@@ -5219,4 +5219,56 @@ const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff }
+
+ const deleteOrderAndReports = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+
+    // 1️⃣ Check if the order exists
+    const order = await orderModel.findById(orderId).populate({
+        path: 'services',
+        populate: {
+            path: 'workTypeDetails.QAtest workTypeDetails.elora',
+            model: 'QATest'
+        }
+    });
+
+    if (!order) {
+        return res.status(404).json({
+            success: false,
+            message: 'Order not found',
+        });
+    }
+
+    // 2️⃣ Collect all related QATest and Elora IDs
+    const qaTestIds = [];
+    const eloraIds = [];
+
+    for (const service of order.services) {
+        for (const workDetail of service.workTypeDetails) {
+            if (workDetail.QAtest) qaTestIds.push(workDetail.QAtest);
+            if (workDetail.elora) eloraIds.push(workDetail.elora);
+        }
+    }
+
+    // 3️⃣ Delete all related reports
+    if (qaTestIds.length > 0) {
+        await QATest.deleteMany({ _id: { $in: qaTestIds } });
+    }
+    if (eloraIds.length > 0) {
+        await Elora.deleteMany({ _id: { $in: eloraIds } });
+    }
+
+    // 4️⃣ Delete all services linked to this order
+    if (order.services.length > 0) {
+        await Services.deleteMany({ _id: { $in: order.services } });
+    }
+
+    // 5️⃣ Finally, delete the order itself
+    await orderModel.findByIdAndDelete(orderId);
+
+    return res.status(200).json({
+        success: true,
+        message: 'Order and all related reports deleted successfully',
+    });
+});
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports }
