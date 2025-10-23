@@ -337,7 +337,10 @@ const getAllRsoByHospitalId = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid hospital ID format');
     }
 
-    const hospital = await Hospital.findById(hospitalId).populate('rsos');
+    const hospital = await Hospital.findById(hospitalId).populate({
+        path: 'rsos',
+        options: { sort: { createdAt: -1 } } // latest first
+    });
     if (!hospital) {
         throw new ApiError(404, 'Hospital not found');
     }
@@ -369,7 +372,7 @@ const getRsoByHospitalIdAndRsoId = asyncHandler(async (req, res) => {
 });
 
 // ✅ Update RSO for a hospital
- const updateRsoByHospitalId = asyncHandler(async (req, res) => {
+const updateRsoByHospitalId = asyncHandler(async (req, res) => {
     const { hospitalId, rsoId } = req.params;
     console.log("🚀 ~ rsoId:", rsoId);
     console.log("🚀 ~ hospitalId:", hospitalId);

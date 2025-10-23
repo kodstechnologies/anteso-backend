@@ -209,9 +209,10 @@ const getAllHospitalsByClientId = asyncHandler(async (req, res) => {
 
         const client = await Client.findById(id).populate({
             path: 'hospitals',
+            options: { sort: { createdAt: -1 } }, 
             populate: [
-                { path: 'rsos' },        // Assuming field name is 'rsos' in Hospital schema
-                { path: 'institutes' }   // Assuming field name is 'institutes' in Hospital schema
+                { path: 'rsos', options: { sort: { createdAt: -1 } } },        
+                { path: 'institutes', options: { sort: { createdAt: -1 } } }   
             ]
         });
         console.log("🚀 ~ client:", client)

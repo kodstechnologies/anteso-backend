@@ -273,7 +273,10 @@ const getAllInstitutesByHospitalId = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Invalid Hospital ID format');
     }
 
-    const hospital = await Hospital.findById(hospitalId).populate('institutes');
+    const hospital = await Hospital.findById(hospitalId).populate({
+        path: 'institutes',
+        options: { sort: { createdAt: -1 } } // latest first
+    });
     if (!hospital) throw new ApiError(404, 'Hospital not found');
 
     return res.status(200).json(new ApiResponse(200, hospital.institutes, 'Institutes fetched successfully'));
