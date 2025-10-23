@@ -274,8 +274,8 @@ const deletersoByClientId = asyncHandler(async (req, res) => {
 
 // ✅ Create RSO for a specific hospital
 const createRsoByHospitalId = asyncHandler(async (req, res) => {
-    console.log("request body",req.body);
-    
+    console.log("request body", req.body);
+
     const { hospitalId } = req.params;
 
     // ✅ Validate hospital ID
@@ -369,34 +369,37 @@ const getRsoByHospitalIdAndRsoId = asyncHandler(async (req, res) => {
 });
 
 // ✅ Update RSO for a hospital
-const updateRsoByHospitalId = asyncHandler(async (req, res) => {
+ const updateRsoByHospitalId = asyncHandler(async (req, res) => {
     const { hospitalId, rsoId } = req.params;
-    console.log("🚀 ~ rsoId:", rsoId)
-    console.log("🚀 ~ hospitalId:", hospitalId)
+    console.log("🚀 ~ rsoId:", rsoId);
+    console.log("🚀 ~ hospitalId:", hospitalId);
 
     if (!mongoose.Types.ObjectId.isValid(hospitalId) || !mongoose.Types.ObjectId.isValid(rsoId)) {
         throw new ApiError(400, 'Invalid ID format');
     }
 
     const hospital = await Hospital.findById(hospitalId);
-    if (!hospital) {
-        throw new ApiError(404, 'Hospital not found');
-    }
+    if (!hospital) throw new ApiError(404, 'Hospital not found');
 
     // Ensure RSO belongs to this hospital
     if (!hospital.rsos.some(r => r.toString() === rsoId)) {
         throw new ApiError(404, 'RSO not associated with this hospital');
     }
 
+    // Validate other fields
     const { error, value } = rsoSchema.validate(req.body, { abortEarly: false });
     if (error) {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
     }
 
-    const updatedRSO = await RSO.findByIdAndUpdate(rsoId, value, { new: true });
-    if (!updatedRSO) {
-        throw new ApiError(404, 'RSO not found');
+    // ✅ Upload file if included
+    if (req.file) {
+        const uploadResult = await uploadToS3(req.file);
+        value.attachment = uploadResult.url;
     }
+
+    const updatedRSO = await RSO.findByIdAndUpdate(rsoId, value, { new: true });
+    if (!updatedRSO) throw new ApiError(404, 'RSO not found');
 
     return res.status(200).json(new ApiResponse(200, updatedRSO, 'RSO updated successfully'));
 });
