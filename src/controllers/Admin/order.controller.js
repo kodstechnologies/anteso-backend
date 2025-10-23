@@ -1219,9 +1219,39 @@ const createOrder = asyncHandler(async (req, res) => {
         }
 
         // ✅ Step 7: Create order
+        // const order = await orderModel.create({
+        //     leadOwner: leadOwnerUser.name, // store name instead of ID
+        //     // leadOwner: leadOwnerUser._id,
+        //     hospitalName,
+        //     fullAddress,
+        //     city,
+        //     district,
+        //     state,
+        //     pinCode,
+        //     branchName,
+        //     contactPersonName,
+        //     emailAddress,
+        //     contactNumber,
+        //     designation,
+        //     advanceAmount,
+        //     workOrderCopy,
+        //     partyCodeOrSysId,
+        //     procNoOrPoNo,
+        //     procExpiryDate,
+        //     customer: client._id,
+        //     urgency,
+        //     services: serviceDocs.map((s) => s._id),
+        //     additionalServices: additionalServiceDocs, // ✅ only ObjectIds here
+        //     specialInstructions,
+        //     courierDetails,
+        //     reportULRNumber,
+        //     qaTestReportNumber,
+        //     rawFile,
+        //     rawPhoto,
+
+        // });
         const order = await orderModel.create({
-            leadOwner: leadOwnerUser.name, // store name instead of ID
-            // leadOwner: leadOwnerUser._id,
+            leadOwner: leadOwnerUser.name,
             hospitalName,
             fullAddress,
             city,
@@ -1241,14 +1271,16 @@ const createOrder = asyncHandler(async (req, res) => {
             customer: client._id,
             urgency,
             services: serviceDocs.map((s) => s._id),
-            additionalServices: additionalServiceDocs, // ✅ only ObjectIds here
+            additionalServices: additionalServiceDocs,
             specialInstructions,
             courierDetails,
             reportULRNumber,
             qaTestReportNumber,
             rawFile,
             rawPhoto,
+            hospital: hospital._id, 
         });
+
 
         console.log("🚀 ~ order:", order);
 
@@ -5220,7 +5252,7 @@ const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
 });
 
 
- const deleteOrderAndReports = asyncHandler(async (req, res) => {
+const deleteOrderAndReports = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
 
     // 1️⃣ Check if the order exists
