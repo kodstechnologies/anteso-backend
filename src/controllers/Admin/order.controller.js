@@ -4412,6 +4412,7 @@ const getAllOrdersByHospitalId = asyncHandler(async (req, res) => {
 
         // ✅ Use hospital ObjectId instead of hospitalName
         const orders = await orderModel.find({ hospital: hospitalId })
+            .sort({ createdAt: -1 })
             .populate("services", "machineType equipmentNo machineModel serialNumber remark workTypeDetails")
             .populate("additionalServices", "name description totalAmount")
             .populate("customer", "name email role")
