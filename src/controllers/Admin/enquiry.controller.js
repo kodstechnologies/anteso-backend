@@ -3720,7 +3720,7 @@ const getByHospitalIdEnquiryId = async (req, res) => {
             emailAddress: enquiry.emailAddress,
             contactNumber: enquiry.contactNumber,
             designation: enquiry.designation,
-
+            attachment:enquiry.attachment,
             // 🔹 Hospital reference (populated)
             hospital: enquiry.hospital,
 
