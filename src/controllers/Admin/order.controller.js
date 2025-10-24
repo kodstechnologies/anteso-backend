@@ -2237,64 +2237,132 @@ const getUpdatedOrderServices2 = asyncHandler(async (req, res) => {
 
 const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
     const { technicianId } = req.params;
+
     if (!technicianId) {
-        return res.status(400).json({ message: 'technicianId is required' });
+        return res.status(400).json({ message: "technicianId is required" });
     }
 
-    // Step 1: Find all services where this engineer is assigned
+    // Step 1️⃣: Find all services that have at least one workTypeDetail with this engineer
     const servicesWithEngineer = await Services.find({
-        workTypeDetails: {
-            $elemMatch: {
-                engineer: new mongoose.Types.ObjectId(technicianId),
-            },
-        },
-    });
+        "workTypeDetails.engineer": new mongoose.Types.ObjectId(technicianId),
+    }).lean(); // lean() so we can easily modify objects
 
-    const serviceIds = servicesWithEngineer.map((s) => s._id);
-
-    if (serviceIds.length === 0) {
+    if (!servicesWithEngineer.length) {
         return res.status(200).json({
             success: true,
             count: 0,
-            orders: []
+            orders: [],
         });
     }
 
-    // Step 2: Find orders that contain those services
-    let orders = await orderModel.find({
-        services: { $in: serviceIds },
-    })
+    // Step 2️⃣: Filter each service's workTypeDetails to include only that engineer
+    const filteredServices = servicesWithEngineer.map((service) => {
+        return {
+            ...service,
+            workTypeDetails: service.workTypeDetails.filter(
+                (wt) =>
+                    wt.engineer &&
+                    wt.engineer.toString() === technicianId.toString()
+            ),
+        };
+    });
+
+    const serviceIds = filteredServices.map((s) => s._id);
+
+    // Step 3️⃣: Find orders that include those services
+    const orders = await orderModel
+        .find({
+            services: { $in: serviceIds },
+        })
         .populate({
-            path: 'services',
+            path: "services",
             populate: {
-                path: 'workTypeDetails.engineer',
-                model: 'Employee',
+                path: "workTypeDetails.engineer",
+                model: "Employee",
             },
         })
-        .populate('customer', 'name email')
-        .sort({ createdAt: -1 });
+        .populate("customer", "name email")
+        .sort({ createdAt: -1 })
+        .lean();
 
-    // Step 3: Filter workTypeDetails to only include "Quality Assurance Test"
-    orders = orders.map(order => {
-        const filteredServices = order.services.map(service => {
-            const qaWorkTypeDetails = service.workTypeDetails.filter(wt => wt.workType === "Quality Assurance Test");
-            return {
-                ...service.toObject(),
-                workTypeDetails: qaWorkTypeDetails
-            };
-        });
+    // Step 4️⃣: Replace each service inside the order with the filtered one (only relevant workTypeDetails)
+    const filteredOrders = orders.map((order) => {
         return {
-            ...order.toObject(),
-            services: filteredServices
+            ...order,
+            services: order.services.map((svc) => {
+                const match = filteredServices.find(
+                    (fs) => fs._id.toString() === svc._id.toString()
+                );
+                return match ? { ...svc, workTypeDetails: match.workTypeDetails } : svc;
+            }),
         };
     });
 
     res.status(200).json({
-        message: 'Orders fetched successfully',
-        count: orders.length,
-        orders,
+        message: "Orders fetched successfully",
+        count: filteredOrders.length,
+        orders: filteredOrders,
     });
 });
+//     const { technicianId } = req.params;
+//     if (!technicianId) {
+//         return res.status(400).json({ message: 'technicianId is required' });
+//     }
+
+//     // Step 1: Find all services where this engineer is assigned
+//     const servicesWithEngineer = await Services.find({
+//         workTypeDetails: {
+//             $elemMatch: {
+//                 engineer: new mongoose.Types.ObjectId(technicianId),
+//             },
+//         },
+//     });
+
+//     const serviceIds = servicesWithEngineer.map((s) => s._id);
+
+//     if (serviceIds.length === 0) {
+//         return res.status(200).json({
+//             success: true,
+//             count: 0,
+//             orders: []
+//         });
+//     }
+
+//     // Step 2: Find orders that contain those services
+//     let orders = await orderModel.find({
+//         services: { $in: serviceIds },
+//     })
+//         .populate({
+//             path: 'services',
+//             populate: {
+//                 path: 'workTypeDetails.engineer',
+//                 model: 'Employee',
+//             },
+//         })
+//         .populate('customer', 'name email')
+//         .sort({ createdAt: -1 });
+
+//     // Step 3: Filter workTypeDetails to only include "Quality Assurance Test"
+//     orders = orders.map(order => {
+//         const filteredServices = order.services.map(service => {
+//             const qaWorkTypeDetails = service.workTypeDetails.filter(wt => wt.workType === "Quality Assurance Test");
+//             return {
+//                 ...service.toObject(),
+//                 workTypeDetails: qaWorkTypeDetails
+//             };
+//         });
+//         return {
+//             ...order.toObject(),
+//             services: filteredServices
+//         };
+//     });
+
+//     res.status(200).json({
+//         message: 'Orders fetched successfully',
+//         count: orders.length,
+//         orders,
+//     });
+// });
 
 
 
