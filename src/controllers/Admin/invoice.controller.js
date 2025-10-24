@@ -478,6 +478,156 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
 
 
 
+// const createInvoice = asyncHandler(async (req, res) => {
+//   try {
+//     const {
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       taxes,
+//       discountPercent,
+//       services,
+//       dealerHospitals,
+//       orderId,        // Order ID to link payment
+//       paymentType,    // advance, balance, complete
+//       paymentAmount,
+//       utrNumber,
+//     } = req.body;
+//     console.log("🚀 ~  req.body:", req.body)
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required to link invoice",
+//       });
+//     }
+
+//     const orderExists = await Order.findById(orderId);
+//     if (!orderExists) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     if (!srfNumber || !buyerName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "SRF number and buyerName are required",
+//       });
+//     }
+
+//     let subtotal = 0;
+
+//     // Handle Customer type
+//     if (type === "Customer") {
+//       if (!services || services.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "At least one service is required for Customer invoice",
+//         });
+//       }
+//       subtotal = services.reduce(
+//         (sum, s) => sum + Number(s.quantity) * Number(s.rate),
+//         0
+//       );
+//     }
+
+//     // Handle Dealer/Manufacturer type
+//     if (type === "Dealer/Manufacturer") {
+//       if (!dealerHospitals || dealerHospitals.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "At least one dealer hospital entry is required for Dealer/Manufacturer invoice",
+//         });
+//       }
+//       subtotal = dealerHospitals.reduce(
+//         (sum, d) => sum + Number(d.amount),
+//         0
+//       );
+//     }
+
+//     // Discount as percentage
+//     const discountPercentNum = parseFloat(discountPercent) || 0;
+//     const discountAmount = (subtotal * discountPercentNum) / 100;
+//     const discountedSubtotal = subtotal - discountAmount;
+
+//     // Taxes applied to discounted subtotal
+//     const taxAmounts = {};
+//     let totalTax = 0;
+//     ["cgst", "sgst", "igst"].forEach((tax) => {
+//       if (taxes && taxes[tax] && taxes[tax].checked) {
+//         const percent = parseFloat(taxes[tax].amount) || 0;
+//         const taxAmount = (discountedSubtotal * percent) / 100;
+//         taxAmounts[tax] = taxAmount;
+//         totalTax += taxAmount;
+//       } else {
+//         taxAmounts[tax] = 0;
+//       }
+//     });
+
+//     // Grand total
+//     const grandTotal = discountedSubtotal + totalTax;
+
+//     // Generate invoiceId
+//     const invoiceId = await generateReadableId("Invoice", "INV");
+
+//     // Create Invoice
+//     const newInvoice = await Invoice.create({
+//       invoiceId,
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       services: type === "Customer" ? services : [],
+//       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals : [],
+//       subtotal,
+//       totalAmount: grandTotal,
+//       discount: discountAmount,
+//       sgst: taxAmounts.sgst,
+//       cgst: taxAmounts.cgst,
+//       igst: taxAmounts.igst,
+//       grandtotal: grandTotal,
+//       createdBy: req.user ? req.user._id : null,
+//       order: orderId,
+//     });
+
+//     // If payment details are provided, create payment and link to invoice
+//     if (orderId && paymentType && paymentAmount && utrNumber) {
+//       const payment = await Payment.create({
+//         orderId,
+//         totalAmount: grandTotal,
+//         paymentAmount,
+//         paymentType,
+//         utrNumber,
+//         paymentStatus: "paid",
+//       });
+
+//       // Save payment reference and paymentType in invoice
+//       newInvoice.payment = payment._id;
+//       newInvoice.paymentType = payment.paymentType; // save paymentType in invoice
+//       await newInvoice.save();
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice created successfully",
+//       data: newInvoice,
+//     });
+//   } catch (error) {
+//     console.error("🚀 ~ createInvoice ~ error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to create invoice",
+//     });
+//   }
+// });
+
 const createInvoice = asyncHandler(async (req, res) => {
   try {
     const {
@@ -495,6 +645,8 @@ const createInvoice = asyncHandler(async (req, res) => {
       paymentType,    // advance, balance, complete
       paymentAmount,
       utrNumber,
+      subtotal,       // Use directly from frontend
+      grandTotal,     // Use directly from frontend for storage
     } = req.body;
     console.log("🚀 ~  req.body:", req.body)
     if (!orderId) {
@@ -519,9 +671,10 @@ const createInvoice = asyncHandler(async (req, res) => {
       });
     }
 
-    let subtotal = 0;
+    // Use subtotal directly from frontend (as calculated there)
+    const subtotalFromFrontend = Number(subtotal) || 0;
 
-    // Handle Customer type
+    // For validation, still check services/dealerHospitals presence but don't recalc subtotal
     if (type === "Customer") {
       if (!services || services.length === 0) {
         return res.status(400).json({
@@ -529,13 +682,8 @@ const createInvoice = asyncHandler(async (req, res) => {
           message: "At least one service is required for Customer invoice",
         });
       }
-      subtotal = services.reduce(
-        (sum, s) => sum + Number(s.quantity) * Number(s.rate),
-        0
-      );
     }
 
-    // Handle Dealer/Manufacturer type
     if (type === "Dealer/Manufacturer") {
       if (!dealerHospitals || dealerHospitals.length === 0) {
         return res.status(400).json({
@@ -544,18 +692,14 @@ const createInvoice = asyncHandler(async (req, res) => {
             "At least one dealer hospital entry is required for Dealer/Manufacturer invoice",
         });
       }
-      subtotal = dealerHospitals.reduce(
-        (sum, d) => sum + Number(d.amount),
-        0
-      );
     }
 
-    // Discount as percentage
+    // Calculate discount as percentage (to derive discount amount for storage)
     const discountPercentNum = parseFloat(discountPercent) || 0;
-    const discountAmount = (subtotal * discountPercentNum) / 100;
-    const discountedSubtotal = subtotal - discountAmount;
+    const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
+    const discountedSubtotal = subtotalFromFrontend - discountAmount;
 
-    // Taxes applied to discounted subtotal
+    // Taxes applied to discounted subtotal (derive individual tax amounts for storage)
     const taxAmounts = {};
     let totalTax = 0;
     ["cgst", "sgst", "igst"].forEach((tax) => {
@@ -569,13 +713,14 @@ const createInvoice = asyncHandler(async (req, res) => {
       }
     });
 
-    // Grand total
-    const grandTotal = discountedSubtotal + totalTax;
+    // Use grandTotal directly from frontend for storage (as calculated there)
+    // Note: In a production setup, you might want to verify it matches discountedSubtotal + totalTax
+    const grandTotalFromFrontend = Number(grandTotal) || 0;
 
     // Generate invoiceId
     const invoiceId = await generateReadableId("Invoice", "INV");
 
-    // Create Invoice
+    // Create Invoice using frontend-provided subtotal and grandTotal, with derived discount/taxes
     const newInvoice = await Invoice.create({
       invoiceId,
       type,
@@ -586,13 +731,13 @@ const createInvoice = asyncHandler(async (req, res) => {
       remarks,
       services: type === "Customer" ? services : [],
       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals : [],
-      subtotal,
-      totalAmount: grandTotal,
-      discount: discountAmount,
-      sgst: taxAmounts.sgst,
-      cgst: taxAmounts.cgst,
-      igst: taxAmounts.igst,
-      grandtotal: grandTotal,
+      subtotal: subtotalFromFrontend,
+      totalAmount: grandTotalFromFrontend,
+      discount: discountAmount,  // Derived for storage
+      sgst: taxAmounts.sgst,    // Derived for storage
+      cgst: taxAmounts.cgst,    // Derived for storage
+      igst: taxAmounts.igst,    // Derived for storage
+      grandtotal: grandTotalFromFrontend,
       createdBy: req.user ? req.user._id : null,
       order: orderId,
     });
@@ -601,7 +746,7 @@ const createInvoice = asyncHandler(async (req, res) => {
     if (orderId && paymentType && paymentAmount && utrNumber) {
       const payment = await Payment.create({
         orderId,
-        totalAmount: grandTotal,
+        totalAmount: grandTotalFromFrontend,
         paymentAmount,
         paymentType,
         utrNumber,
@@ -627,8 +772,6 @@ const createInvoice = asyncHandler(async (req, res) => {
     });
   }
 });
-
-
 
 
 
