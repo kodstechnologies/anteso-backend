@@ -2187,6 +2187,54 @@ const getUpdatedOrderServices2 = asyncHandler(async (req, res) => {
 
 
 //check
+// const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
+//     const { technicianId } = req.params;
+//     if (!technicianId) {
+//         return res.status(400).json({ message: 'technicianId is required' });
+//     }
+
+//     // Step 1: Find all services where this engineer is assigned
+//     const servicesWithEngineer = await Services.find({
+//         workTypeDetails: {
+//             $elemMatch: {
+//                 engineer: new mongoose.Types.ObjectId(technicianId),
+//             },
+//         },
+//     });
+
+//     const serviceIds = servicesWithEngineer.map((s) => s._id);
+
+//     if (serviceIds.length === 0) {
+//         return res.status(200).json({
+//             success: true,
+//             count: 0,
+//             orders: []
+//         });
+//     }
+
+//     // Step 2: Find orders that contain those services
+//     const orders = await orderModel.find({
+//         services: { $in: serviceIds },
+//     })
+//         .populate({
+//             path: 'services',
+//             populate: {
+//                 path: 'workTypeDetails.engineer',
+//                 model: 'Employee', // Assuming engineer is also stored in Employee model
+//             },
+//         })
+//         .populate('customer', 'name email')
+//         .sort({ createdAt: -1 });
+
+//     res.status(200).json({
+//         message: 'Orders fetched successfully',
+//         count: orders.length,
+//         orders,
+//     });
+// });
+
+
+
 const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
     const { technicianId } = req.params;
     if (!technicianId) {
@@ -2213,18 +2261,33 @@ const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
     }
 
     // Step 2: Find orders that contain those services
-    const orders = await orderModel.find({
+    let orders = await orderModel.find({
         services: { $in: serviceIds },
     })
         .populate({
             path: 'services',
             populate: {
                 path: 'workTypeDetails.engineer',
-                model: 'Employee', // Assuming engineer is also stored in Employee model
+                model: 'Employee',
             },
         })
         .populate('customer', 'name email')
         .sort({ createdAt: -1 });
+
+    // Step 3: Filter workTypeDetails to only include "Quality Assurance Test"
+    orders = orders.map(order => {
+        const filteredServices = order.services.map(service => {
+            const qaWorkTypeDetails = service.workTypeDetails.filter(wt => wt.workType === "Quality Assurance Test");
+            return {
+                ...service.toObject(),
+                workTypeDetails: qaWorkTypeDetails
+            };
+        });
+        return {
+            ...order.toObject(),
+            services: filteredServices
+        };
+    });
 
     res.status(200).json({
         message: 'Orders fetched successfully',
@@ -2232,6 +2295,7 @@ const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
         orders,
     });
 });
+
 
 
 // const updateCompletedStatus = asyncHandler(async (req, res) => {
@@ -4062,7 +4126,7 @@ const getQaReportsByTechnician = async (req, res) => {
                 if (
                     wt.engineer?.toString() === technicianId &&
                     wt.QAtest &&
-                    ["pending", "reuploaded"].includes(wt.QAtest.reportStatus) // ✅ include both
+                    ["pending", "reuploaded"].includes(wt.QAtest.reportStatus)
                 ) {
                     reports.push({
                         orderId: parentOrder?._id,
@@ -4082,7 +4146,10 @@ const getQaReportsByTechnician = async (req, res) => {
             });
         }
 
-        // 4️⃣ Send response
+        // ✅ 4️⃣ Sort reports by latest uploadedAt first
+        reports.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+
+        // 5️⃣ Send response
         return res.status(200).json({
             success: true,
             technicianId,
@@ -4094,6 +4161,7 @@ const getQaReportsByTechnician = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error", error: error.message });
     }
 };
+
 
 // const getQaReportsByTechnician = async (req, res) => {
 //     try {

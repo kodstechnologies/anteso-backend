@@ -319,54 +319,96 @@ const rejectLeave = asyncHandler(async (req, res) => {
 });
 
 
-const allocateLeaves = asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
+const allocateLeavesToAll = asyncHandler(async (req, res) => {
     const { year, totalLeaves } = req.body;
 
-    if (!employeeId || !year || totalLeaves === undefined) {
-        return res.status(400).json({ message: 'employeeId (params), year, and totalLeaves (body) are required' });
+    if (!year || totalLeaves === undefined) {
+        return res.status(400).json({ message: 'year and totalLeaves are required' });
     }
 
-    let leaveAllocation = await LeaveAllocation.findOne({ employee: employeeId, year });
-
-    if (leaveAllocation) {
-        leaveAllocation.totalLeaves = totalLeaves;
-        await leaveAllocation.save();
-        return res.status(200).json({ message: 'Leave allocation updated', leave: leaveAllocation });
-    } else {
-        leaveAllocation = await LeaveAllocation.create({
-            employee: employeeId,
-            year,
-            totalLeaves,
-            usedLeaves: 0,
-        });
-        return res.status(201).json({ message: 'Leave allocation created', leave: leaveAllocation });
+    // 1️⃣ Fetch all employees (active + inactive)
+    const employees = await Employee.find().select('_id');
+    if (!employees.length) {
+        return res.status(404).json({ message: 'No employees found' });
     }
+
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    // 2️⃣ Loop through all employees and create/update their allocation
+    for (const emp of employees) {
+        const existing = await LeaveAllocation.findOne({ employee: emp._id, year });
+
+        if (existing) {
+            existing.totalLeaves = totalLeaves;
+            await existing.save();
+            updatedCount++;
+        } else {
+            await LeaveAllocation.create({
+                employee: emp._id,
+                year,
+                totalLeaves,
+                usedLeaves: 0,
+            });
+            createdCount++;
+        }
+    }
+
+    // 3️⃣ Calculate total leaves allocated for this year
+    // const totalLeavesAllocated = employees.length * totalLeaves;
+
+    return res.status(200).json({
+        message: 'Leave allocation process completed for all employees',
+        totalEmployees: employees.length,
+        createdCount,
+        updatedCount,
+        totalLeaves,
+        // totalLeavesAllocated, // ✅ total leaves allocated for this year
+        year,
+    });
 });
 
-const getLeaveAllocation = asyncHandler(async (req, res) => {
-    const { employeeId } = req.params;
 
-    if (!employeeId) {
-        return res.status(400).json({ message: 'employeeId (params) is required' });
+
+const getAllLeaveAllocations = asyncHandler(async (req, res) => {
+    // Optional filter: year (if you want to see only a specific year)
+    const { year } = req.query;
+
+    // 1️⃣ Fetch all employees
+    const employees = await Employee.find().select('_id firstName lastName empId status');
+    if (!employees.length) {
+        return res.status(404).json({ message: 'No employees found' });
     }
 
-    // Fetch all leave allocations for the employee
-    const leaveAllocations = await LeaveAllocation.find({ employee: employeeId }).sort({ year: -1 });
+    // 2️⃣ Fetch all leave allocations (optionally filter by year)
+    const query = year ? { year: Number(year) } : {};
+    const allocations = await LeaveAllocation.find(query)
+        .populate('employee', 'firstName lastName empId status')
+        .sort({ year: -1 });
 
-    if (!leaveAllocations || leaveAllocations.length === 0) {
-        return res.status(200).json([]); // Return empty array if none
+    if (!allocations.length) {
+        return res.status(200).json({ message: 'No leave allocations found', data: [] });
     }
 
-    // Map the allocations to a standard format
-    const formattedAllocations = leaveAllocations.map((allocation) => ({
+    // 3️⃣ Map data into a clean, readable format
+    const formattedData = allocations.map((allocation) => ({
+        employeeId: allocation.employee?._id,
+        empId: allocation.employee?.empId,
+        name: `${allocation.employee?.firstName || ''} ${allocation.employee?.lastName || ''}`.trim(),
+        status: allocation.employee?.status,
         year: allocation.year,
         totalLeaves: allocation.totalLeaves,
         usedLeaves: allocation.usedLeaves,
         remainingLeaves: allocation.totalLeaves - allocation.usedLeaves,
+        createdAt: allocation.createdAt,
+        updatedAt: allocation.updatedAt,
     }));
 
-    return res.status(200).json(formattedAllocations);
+    return res.status(200).json({
+        success: true,
+        total: formattedData.length,
+        data: formattedData,
+    });
 });
 const attendanceSummary = asyncHandler(async (req, res) => {
     const { employeeId } = req.params;
@@ -571,5 +613,5 @@ const getStaffLeaveById = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeaves, getLeaveAllocation, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById }
+export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeavesToAll, getAllLeaveAllocations, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById }
 // export default {createLeave,getLeavesByEmployeeId,updateLeaveByEmployee,deleteLeaveByEmployee}

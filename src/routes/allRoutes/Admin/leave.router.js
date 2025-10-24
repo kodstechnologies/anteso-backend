@@ -6,8 +6,8 @@ router.get('/get-by-id/:id', leaveController.getLeaveById)
 router.put('/update/:id', leaveController.updateLeaveById)
 router.get('/all-leaves', leaveController.getAllLeaves)
 router.delete('/delete/:id', leaveController.deleteLeaveById)
-router.post('/allocate-leaves/:employeeId', leaveController.allocateLeaves);
-router.get('/get-allocated-leaves/:employeeId', leaveController.getLeaveAllocation)
+router.post('/allocate-leaves-all', leaveController.allocateLeavesToAll);
+router.get('/leave-allocations', leaveController.getAllLeaveAllocations);
 router.get('/attendance-summary/:employeeId', leaveController.attendanceSummary)
 // router.get()
 // technician
