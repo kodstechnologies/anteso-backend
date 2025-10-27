@@ -226,52 +226,52 @@ const getAllOrdersWithType = asyncHandler(async (req, res) => {
 });
 
 
-const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
-  try {
-    const { orderId } = req.params;
+// const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
 
-    if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: "orderId is required",
-      });
-    }
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required",
+//       });
+//     }
 
-    // Fetch the order
-    const order = await Order.findById(orderId)
-      .populate("services")
-      .populate("additionalServices")
-      .populate({
-        path: "quotation",
-        select: "total discount subtotal gstRate gstAmount", // only total (grand total) from quotation
-      })
-      .lean();
+//     // Fetch the order
+//     const order = await Order.findById(orderId)
+//       .populate("services")
+//       .populate("additionalServices")
+//       .populate({
+//         path: "quotation",
+//         select: "total discount subtotal gstRate gstAmount", // only total (grand total) from quotation
+//       })
+//       .lean();
 
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
-    }
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
 
-    // Extract grand total safely
-    const grandTotal = order.quotation?.total || 0;
+//     // Extract grand total safely
+//     const grandTotal = order.quotation?.total || 0;
 
-    res.status(200).json({
-      success: true,
-      data: {
-        ...order,
-        grandTotal, // attach it at the top level if you want
-      },
-    });
-  } catch (error) {
-    console.error("Error fetching order details:", error);
-    res.status(500).json({
-      success: false,
-      message: "Server error while fetching order details",
-    });
-  }
-});
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         ...order,
+//         grandTotal, // attach it at the top level if you want
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching order details:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while fetching order details",
+//     });
+//   }
+// });
 
 
 // const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
@@ -628,6 +628,739 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
 //   }
 // });
 
+
+// const createInvoice = asyncHandler(async (req, res) => {
+//   try {
+//     const {
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       taxes,
+//       discountPercent,
+//       services,
+//       dealerHospitals,
+//       orderId,        // Order ID to link payment
+//       paymentType,    // advance, balance, complete
+//       paymentAmount,
+//       utrNumber,
+//       subtotal,       // Use directly from frontend
+//       grandTotal,     // Use directly from frontend for storage
+//     } = req.body;
+//     console.log("🚀 ~  req.body:", req.body)
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required to link invoice",
+//       });
+//     }
+
+//     const orderExists = await Order.findById(orderId);
+//     if (!orderExists) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     if (!srfNumber || !buyerName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "SRF number and buyerName are required",
+//       });
+//     }
+
+//     // Use subtotal directly from frontend (as calculated there)
+//     const subtotalFromFrontend = Number(subtotal) || 0;
+
+//     // For validation, still check services/dealerHospitals presence but don't recalc subtotal
+//     if (type === "Customer") {
+//       if (!services || services.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "At least one service is required for Customer invoice",
+//         });
+//       }
+//     }
+
+//     if (type === "Dealer/Manufacturer") {
+//       if (!dealerHospitals || dealerHospitals.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "At least one dealer hospital entry is required for Dealer/Manufacturer invoice",
+//         });
+//       }
+//     }
+
+//     // Calculate discount as percentage (to derive discount amount for storage)
+//     const discountPercentNum = parseFloat(discountPercent) || 0;
+//     const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
+//     const discountedSubtotal = subtotalFromFrontend - discountAmount;
+
+//     // Taxes applied to discounted subtotal (derive individual tax amounts for storage)
+//     const taxAmounts = {};
+//     let totalTax = 0;
+//     ["cgst", "sgst", "igst"].forEach((tax) => {
+//       if (taxes && taxes[tax] && taxes[tax].checked) {
+//         const percent = parseFloat(taxes[tax].amount) || 0;
+//         const taxAmount = (discountedSubtotal * percent) / 100;
+//         taxAmounts[tax] = taxAmount;
+//         totalTax += taxAmount;
+//       } else {
+//         taxAmounts[tax] = 0;
+//       }
+//     });
+
+//     // Use grandTotal directly from frontend for storage (as calculated there)
+//     // Note: In a production setup, you might want to verify it matches discountedSubtotal + totalTax
+//     const grandTotalFromFrontend = Number(grandTotal) || 0;
+
+//     // Generate invoiceId
+//     const invoiceId = await generateReadableId("Invoice", "INV");
+
+//     // Create Invoice using frontend-provided subtotal and grandTotal, with derived discount/taxes
+//     const newInvoice = await Invoice.create({
+//       invoiceId,
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       services: type === "Customer" ? services : [],
+//       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals : [],
+//       subtotal: subtotalFromFrontend,
+//       totalAmount: grandTotalFromFrontend,
+//       discount: discountAmount,  // Derived for storage
+//       sgst: taxAmounts.sgst,    // Derived for storage
+//       cgst: taxAmounts.cgst,    // Derived for storage
+//       igst: taxAmounts.igst,    // Derived for storage
+//       grandtotal: grandTotalFromFrontend,
+//       createdBy: req.user ? req.user._id : null,
+//       order: orderId,
+//     });
+
+//     // If payment details are provided, create payment and link to invoice
+//     if (orderId && paymentType && paymentAmount && utrNumber) {
+//       const payment = await Payment.create({
+//         orderId,
+//         totalAmount: grandTotalFromFrontend,
+//         paymentAmount,
+//         paymentType,
+//         utrNumber,
+//         paymentStatus: "paid",
+//       });
+
+//       // Save payment reference and paymentType in invoice
+//       newInvoice.payment = payment._id;
+//       newInvoice.paymentType = payment.paymentType; // save paymentType in invoice
+//       await newInvoice.save();
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice created successfully",
+//       data: newInvoice,
+//     });
+//   } catch (error) {
+//     console.error("🚀 ~ createInvoice ~ error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to create invoice",
+//     });
+//   }
+// });
+
+
+// const createInvoice = asyncHandler(async (req, res) => {
+//   try {
+//     const {
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       taxes,
+//       discountPercent,
+//       services,
+//       dealerHospitals,
+//       orderId,
+//       paymentType,
+//       paymentAmount,
+//       utrNumber,
+//       subtotal,
+//       grandTotal,
+//     } = req.body;
+
+//     console.log("🚀 ~ createInvoice ~ req.body:", req.body);
+
+//     // Validate orderId
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required to link invoice",
+//       });
+//     }
+
+//     const orderExists = await Order.findById(orderId);
+//     if (!orderExists) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Validate required fields
+//     if (!srfNumber || !buyerName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "SRF number and buyerName are required",
+//       });
+//     }
+
+//     // Validate services or dealerHospitals based on type
+//     if (type === "Customer") {
+//       if (!services || services.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "At least one service is required for Customer invoice",
+//         });
+//       }
+//     } else if (type === "Dealer/Manufacturer") {
+//       if ((!services || services.length === 0) && (!dealerHospitals || dealerHospitals.length === 0)) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "At least one service or dealer hospital entry is required for Dealer/Manufacturer invoice",
+//         });
+//       }
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid invoice type",
+//       });
+//     }
+
+//     // Use subtotal directly from frontend
+//     const subtotalFromFrontend = Number(subtotal) || 0;
+
+//     // Calculate discount
+//     const discountPercentNum = parseFloat(discountPercent) || 0;
+//     const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
+//     const discountedSubtotal = subtotalFromFrontend - discountAmount;
+
+//     // Calculate taxes
+//     const taxAmounts = {};
+//     let totalTax = 0;
+//     ["cgst", "sgst", "igst"].forEach((tax) => {
+//       if (taxes && taxes[tax] && taxes[tax].checked) {
+//         const percent = parseFloat(taxes[tax].amount) || 0;
+//         const taxAmount = (discountedSubtotal * percent) / 100;
+//         taxAmounts[tax] = taxAmount;
+//         totalTax += taxAmount;
+//       } else {
+//         taxAmounts[tax] = 0;
+//       }
+//     });
+
+//     // Use grandTotal from frontend
+//     const grandTotalFromFrontend = Number(grandTotal) || 0;
+
+//     // Generate invoiceId
+//     const invoiceId = await generateReadableId("Invoice", "INV");
+
+//     // Create Invoice
+//     const newInvoice = await Invoice.create({
+//       invoiceId,
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       services: services || [], // Allow services for both types
+//       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals || [] : [],
+//       subtotal: subtotalFromFrontend,
+//       totalAmount: grandTotalFromFrontend,
+//       discount: discountAmount,
+//       sgst: taxAmounts.sgst,
+//       cgst: taxAmounts.cgst,
+//       igst: taxAmounts.igst,
+//       grandtotal: grandTotalFromFrontend,
+//       createdBy: req.user ? req.user._id : null,
+//       order: orderId,
+//       paymentType,
+//     });
+
+//     // Create payment if details provided
+//     if (orderId && paymentType && paymentAmount && utrNumber) {
+//       const payment = await Payment.create({
+//         orderId,
+//         totalAmount: grandTotalFromFrontend,
+//         paymentAmount,
+//         paymentType,
+//         utrNumber,
+//         paymentStatus: "paid",
+//       });
+
+//       newInvoice.payment = payment._id;
+//       newInvoice.paymentType = payment.paymentType;
+//       await newInvoice.save();
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice created successfully",
+//       data: newInvoice,
+//     });
+//   } catch (error) {
+//     console.error("🚀 ~ createInvoice ~ error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to create invoice",
+//     });
+//   }
+// });
+
+
+// const createInvoice = asyncHandler(async (req, res) => {
+//   try {
+//     const {
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       taxes,
+//       discountPercent,
+//       services,
+//       additionalServices,
+//       dealerHospitals,
+//       orderId,
+//       paymentType,
+//       paymentAmount,
+//       utrNumber,
+//       subtotal,
+//       grandTotal,
+//     } = req.body;
+
+//     console.log("🚀 ~ createInvoice ~ req.body:", req.body);
+
+//     // Validate orderId
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required to link invoice",
+//       });
+//     }
+
+//     const orderExists = await Order.findById(orderId);
+//     if (!orderExists) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Validate required fields
+//     if (!srfNumber || !buyerName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "SRF number and buyerName are required",
+//       });
+//     }
+
+//     // Validate services or dealerHospitals based on type
+//     if (type === "Customer") {
+//       if (!services || services.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "At least one service is required for Customer invoice",
+//         });
+//       }
+//     } else if (type === "Dealer/Manufacturer") {
+//       if (
+//         (!services || services.length === 0) &&
+//         (!dealerHospitals || dealerHospitals.length === 0)
+//       ) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "At least one service or dealer hospital entry is required for Dealer/Manufacturer invoice",
+//         });
+//       }
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid invoice type",
+//       });
+//     }
+
+//     // Use subtotal directly from frontend
+//     const subtotalFromFrontend = Number(subtotal) || 0;
+
+//     // Calculate discount
+//     const discountPercentNum = parseFloat(discountPercent) || 0;
+//     const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
+//     const discountedSubtotal = subtotalFromFrontend - discountAmount;
+
+//     // Calculate taxes
+//     const taxAmounts = {};
+//     let totalTax = 0;
+//     ["cgst", "sgst", "igst"].forEach((tax) => {
+//       if (taxes && taxes[tax] && taxes[tax].checked) {
+//         const percent = parseFloat(taxes[tax].amount) || 0;
+//         const taxAmount = (discountedSubtotal * percent) / 100;
+//         taxAmounts[tax] = taxAmount;
+//         totalTax += taxAmount;
+//       } else {
+//         taxAmounts[tax] = 0;
+//       }
+//     });
+
+//     // Use grandTotal from frontend
+//     const grandTotalFromFrontend = Number(grandTotal) || 0;
+
+//     // Generate invoiceId
+//     const invoiceId = await generateReadableId("Invoice", "INV");
+
+//     // Create Invoice
+//     const newInvoice = await Invoice.create({
+//       invoiceId,
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       services: services || [],
+//       additionalServices: additionalServices || [], // Include additionalServices
+//       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals || [] : [],
+//       subtotal: subtotalFromFrontend,
+//       totalAmount: grandTotalFromFrontend,
+//       discount: discountAmount,
+//       sgst: taxAmounts.sgst,
+//       cgst: taxAmounts.cgst,
+//       igst: taxAmounts.igst,
+//       grandtotal: grandTotalFromFrontend,
+//       createdBy: req.user ? req.user._id : null,
+//       order: orderId,
+//       paymentType,
+//     });
+
+//     // Create payment if details provided
+//     if (orderId && paymentType && paymentAmount && utrNumber) {
+//       const payment = await Payment.create({
+//         orderId,
+//         totalAmount: grandTotalFromFrontend,
+//         paymentAmount,
+//         paymentType,
+//         utrNumber,
+//         paymentStatus: "paid",
+//       });
+
+//       newInvoice.payment = payment._id;
+//       newInvoice.paymentType = payment.paymentType;
+//       await newInvoice.save();
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice created successfully",
+//       data: newInvoice,
+//     });
+//   } catch (error) {
+//     console.error("🚀 ~ createInvoice ~ error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to create invoice",
+//     });
+//   }
+// });
+
+// const createInvoice = asyncHandler(async (req, res) => {
+//   try {
+//     const {
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       taxes,
+//       discountPercent,
+//       services,
+//       additionalServices,
+//       dealerHospitals,
+//       orderId,
+//       paymentType,
+//       paymentAmount,
+//       utrNumber,
+//       subtotal,
+//       grandTotal,
+//     } = req.body;
+
+//     console.log("🚀 ~ createInvoice ~ req.body:", JSON.stringify(req.body, null, 2));
+//     console.log("🚀 ~ createInvoice ~ additionalServices:", additionalServices);
+
+//     // Validate orderId
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required to link invoice",
+//       });
+//     }
+
+//     const orderExists = await Order.findById(orderId);
+//     if (!orderExists) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Validate required fields
+//     if (!srfNumber || !buyerName) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "SRF number and buyerName are required",
+//       });
+//     }
+
+//     // Validate services or dealerHospitals based on type
+//     if (type === "Customer") {
+//       if (!services || services.length === 0) {
+//         return res.status(400).json({
+//           success: false,
+//           message: "At least one service is required for Customer invoice",
+//         });
+//       }
+//     } else if (type === "Dealer/Manufacturer") {
+//       if (
+//         (!services || services.length === 0) &&
+//         (!dealerHospitals || dealerHospitals.length === 0)
+//       ) {
+//         return res.status(400).json({
+//           success: false,
+//           message:
+//             "At least one service or dealer hospital entry is required for Dealer/Manufacturer invoice",
+//         });
+//       }
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid invoice type",
+//       });
+//     }
+
+//     // Use subtotal directly from frontend
+//     const subtotalFromFrontend = Number(subtotal) || 0;
+
+//     // Calculate discount
+//     const discountPercentNum = parseFloat(discountPercent) || 0;
+//     const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
+//     const discountedSubtotal = subtotalFromFrontend - discountAmount;
+
+//     // Calculate taxes
+//     const taxAmounts = {};
+//     let totalTax = 0;
+//     ["cgst", "sgst", "igst"].forEach((tax) => {
+//       if (taxes && taxes[tax] && taxes[tax].checked) {
+//         const percent = parseFloat(taxes[tax].amount) || 0;
+//         const taxAmount = (discountedSubtotal * percent) / 100;
+//         taxAmounts[tax] = taxAmount;
+//         totalTax += taxAmount;
+//       } else {
+//         taxAmounts[tax] = 0;
+//       }
+//     });
+
+//     // Use grandTotal from frontend
+//     const grandTotalFromFrontend = Number(grandTotal) || 0;
+
+//     // Generate invoiceId
+//     const invoiceId = await generateReadableId("Invoice", "INV");
+
+//     // Ensure additionalServices is an array, even if empty
+//     const formattedAdditionalServices = Array.isArray(additionalServices) ? additionalServices : [];
+
+//     // Create Invoice
+//     const newInvoice = await Invoice.create({
+//       invoiceId,
+//       type,
+//       srfNumber,
+//       buyerName,
+//       address,
+//       state,
+//       remarks,
+//       services: services || [],
+//       additionalServices: formattedAdditionalServices, // Explicitly set additionalServices
+//       dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals || [] : [],
+//       subtotal: subtotalFromFrontend,
+//       totalAmount: grandTotalFromFrontend,
+//       discount: discountAmount,
+//       sgst: taxAmounts.sgst,
+//       cgst: taxAmounts.cgst,
+//       igst: taxAmounts.igst,
+//       grandtotal: grandTotalFromFrontend,
+//       createdBy: req.user ? req.user._id : null,
+//       order: orderId,
+//       paymentType,
+//     });
+
+//     // Create payment if details provided
+//     if (orderId && paymentType && paymentAmount && utrNumber) {
+//       const payment = await Payment.create({
+//         orderId,
+//         totalAmount: grandTotalFromFrontend,
+//         paymentAmount,
+//         paymentType,
+//         utrNumber,
+//         paymentStatus: "paid",
+//       });
+
+//       newInvoice.payment = payment._id;
+//       newInvoice.paymentType = payment.paymentType;
+//       await newInvoice.save();
+//     }
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Invoice created successfully",
+//       data: newInvoice,
+//     });
+//   } catch (error) {
+//     console.error("🚀 ~ createInvoice ~ error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: error.message || "Failed to create invoice",
+//     });
+//   }
+// });
+
+
+// const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required",
+//       });
+//     }
+
+//     // Fetch the order
+//     const order = await Order.findById(orderId)
+//       .populate("services")
+//       .populate("additionalServices")
+//       .populate({
+//         path: "quotation",
+//         select: "total discount subtotal gstRate gstAmount",
+//       })
+//       .populate({
+//         path: "dealerHospitals",
+//         populate: [
+//           { path: "services" },
+//           { path: "additionalServices" },
+//         ],
+//       })
+//       .lean();
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Extract grand total safely
+//     const grandTotal = order.quotation?.total || 0;
+
+//     // Format dealerHospitals to include nested services and additionalServices
+//     const formattedDealerHospitals = order.dealerHospitals?.map(dh => ({
+//       ...dh,
+//       services: dh.services || [],
+//       additionalServices: dh.additionalServices || [],
+//     })) || [];
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         ...order,
+//         dealerHospitals: formattedDealerHospitals,
+//         grandTotal,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching order details:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while fetching order details",
+//     });
+//   }
+// });
+
+
+const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "orderId is required",
+      });
+    }
+
+    // Fetch the order
+    const order = await Order.findById(orderId)
+      .populate({
+        path: 'services',
+        select: 'machineType description quantity rate hsnno machineModel workTypeDetails',
+      })
+      .populate({
+        path: 'additionalServices',
+        select: 'name description totalAmount',
+      })
+      .populate({
+        path: 'quotation',
+        select: 'total discount subtotal gstRate gstAmount',
+      })
+      .lean();
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    // Extract grand total safely
+    const grandTotal = order.quotation?.total || 0;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...order,
+        grandTotal,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching order details:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching order details",
+    });
+  }
+});
+
+
 const createInvoice = asyncHandler(async (req, res) => {
   try {
     const {
@@ -640,15 +1373,21 @@ const createInvoice = asyncHandler(async (req, res) => {
       taxes,
       discountPercent,
       services,
+      additionalServices,
       dealerHospitals,
-      orderId,        // Order ID to link payment
-      paymentType,    // advance, balance, complete
+      orderId,
+      paymentType,
       paymentAmount,
       utrNumber,
-      subtotal,       // Use directly from frontend
-      grandTotal,     // Use directly from frontend for storage
+      subtotal,
+      grandTotal,
     } = req.body;
-    console.log("🚀 ~  req.body:", req.body)
+
+    console.log("🚀 ~ createInvoice ~ req.body:", JSON.stringify(req.body, null, 2));
+    console.log("🚀 ~ createInvoice ~ additionalServices:", additionalServices);
+    console.log("🚀 ~ createInvoice ~ dealerHospitals:", dealerHospitals);
+
+    // Validate orderId
     if (!orderId) {
       return res.status(400).json({
         success: false,
@@ -664,6 +1403,7 @@ const createInvoice = asyncHandler(async (req, res) => {
       });
     }
 
+    // Validate required fields
     if (!srfNumber || !buyerName) {
       return res.status(400).json({
         success: false,
@@ -671,10 +1411,7 @@ const createInvoice = asyncHandler(async (req, res) => {
       });
     }
 
-    // Use subtotal directly from frontend (as calculated there)
-    const subtotalFromFrontend = Number(subtotal) || 0;
-
-    // For validation, still check services/dealerHospitals presence but don't recalc subtotal
+    // Validate services or dealerHospitals based on type
     if (type === "Customer") {
       if (!services || services.length === 0) {
         return res.status(400).json({
@@ -682,24 +1419,41 @@ const createInvoice = asyncHandler(async (req, res) => {
           message: "At least one service is required for Customer invoice",
         });
       }
-    }
-
-    if (type === "Dealer/Manufacturer") {
+    } else if (type === "Dealer/Manufacturer") {
       if (!dealerHospitals || dealerHospitals.length === 0) {
         return res.status(400).json({
           success: false,
-          message:
-            "At least one dealer hospital entry is required for Dealer/Manufacturer invoice",
+          message: "At least one dealer hospital entry is required for Dealer/Manufacturer invoice",
         });
       }
+      // Validate nested services/additionalServices for each dealer hospital
+      for (const [index, dh] of dealerHospitals.entries()) {
+        if (
+          (!dh.services || dh.services.length === 0) &&
+          (!dh.additionalServices || dh.additionalServices.length === 0)
+        ) {
+          return res.status(400).json({
+            success: false,
+            message: `At least one service or additional service is required for dealer hospital at index ${index}`,
+          });
+        }
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid invoice type",
+      });
     }
 
-    // Calculate discount as percentage (to derive discount amount for storage)
+    // Use subtotal directly from frontend
+    const subtotalFromFrontend = Number(subtotal) || 0;
+
+    // Calculate discount
     const discountPercentNum = parseFloat(discountPercent) || 0;
     const discountAmount = (subtotalFromFrontend * discountPercentNum) / 100;
     const discountedSubtotal = subtotalFromFrontend - discountAmount;
 
-    // Taxes applied to discounted subtotal (derive individual tax amounts for storage)
+    // Calculate taxes
     const taxAmounts = {};
     let totalTax = 0;
     ["cgst", "sgst", "igst"].forEach((tax) => {
@@ -713,14 +1467,25 @@ const createInvoice = asyncHandler(async (req, res) => {
       }
     });
 
-    // Use grandTotal directly from frontend for storage (as calculated there)
-    // Note: In a production setup, you might want to verify it matches discountedSubtotal + totalTax
+    // Use grandTotal from frontend
     const grandTotalFromFrontend = Number(grandTotal) || 0;
 
     // Generate invoiceId
     const invoiceId = await generateReadableId("Invoice", "INV");
 
-    // Create Invoice using frontend-provided subtotal and grandTotal, with derived discount/taxes
+    // Ensure additionalServices is an array, even if empty
+    const formattedAdditionalServices = Array.isArray(additionalServices) ? additionalServices : [];
+
+    // Format dealerHospitals to ensure nested arrays
+    const formattedDealerHospitals = type === "Dealer/Manufacturer"
+      ? dealerHospitals.map(dh => ({
+        ...dh,
+        services: Array.isArray(dh.services) ? dh.services : [],
+        additionalServices: Array.isArray(dh.additionalServices) ? dh.additionalServices : [],
+      }))
+      : [];
+
+    // Create Invoice
     const newInvoice = await Invoice.create({
       invoiceId,
       type,
@@ -729,20 +1494,22 @@ const createInvoice = asyncHandler(async (req, res) => {
       address,
       state,
       remarks,
-      services: type === "Customer" ? services : [],
-      dealerHospitals: type === "Dealer/Manufacturer" ? dealerHospitals : [],
+      services: type === "Customer" ? services || [] : [], // Only for Customer invoices
+      additionalServices: type === "Customer" ? formattedAdditionalServices : [], // Only for Customer invoices
+      dealerHospitals: formattedDealerHospitals,
       subtotal: subtotalFromFrontend,
       totalAmount: grandTotalFromFrontend,
-      discount: discountAmount,  // Derived for storage
-      sgst: taxAmounts.sgst,    // Derived for storage
-      cgst: taxAmounts.cgst,    // Derived for storage
-      igst: taxAmounts.igst,    // Derived for storage
+      discount: discountAmount,
+      sgst: taxAmounts.sgst,
+      cgst: taxAmounts.cgst,
+      igst: taxAmounts.igst,
       grandtotal: grandTotalFromFrontend,
       createdBy: req.user ? req.user._id : null,
       order: orderId,
+      paymentType,
     });
 
-    // If payment details are provided, create payment and link to invoice
+    // Create payment if details provided
     if (orderId && paymentType && paymentAmount && utrNumber) {
       const payment = await Payment.create({
         orderId,
@@ -753,9 +1520,8 @@ const createInvoice = asyncHandler(async (req, res) => {
         paymentStatus: "paid",
       });
 
-      // Save payment reference and paymentType in invoice
       newInvoice.payment = payment._id;
-      newInvoice.paymentType = payment.paymentType; // save paymentType in invoice
+      newInvoice.paymentType = payment.paymentType;
       await newInvoice.save();
     }
 
@@ -769,6 +1535,33 @@ const createInvoice = asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || "Failed to create invoice",
+    });
+  }
+});
+
+const getDealerOrders = asyncHandler(async (req, res) => {
+  try {
+    // Step 1: Fetch all dealer _ids
+    const dealers = await Dealer.find({}, "_id");
+    const dealerIds = dealers.map((d) => d._id.toString());
+
+    // Step 2: Find orders whose leadOwner matches any dealer _id
+    const dealerOrders = await Order.find(
+      { leadOwner: { $in: dealerIds } },
+      { _id: 1, srfNumber: 1 } // only return id and srfNumber
+    );
+
+    // Step 3: Return result
+    res.status(200).json({
+      success: true,
+      count: dealerOrders.length,
+      data: dealerOrders,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching dealer orders:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dealer orders",
     });
   }
 });
@@ -1125,4 +1918,4 @@ const getInvoicePdf = asyncHandler(async (req, res) => {
 
 
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf }
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders }

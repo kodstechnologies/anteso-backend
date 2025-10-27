@@ -2701,7 +2701,7 @@ const add = asyncHandler(async (req, res) => {
 
 export const createDirectOrder = asyncHandler(async (req, res) => {
     try {
-        console.log("🚀 Raw body:", req.body);
+        console.log("🚀 Raw body:-------------------------->", req.body);
         console.log("🚀 File:", req.file?.originalname);
 
         let {

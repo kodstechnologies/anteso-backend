@@ -176,12 +176,77 @@ const allTools = asyncHandler(async (req, res) => {
 //     res.status(200).json(new ApiResponse(200, updatedTool, "Tool updated successfully"));
 // });
 
-const updateById = asyncHandler(async (req, res) => {
+// const updateById = asyncHandler(async (req, res) => {
+//     try {
+//         const { toolId } = req.params;
+//         console.log("🚀 ~ toolId:", toolId)
+//         const updateData = req.body;
+//         console.log("🚀 ~ updateData:", updateData)
+
+//         if (!toolId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Tool ID is required.",
+//             });
+//         }
+
+//         // find tool by toolId
+//         const tool = await Tools.findById(toolId);
+//         console.log("🚀 ~ tool:", tool)
+//         if (!tool) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Tool not found.",
+//             });
+//         }
+
+//         // ✅ Allowed fields to update (added submitDate)
+//         const allowedFields = [
+//             "SrNo",
+//             "nomenclature",
+//             "manufacturer",
+//             "manufacture_date",
+//             "model",
+//             "calibrationCertificateNo",
+//             "calibrationValidTill",
+//             "range",
+//             "certificate",
+//             "toolStatus",
+//             "technician",
+//             "submitDate", // ✅ Added this line
+//         ];
+
+//         Object.keys(updateData).forEach((key) => {
+//             if (allowedFields.includes(key)) {
+//                 if (key === 'technician') {
+//                     tool[key] = updateData[key]; // assuming ObjectId from frontend
+//                 } else {
+//                     tool[key] = updateData[key];
+//                 }
+//             }
+//         });
+
+//         await tool.save();
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Tool updated successfully.",
+//             data: tool,
+//         });
+//     } catch (error) {
+//         console.error("Error updating tool:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Server error while updating tool.",
+//             error: error.message,
+//         });
+//     }
+// });
+
+ const updateById = asyncHandler(async (req, res) => {
     try {
         const { toolId } = req.params;
-        console.log("🚀 ~ toolId:", toolId)
         const updateData = req.body;
-        console.log("🚀 ~ updateData:", updateData)
 
         if (!toolId) {
             return res.status(400).json({
@@ -190,9 +255,8 @@ const updateById = asyncHandler(async (req, res) => {
             });
         }
 
-        // find tool by toolId
+        // Find tool by ID
         const tool = await Tools.findById(toolId);
-        console.log("🚀 ~ tool:", tool)
         if (!tool) {
             return res.status(404).json({
                 success: false,
@@ -200,7 +264,6 @@ const updateById = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Allowed fields to update (added submitDate)
         const allowedFields = [
             "SrNo",
             "nomenclature",
@@ -213,24 +276,62 @@ const updateById = asyncHandler(async (req, res) => {
             "certificate",
             "toolStatus",
             "technician",
-            "submitDate", // ✅ Added this line
+            "submitDate",
         ];
 
         Object.keys(updateData).forEach((key) => {
             if (allowedFields.includes(key)) {
-                if (key === 'technician') {
-                    tool[key] = updateData[key]; // assuming ObjectId from frontend
-                } else {
-                    tool[key] = updateData[key];
-                }
+                tool[key] = updateData[key];
             }
         });
+
+        // ✅ If technician assigned
+        if (updateData.technician) {
+            const technicianId = updateData.technician;
+            const issueDate = updateData.issueDate ? new Date(updateData.issueDate) : new Date();
+
+            // Mark tool as assigned
+            tool.toolStatus = 'assigned';
+            tool.technician = technicianId;
+
+            // ✅ Remove this tool from any other employees who might have it
+            await Employee.updateMany(
+                { "tools.toolId": tool._id },
+                { $pull: { tools: { toolId: tool._id } } }
+            );
+
+            // ✅ Add or update tool inside the assigned employee’s record
+            await Employee.findByIdAndUpdate(
+                technicianId,
+                {
+                    $addToSet: {
+                        tools: {
+                            toolId: tool._id,
+                            issueDate,
+                            toolName: tool.nomenclature,
+                            serialNumber: tool.SrNo,
+                        },
+                    },
+                },
+                { new: true }
+            );
+        }
+
+        // ✅ If technician is removed (unassigned)
+        if (updateData.toolStatus === 'unassigned' && tool.technician) {
+            // Remove from old employee
+            await Employee.updateOne(
+                { _id: tool.technician },
+                { $pull: { tools: { toolId: tool._id } } }
+            );
+            tool.technician = null;
+        }
 
         await tool.save();
 
         res.status(200).json({
             success: true,
-            message: "Tool updated successfully.",
+            message: "Tool updated successfully and synced with employee.",
             data: tool,
         });
     } catch (error) {
@@ -242,7 +343,6 @@ const updateById = asyncHandler(async (req, res) => {
         });
     }
 });
-
 
 const deleteById = asyncHandler(async (req, res) => {
     const { id } = req.params;
