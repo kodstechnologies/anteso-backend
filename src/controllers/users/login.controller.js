@@ -129,6 +129,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
     }
 
     const { mobileNumber } = req.body;
+    console.log("🚀 ~ mobileNumber:", mobileNumber)
 
     // 🔍 Find matching user or admin
     const [user, admin] = await Promise.all([
@@ -156,6 +157,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("🚀 ~ otp:", otp)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     const message = `Dear User, Your OTP for login is ${otp}. It is valid for 10 minutes. Please do not share this OTP with anyone. - ANTESO BIOMEDICAL`;
@@ -332,34 +334,89 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     }
 
     // 🕒 Optional: Engineer attendance mark
+    // if (!isAdmin && user.role === "Employee" && user.technicianType === "engineer") {
+    //     const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
+    //     if (employee) {
+    //         const today = new Date();
+    //         console.log("🚀 ~ today:--------->", today)
+    //         today.setHours(0, 0, 0, 0);
+
+    //         let attendance = await Attendance.findOne({ employee: user._id, date: today });
+    //         console.log("🚀 ~ attendance:", attendance)
+
+    //         if (!attendance) {
+    //             const leave = await Leave.findOne({
+    //                 employee: user._id,
+    //                 startDate: { $lte: today },
+    //                 endDate: { $gte: today },
+    //                 status: "Approved",
+    //             });
+
+    //             attendance = new Attendance({
+    //                 employee: user._id,
+    //                 date: today,
+    //                 status: leave ? "Absent" : "Present",
+    //                 workingDays: employee.workingDays,
+    //                 leave: leave ? leave._id : null,
+    //             });
+
+    //             await attendance.save();
+    //         }
+    //     }
+    // }
+    // 🕒 Optional: Engineer attendance mark
     if (!isAdmin && user.role === "Employee" && user.technicianType === "engineer") {
         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
-        if (employee) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
 
-            let attendance = await Attendance.findOne({ employee: user._id, date: today });
+        if (employee) {
+            const now = new Date();
+
+            // Get local midnight and add timezone offset to get correct UTC midnight
+            const todayStartLocal = new Date(now);
+            todayStartLocal.setHours(0, 0, 0, 0);
+
+            const todayEndLocal = new Date(now);
+            todayEndLocal.setHours(23, 59, 59, 999);
+
+            // ✅ Convert local (IST) → UTC by subtracting offset
+            const offsetMs = todayStartLocal.getTimezoneOffset() * 60 * 1000; // -330 min for IST
+            const todayStartUTC = new Date(todayStartLocal.getTime() - offsetMs);
+            const todayEndUTC = new Date(todayEndLocal.getTime() - offsetMs);
+
+            console.log("📅 Local Start:", todayStartLocal);
+            console.log("🌍 Corrected UTC Start:", todayStartUTC);
+            console.log("🌍 Corrected UTC End:", todayEndUTC);
+
+            // 🔍 Check if attendance already exists
+            let attendance = await Attendance.findOne({
+                employee: user._id,
+                date: { $gte: todayStartUTC, $lte: todayEndUTC }
+            });
 
             if (!attendance) {
+                // 🔎 Check if leave is approved for this day
                 const leave = await Leave.findOne({
                     employee: user._id,
-                    startDate: { $lte: today },
-                    endDate: { $gte: today },
                     status: "Approved",
+                    startDate: { $lte: todayEndUTC },
+                    endDate: { $gte: todayStartUTC }
                 });
 
                 attendance = new Attendance({
                     employee: user._id,
-                    date: today,
-                    status: leave ? "Absent" : "Present",
+                    date: todayStartUTC,
+                    status: leave ? "On Leave" : "Present",
                     workingDays: employee.workingDays,
                     leave: leave ? leave._id : null,
                 });
 
                 await attendance.save();
+                console.log("✅ Attendance saved:", attendance);
             }
         }
     }
+
+
 
     // ✅ Generate JWT tokens
     const payload = {

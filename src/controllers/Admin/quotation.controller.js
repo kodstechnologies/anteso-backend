@@ -2061,6 +2061,78 @@ const acceptQuotationPDF = asyncHandler(async (req, res) => {
 // });
 
 
+// const downloadQuotationPdf = asyncHandler(async (req, res) => {
+//     try {
+//         const { hospitalId, quotationId } = req.params;
+//         console.log("🚀 ~ quotationId:", quotationId);
+//         console.log("🚀 ~ hospitalId:", hospitalId);
+
+//         if (!quotationId || !hospitalId) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "quotationId and hospitalId are required",
+//             });
+//         }
+
+//         if (!req.file) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "PDF file is required",
+//             });
+//         }
+
+//         // 1️⃣ Upload file to S3
+//         const { url } = await uploadToS3(req.file);
+
+//         // 2️⃣ Save URL in MongoDB (Quotation)
+//         const quotation = await Quotation.findByIdAndUpdate(
+//             quotationId,
+//             {
+//                 $set: {
+//                     pdfUrl: url,
+//                     from: hospitalId,
+//                     quotationStatus: "Created", // ✅ mark as created when PDF is uploaded
+//                 },
+//             },
+//             { new: true }
+//         );
+
+//         if (!quotation) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Quotation not found",
+//             });
+//         }
+
+//         // 3️⃣ Update Enquiry with quotation sent date & status
+//         await Enquiry.findByIdAndUpdate(
+//             quotation.enquiry,
+//             {
+//                 $set: {
+//                     "enquiryStatus": "Quotation Sent",
+//                     "quotationStatus": "Created",
+//                     "enquiryStatusDates.quotationSentOn": new Date(),
+//                 },
+//             },
+//             { new: true }
+//         );
+
+//         return res.status(200).json({
+//             success: true,
+//             message: "Quotation PDF uploaded and quotation sent date updated successfully",
+//             pdfUrl: url,
+//             quotation,
+//             isUploaded: true,
+//         });
+//     } catch (error) {
+//         console.error("Error uploading quotation PDF:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Server error",
+//         });
+//     }
+// });
+
 const downloadQuotationPdf = asyncHandler(async (req, res) => {
     try {
         const { hospitalId, quotationId } = req.params;
@@ -2092,6 +2164,7 @@ const downloadQuotationPdf = asyncHandler(async (req, res) => {
                     pdfUrl: url,
                     from: hospitalId,
                     quotationStatus: "Created", // ✅ mark as created when PDF is uploaded
+                    isUploaded: true, // ✅ set isUploaded to true after successful upload
                 },
             },
             { new: true }
@@ -2126,14 +2199,13 @@ const downloadQuotationPdf = asyncHandler(async (req, res) => {
         });
     } catch (error) {
         console.error("Error uploading quotation PDF:", error);
+        // Optionally: If upload fails, ensure isUploaded remains false (already default, but could explicitly set if needed)
         res.status(500).json({
             success: false,
             message: error.message || "Server error",
         });
     }
 });
-
-
 
 const shareQuotation = asyncHandler(async (req, res) => {
     try {

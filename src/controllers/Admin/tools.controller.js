@@ -200,7 +200,7 @@ const updateById = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Prevent invalid updates
+        // ✅ Allowed fields to update (added submitDate)
         const allowedFields = [
             "SrNo",
             "nomenclature",
@@ -213,18 +213,13 @@ const updateById = asyncHandler(async (req, res) => {
             "certificate",
             "toolStatus",
             "technician",
+            "submitDate", // ✅ Added this line
         ];
 
-        // Object.keys(updateData).forEach((key) => {
-        //     if (allowedFields.includes(key)) {
-        //         tool[key] = updateData[key];
-        //     }
-        // });
         Object.keys(updateData).forEach((key) => {
             if (allowedFields.includes(key)) {
                 if (key === 'technician') {
-                    // Already an ObjectId from frontend
-                    tool[key] = updateData[key];
+                    tool[key] = updateData[key]; // assuming ObjectId from frontend
                 } else {
                     tool[key] = updateData[key];
                 }
@@ -248,6 +243,7 @@ const updateById = asyncHandler(async (req, res) => {
     }
 });
 
+
 const deleteById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const deletedTool = await Tool.findByIdAndDelete(id);
@@ -265,6 +261,7 @@ const getById = asyncHandler(async (req, res) => {
 
     const { id } = req.params;
     const tool = await Tool.findById(id);
+    console.log("🚀 ~ tool:", tool)
     if (!tool) {
         throw new ApiError(404, "Tool not found");
     }
@@ -429,7 +426,7 @@ const getAllToolsByTechnicianId = asyncHandler(async (req, res) => {
 
         // Find employee/technician by ID and populate tool details
         const technician = await Employee.findById(technicianId)
-            .populate("tools.toolId", "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill range toolStatus");
+            .populate("tools.toolId", "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill range toolStatus certificate");
 
         if (!technician) {
             return res.status(404).json({
@@ -559,6 +556,57 @@ const getToolByTechnicianAndTool = asyncHandler(async (req, res) => {
 //     }
 // });
 
+// const toolHistory = asyncHandler(async (req, res) => {
+//     const { toolId } = req.params;
+
+//     if (!toolId) {
+//         return res.status(400).json({ success: false, message: "Tool ID is required" });
+//     }
+
+//     try {
+//         // Find the tool and populate the technician
+//         const tool = await Tools.findById(toolId).populate({
+//             path: "technician",
+//             select: "name email tools", // get tools array too
+//         });
+
+//         if (!tool) {
+//             return res.status(404).json({ success: false, message: "Tool not found" });
+//         }
+
+//         let issueDate = null;
+//         let submitDate = null;
+
+//         if (tool.technician) {
+//             // Find the tool inside technician.tools array
+//             const techTool = tool.technician.tools.find(t => t.toolId.toString() === tool._id.toString());
+//             if (techTool) {
+//                 issueDate = techTool.issueDate;
+//                 submitDate = techTool.submitDate;
+//             }
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             engineer: tool.technician
+//                 ? {
+//                     _id: tool.technician._id,
+//                     name: tool.technician.name,
+//                     email: tool.technician.email,
+//                 }
+//                 : null,
+//             issueDate,
+//             submitDate,
+//         });
+//     } catch (error) {
+//         console.error("❌ Error fetching tool history:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Failed to fetch tool history",
+//             error: error.message,
+//         });
+//     }
+// });
 const toolHistory = asyncHandler(async (req, res) => {
     const { toolId } = req.params;
 
@@ -567,10 +615,10 @@ const toolHistory = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Find the tool and populate the technician
+        // Find tool and populate technician
         const tool = await Tools.findById(toolId).populate({
             path: "technician",
-            select: "name email tools", // get tools array too
+            select: "name email tools", // includes tools array for issue date
         });
 
         if (!tool) {
@@ -578,14 +626,16 @@ const toolHistory = asyncHandler(async (req, res) => {
         }
 
         let issueDate = null;
-        let submitDate = null;
+        let submitDate = tool.submitDate || null; // ✅ get submitDate directly from tool model
 
         if (tool.technician) {
-            // Find the tool inside technician.tools array
-            const techTool = tool.technician.tools.find(t => t.toolId.toString() === tool._id.toString());
+            // Find matching tool in technician's tools array
+            const techTool = tool.technician.tools.find(
+                (t) => t.toolId?.toString() === tool._id.toString()
+            );
+
             if (techTool) {
-                issueDate = techTool.issueDate;
-                submitDate = techTool.submitDate;
+                issueDate = techTool.issueDate; // ✅ get issueDate from technician
             }
         }
 
@@ -610,7 +660,29 @@ const toolHistory = asyncHandler(async (req, res) => {
         });
     }
 });
+const getUnassignedTools = asyncHandler(async (req, res) => {
+    try {
+        const unassignedTools = await Tools.find({ toolStatus: 'unassigned' })
+            .populate('technician', 'name email') // optional: populate technician details if you need them
+            .sort({ createdAt: -1 }); // latest first
 
+        if (!unassignedTools.length) {
+            return res.status(404).json({ message: 'No unassigned tools found' });
+        }
 
+        res.status(200).json({
+            success: true,
+            count: unassignedTools.length,
+            data: unassignedTools,
+        });
+    } catch (error) {
+        console.error("Error fetching unassigned tools:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch unassigned tools",
+            error: error.message,
+        });
+    }
+});
 
-export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory };
+export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory, getUnassignedTools };

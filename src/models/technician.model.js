@@ -34,7 +34,7 @@ const { Schema } = mongoose;
 const toolSubSchema = new Schema({
     toolName: {
         type: String,
-        // required: true,
+        // required: true,a
         // trim: true,
     },
     toolId: {
@@ -50,10 +50,10 @@ const toolSubSchema = new Schema({
         type: Date,
         // required: false,
     },
-    submitDate: {
-        type: Date,
-        // required: false,
-    }
+    // submitDate: {
+    //     type: Date,
+    //     // required: false,
+    // }
 }, { _id: false }); // Prevents automatic _id generation for subdocuments
 
 // Main employee schema extending User

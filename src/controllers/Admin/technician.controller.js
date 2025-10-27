@@ -545,25 +545,92 @@ const getAll = asyncHandler(async (req, res) => {
     }
 });
 
-const updateById = asyncHandler(async (req, res) => {
+
+
+// const updateById = asyncHandler(async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const updateData = req.body;
+
+//         if (updateData.technicianType === "engineer" && (!updateData.tools || updateData.tools.length === 0)) {
+//             throw new ApiError(400, "Engineer must be assigned at least one tool.");
+//         }
+
+//         const updatedTechnician = await Technician.findByIdAndUpdate(id, updateData, { new: true }).populate("tools");
+//         if (!updatedTechnician) {
+//             throw new ApiError(404, "Technician not found");
+//         }
+
+//         return res.status(200).json(new ApiResponse(200, updatedTechnician, "Technician updated successfully"));
+//     } catch (error) {
+//         throw new ApiError(500, error.message || "Failed to update technician");
+//     }
+// });
+
+export const updateById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
 
-        if (updateData.technicianType === "engineer" && (!updateData.tools || updateData.tools.length === 0)) {
-            throw new ApiError(400, "Engineer must be assigned at least one tool.");
-        }
-
-        const updatedTechnician = await Technician.findByIdAndUpdate(id, updateData, { new: true }).populate("tools");
-        if (!updatedTechnician) {
+        const technician = await Technician.findById(id);
+        if (!technician) {
             throw new ApiError(404, "Technician not found");
         }
 
-        return res.status(200).json(new ApiResponse(200, updatedTechnician, "Technician updated successfully"));
+        // 🔹 For engineers: must have tools
+        if (
+            updateData.technicianType === "engineer" &&
+            (!updateData.tools || updateData.tools.length === 0)
+        ) {
+            throw new ApiError(400, "Engineer must be assigned at least one tool.");
+        }
+
+        // 🔹 Step 1: Unassign previous tools if role is engineer
+        if (technician.technicianType === "engineer") {
+            await Tools.updateMany(
+                { technician: technician._id },
+                { $set: { technician: null, toolStatus: "unassigned" } }
+            );
+        }
+
+        // 🔹 Step 2: Assign new tools if engineer
+        if (
+            updateData.technicianType === "engineer" &&
+            Array.isArray(updateData.tools)
+        ) {
+            for (const toolData of updateData.tools) {
+                const { toolId } = toolData;
+                await Tools.findByIdAndUpdate(toolId, {
+                    technician: technician._id,
+                    toolStatus: "assigned",
+                    submitDate: new Date(),
+                });
+            }
+        }
+
+        // 🔹 Step 3: Update technician record itself
+        const updatedTechnician = await Technician.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true }
+        )
+            .populate({
+                path: "tools.toolId",
+                model: "Tool",
+            })
+            .lean();
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(200, updatedTechnician, "Technician updated successfully")
+            );
     } catch (error) {
+        console.error("❌ Error in updateById:", error);
         throw new ApiError(500, error.message || "Failed to update technician");
     }
 });
+
 const deleteById = asyncHandler(async (req, res) => {
     try {
         // return res.status(200).json({msg:"hi"})

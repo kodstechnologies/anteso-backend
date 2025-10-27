@@ -1,6 +1,7 @@
 import { Schema } from "mongoose";
 import mongoose from 'mongoose'
 import { generateReadableId } from "../utils/GenerateReadableId.js";
+import { type } from "os";
 
 const quotationSchema = new Schema(
     {
@@ -70,6 +71,11 @@ const quotationSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Employee', // Reference the Employee model
         },
+        isUploaded: {
+            type: Boolean,
+            default: false,
+        }
+
     },
     { timestamps: true }
 );

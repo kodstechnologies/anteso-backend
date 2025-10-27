@@ -37,7 +37,7 @@ const getLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     const leave = await Leave.findById(id)
-        .populate("employee", "name designation"); // populate employee name + designation
+        .populate("employee", "name designation technicianType"); // populate employee name + designation
 
     if (!leave) {
         throw new ApiError(404, "Leave not found");
@@ -217,36 +217,36 @@ const getAllLeavesByCustomerId = asyncHandler(async (req, res) => {
 });
 
 
-const approveLeave = asyncHandler(async (req, res) => {
-    try {
-        const { employeeId, leaveId } = req.params;
+// const approveLeave = asyncHandler(async (req, res) => {
+//     try {
+//         const { employeeId, leaveId } = req.params;
 
-        const leave = await Leave.findOne({ _id: leaveId, employee: employeeId });
-        if (!leave) {
-            return res.status(404).json({
-                success: false,
-                message: "Leave request not found for this employee",
-            });
-        }
+//         const leave = await Leave.findOne({ _id: leaveId, employee: employeeId });
+//         if (!leave) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Leave request not found for this employee",
+//             });
+//         }
 
-        // Update status to Approved
-        leave.status = "Approved";
-        await leave.save();
+//         // Update status to Approved
+//         leave.status = "Approved";
+//         await leave.save();
 
-        res.status(200).json({
-            success: true,
-            message: "Leave approved successfully",
-            data: leave.status,
-        });
-    } catch (error) {
-        console.error("Approve Leave Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Error approving leave",
-            error: error.message,
-        });
-    }
-});
+//         res.status(200).json({
+//             success: true,
+//             message: "Leave approved successfully",
+//             data: leave.status,
+//         });
+//     } catch (error) {
+//         console.error("Approve Leave Error:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Error approving leave",
+//             error: error.message,
+//         });
+//     }
+// });
 
 // const rejectLeave = asyncHandler(async (req, res) => {
 //     try {
@@ -278,6 +278,79 @@ const approveLeave = asyncHandler(async (req, res) => {
 //         });
 //     }
 // });
+
+const approveLeave = asyncHandler(async (req, res) => {
+    try {
+        const { employeeId, leaveId } = req.params;
+
+        // 1️⃣ Find leave for this employee
+        const leave = await Leave.findOne({ _id: leaveId, employee: employeeId });
+        if (!leave) {
+            return res.status(404).json({
+                success: false,
+                message: "Leave request not found for this employee",
+            });
+        }
+
+        // 2️⃣ Update status to Approved
+        leave.status = "Approved";
+        await leave.save();
+
+        // 3️⃣ Update existing attendance records
+        await Attendance.updateMany(
+            {
+                employee: employeeId,
+                date: { $gte: leave.startDate, $lte: leave.endDate },
+            },
+            {
+                $set: {
+                    status: "On Leave",   // ← mark as On Leave
+                    leave: leave._id,
+                },
+            }
+        );
+
+        // 4️⃣ Create missing attendance records for leave dates
+        let current = new Date(leave.startDate);
+        const end = new Date(leave.endDate);
+
+        while (current <= end) {
+            const startOfDay = new Date(current);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(current);
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const existing = await Attendance.findOne({
+                employee: employeeId,
+                date: { $gte: startOfDay, $lte: endOfDay },
+            });
+
+            if (!existing) {
+                await Attendance.create({
+                    employee: employeeId,
+                    date: startOfDay,
+                    status: "On Leave",
+                    leave: leave._id,
+                });
+            }
+
+            current.setDate(current.getDate() + 1);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Leave approved and attendance updated successfully",
+            data: leave,
+        });
+    } catch (error) {
+        console.error("Approve Leave Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error approving leave",
+            error: error.message,
+        });
+    }
+});
 
 const rejectLeave = asyncHandler(async (req, res) => {
     try {

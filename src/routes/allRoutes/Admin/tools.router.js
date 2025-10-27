@@ -14,5 +14,5 @@ router.get('/history/:toolId',toolsController.toolHistory)
 
 router.get('/all-tools-by-technicianId/:technicianId',toolsController.getAllToolsByTechnicianId)
 router.get('/get-tools-by-technicanId-and-toolId/:technicianId/:toolId',toolsController.getToolByTechnicianAndTool)
-
+router.get('/unassigned-tools',toolsController.getUnassignedTools)
 export default router
