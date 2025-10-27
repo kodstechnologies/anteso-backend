@@ -667,7 +667,7 @@ const getUnassignedTools = asyncHandler(async (req, res) => {
             .sort({ createdAt: -1 }); // latest first
 
         if (!unassignedTools.length) {
-            return res.status(404).json({ message: 'No unassigned tools found' });
+            return res.status(200).json({ message: 'No unassigned tools found' });
         }
 
         res.status(200).json({
