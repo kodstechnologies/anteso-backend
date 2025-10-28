@@ -10,11 +10,12 @@ dotenv.config();
 
 const port = process.env.PORT
 const app = express()
+app.set('trust proxy', true);
 
 app.use(cors({
     origin: ["https://admin.antesobiomedicalopc.com", 'http://localhost:3000',
         'http://localhost:8000',
-        'http://localhost:5173',], 
+        'http://localhost:5173',],
     credentials: true,
 }));
 // app.use(express.json());
