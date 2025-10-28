@@ -4177,7 +4177,7 @@ const getQaReportsByTechnician = async (req, res) => {
         });
 
         if (!services || services.length === 0) {
-            return res.status(404).json({ success: false, message: "No QA reports found for this technician" });
+            return res.status(200).json({ success: false, message: "No QA reports found for this technician" });
         }
 
         // 2️⃣ Fetch related orders for those services

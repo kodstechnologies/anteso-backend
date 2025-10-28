@@ -38,6 +38,7 @@ const getLeaveById = asyncHandler(async (req, res) => {
 
     const leave = await Leave.findById(id)
         .populate("employee", "name designation technicianType"); // populate employee name + designation
+    console.log("🚀 ~ leave:", leave)
 
     if (!leave) {
         throw new ApiError(404, "Leave not found");
