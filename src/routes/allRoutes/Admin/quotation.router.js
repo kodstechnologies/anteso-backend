@@ -23,4 +23,5 @@ router.get('/get-quotation-pdf/:hospitalId/:enquiryId', quotationController.getQ
 //mobile api
 // router.get('/get-quotation-pdf/:hospitalId/:enquiryId/:quotationId')
 router.get('/next-number',quotationController.getNextQuotationNumber)
+router.get('/get-quotation-history/:quotationId',quotationController.getQuotationHistory)
 export default router
