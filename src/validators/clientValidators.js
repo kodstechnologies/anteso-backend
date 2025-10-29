@@ -5,7 +5,7 @@ export const clientValidationSchema = Joi.object({
     phone: Joi.number().required(),
     email: Joi.string().email().required(),
     address: Joi.string().optional(),
-    gstNo: Joi.string().optional(),
+    gstNo: Joi.string().allow("", null),
 
     // Optional references
     hospitals: Joi.array().items(Joi.string().hex().length(24)),

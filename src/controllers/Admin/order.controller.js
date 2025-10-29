@@ -4181,7 +4181,7 @@ const getQaReportsByTechnician = async (req, res) => {
                 success: true,
                 technicianId,
                 totalReports: 0,
-                reports: [], 
+                reports: [],
             });
         }
 
@@ -4565,13 +4565,54 @@ const acceptQAReport = asyncHandler(async (req, res) => {
 });
 
 
+// const rejectQAReport = asyncHandler(async (req, res) => {
+//     const { orderId, serviceId, qaReportId } = req.params;
+
+//     // Validate ObjectIds
+//     if (!mongoose.Types.ObjectId.isValid(orderId) ||
+//         !mongoose.Types.ObjectId.isValid(serviceId) ||
+//         !mongoose.Types.ObjectId.isValid(qaReportId)) {
+//         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
+//     }
+
+//     const order = await orderModel.findById(orderId).populate({
+//         path: "services",
+//         populate: {
+//             path: "workTypeDetails.QAtest",
+//         },
+//     });
+
+//     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+//     const service = order.services.find(s => s._id.toString() === serviceId);
+//     if (!service) return res.status(404).json({ success: false, message: "Service not found" });
+
+//     const wt = service.workTypeDetails.find(w => w.QAtest && w.QAtest._id.toString() === qaReportId);
+//     if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
+
+//     // Check if already accepted
+//     if (wt.QAtest.reportStatus === "accepted") {
+//         return res.status(400).json({ success: false, message: "Cannot reject. QA Report is already accepted." });
+//     }
+
+//     // Update status to rejected
+//     wt.QAtest.reportStatus = "rejected";
+//     await wt.QAtest.save();
+
+//     res.status(200).json({ success: true, message: "QA Report rejected", report: wt.QAtest });
+// });
+
+
 const rejectQAReport = asyncHandler(async (req, res) => {
     const { orderId, serviceId, qaReportId } = req.params;
+    const { remark } = req.body; 
 
     // Validate ObjectIds
-    if (!mongoose.Types.ObjectId.isValid(orderId) ||
+    if (
+        !mongoose.Types.ObjectId.isValid(orderId) ||
         !mongoose.Types.ObjectId.isValid(serviceId) ||
-        !mongoose.Types.ObjectId.isValid(qaReportId)) {
+        !mongoose.Types.ObjectId.isValid(qaReportId)
+    ) {
         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
     }
 
@@ -4582,24 +4623,36 @@ const rejectQAReport = asyncHandler(async (req, res) => {
         },
     });
 
-    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+    if (!order)
+        return res.status(404).json({ success: false, message: "Order not found" });
 
     const service = order.services.find(s => s._id.toString() === serviceId);
-    if (!service) return res.status(404).json({ success: false, message: "Service not found" });
+    if (!service)
+        return res.status(404).json({ success: false, message: "Service not found" });
 
-    const wt = service.workTypeDetails.find(w => w.QAtest && w.QAtest._id.toString() === qaReportId);
-    if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
+    const wt = service.workTypeDetails.find(
+        w => w.QAtest && w.QAtest._id.toString() === qaReportId
+    );
+    if (!wt)
+        return res.status(404).json({ success: false, message: "QA Report not found" });
 
     // Check if already accepted
     if (wt.QAtest.reportStatus === "accepted") {
-        return res.status(400).json({ success: false, message: "Cannot reject. QA Report is already accepted." });
+        return res
+            .status(400)
+            .json({ success: false, message: "Cannot reject. QA Report is already accepted." });
     }
 
-    // Update status to rejected
     wt.QAtest.reportStatus = "rejected";
+    wt.QAtest.remark = remark || "Rejected without remark"; // Default fallback remark
+
     await wt.QAtest.save();
 
-    res.status(200).json({ success: true, message: "QA Report rejected", report: wt.QAtest });
+    res.status(200).json({
+        success: true,
+        message: "QA Report rejected successfully",
+        report: wt.QAtest,
+    });
 });
 
 const getEloraReport = asyncHandler(async (req, res) => {

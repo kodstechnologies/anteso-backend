@@ -6,5 +6,5 @@ export const hospitalSchema = Joi.object({
     address: Joi.string().required(),
     branch: Joi.string().required(),
     phone: Joi.number().required(),
-    gstNo: Joi.string().required()
+    gstNo: Joi.string().allow("", null),
 });

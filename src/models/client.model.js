@@ -12,7 +12,6 @@ const clientSchema = new Schema({
     },
     gstNo: {
         type: String,
-        unique: true,
     },
     address:{
         type:String

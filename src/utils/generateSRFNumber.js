@@ -18,6 +18,6 @@ export const genarateSRFNumber = async () => {
     },
   });
 
-  const nextNumber = String(count + 1).padStart(3, '0'); // 001, 002, ...
+  const nextNumber = String(count + 1).padStart(4, '0'); // 001, 002, ...
   return `${prefix}/${year}/${month}/${nextNumber}`;
 };
