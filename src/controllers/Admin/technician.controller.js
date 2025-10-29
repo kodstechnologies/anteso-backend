@@ -363,6 +363,133 @@ import Salary from "../../models/salary.model.js"
 //     }
 // });
 
+// const add = asyncHandler(async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             phone,
+//             email,
+//             technicianType,
+//             status,
+//             tools,
+//             designation,
+//             department,
+//             dateOfJoining,
+//             workingDays,
+//             password,
+//         } = req.body;
+
+//         // ✅ Basic validation
+//         if (
+//             !name ||
+//             !phone ||
+//             !email ||
+//             !technicianType ||
+//             !designation ||
+//             !department ||
+//             !dateOfJoining ||
+//             workingDays === undefined
+//         ) {
+//             throw new ApiError(400, "All required fields must be provided");
+//         }
+
+//         // ✅ Check duplicate email
+//         const existingEmail = await Employee.findOne({ email });
+//         if (existingEmail) {
+//             throw new ApiError(400, "Employee with this email already exists");
+//         }
+
+//         // ✅ Check duplicate phone
+//         const existingPhone = await Employee.findOne({ phone });
+//         if (existingPhone) {
+//             throw new ApiError(400, "Phone number already exists");
+//         }
+
+//         // ✅ Password required for office-staff only
+//         let hashedPassword = undefined;
+//         if (technicianType === "office-staff") {
+//             if (!password) {
+//                 throw new ApiError(400, "Password is required for office staff");
+//             }
+//             hashedPassword = await bcrypt.hash(password, 10);
+//         }
+
+//         // ✅ Engineer-specific tool validation
+//         if (technicianType === "engineer") {
+//             if (!tools || !Array.isArray(tools) || tools.length === 0) {
+//                 throw new ApiError(400, "Engineer must be assigned at least one tool.");
+//             }
+
+//             for (const t of tools) {
+//                 const toolDoc = await Tool.findById(t.toolId);
+//                 if (!toolDoc) {
+//                     throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
+//                 }
+//                 if (toolDoc.toolStatus === "assigned") {
+//                     throw new ApiError(
+//                         400,
+//                         `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`
+//                     );
+//                 }
+//             }
+//         }
+
+//         // ✅ Build employee data
+//         const employeeData = {
+//             name,
+//             phone,
+//             email,
+//             technicianType,
+//             status,
+//             designation,
+//             department,
+//             dateOfJoining,
+//             workingDays,
+//             tools: technicianType === "engineer" ? tools : [],
+//         };
+
+//         if (technicianType === "office-staff") {
+//             employeeData.password = hashedPassword;
+//         }
+
+//         // ✅ Create employee
+//         const employee = new Employee(employeeData);
+
+//         try {
+//             await employee.save();
+//         } catch (err) {
+//             // Handle MongoDB duplicate key error
+//             if (err.code === 11000) {
+//                 if (err.keyPattern?.phone) {
+//                     throw new ApiError(400, "Phone number already exists");
+//                 }
+//                 if (err.keyPattern?.email) {
+//                     throw new ApiError(400, "Email already exists");
+//                 }
+//             }
+//             throw err;
+//         }
+
+//         // ✅ Update tool status if assigned
+//         if (technicianType === "engineer") {
+//             for (const t of tools) {
+//                 await Tool.findByIdAndUpdate(
+//                     t.toolId,
+//                     { toolStatus: "assigned", technician: employee._id },
+//                     { new: true }
+//                 );
+//             }
+//         }
+
+//         return res
+//             .status(201)
+//             .json(new ApiResponse(201, employee, "Employee created successfully"));
+
+//     } catch (error) {
+//         throw new ApiError(error.statusCode || 500, error.message || "Failed to create employee");
+//     }
+// });
+
 const add = asyncHandler(async (req, res) => {
     try {
         const {
@@ -378,6 +505,17 @@ const add = asyncHandler(async (req, res) => {
             workingDays,
             password,
         } = req.body;
+        console.log("🚀 ~ req.body:", req.body);
+
+        // ✅ Parse tools if it's a JSON string
+        let parsedTools = tools;
+        if (typeof tools === "string") {
+            try {
+                parsedTools = JSON.parse(tools);
+            } catch (err) {
+                throw new ApiError(400, "Invalid JSON format for tools");
+            }
+        }
 
         // ✅ Basic validation
         if (
@@ -393,20 +531,16 @@ const add = asyncHandler(async (req, res) => {
             throw new ApiError(400, "All required fields must be provided");
         }
 
-        // ✅ Check duplicate email
-        const existingEmail = await Employee.findOne({ email });
-        if (existingEmail) {
-            throw new ApiError(400, "Employee with this email already exists");
-        }
+        // ✅ Check duplicate email and phone
+        const [existingEmail, existingPhone] = await Promise.all([
+            Employee.findOne({ email }),
+            Employee.findOne({ phone })
+        ]);
+        if (existingEmail) throw new ApiError(400, "Employee with this email already exists");
+        if (existingPhone) throw new ApiError(400, "Phone number already exists");
 
-        // ✅ Check duplicate phone
-        const existingPhone = await Employee.findOne({ phone });
-        if (existingPhone) {
-            throw new ApiError(400, "Phone number already exists");
-        }
-
-        // ✅ Password required for office-staff only
-        let hashedPassword = undefined;
+        // ✅ Password required for office-staff
+        let hashedPassword;
         if (technicianType === "office-staff") {
             if (!password) {
                 throw new ApiError(400, "Password is required for office staff");
@@ -416,11 +550,11 @@ const add = asyncHandler(async (req, res) => {
 
         // ✅ Engineer-specific tool validation
         if (technicianType === "engineer") {
-            if (!tools || !Array.isArray(tools) || tools.length === 0) {
+            if (!parsedTools || !Array.isArray(parsedTools) || parsedTools.length === 0) {
                 throw new ApiError(400, "Engineer must be assigned at least one tool.");
             }
 
-            for (const t of tools) {
+            for (const t of parsedTools) {
                 const toolDoc = await Tool.findById(t.toolId);
                 if (!toolDoc) {
                     throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
@@ -430,6 +564,18 @@ const add = asyncHandler(async (req, res) => {
                         400,
                         `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`
                     );
+                }
+            }
+        }
+
+        // ✅ Handle document uploads for engineer
+        let uploadedDocs = {};
+        if (technicianType === "engineer" && req.files) {
+            const fileKeys = ["doc1", "doc2", "doc3"];
+            for (const key of fileKeys) {
+                if (req.files[key] && req.files[key][0]) {
+                    const uploadResult = await uploadToS3(req.files[key][0]);
+                    uploadedDocs[key] = uploadResult.url;
                 }
             }
         }
@@ -445,7 +591,8 @@ const add = asyncHandler(async (req, res) => {
             department,
             dateOfJoining,
             workingDays,
-            tools: technicianType === "engineer" ? tools : [],
+            tools: technicianType === "engineer" ? parsedTools : [],
+            ...uploadedDocs,
         };
 
         if (technicianType === "office-staff") {
@@ -454,25 +601,11 @@ const add = asyncHandler(async (req, res) => {
 
         // ✅ Create employee
         const employee = new Employee(employeeData);
-
-        try {
-            await employee.save();
-        } catch (err) {
-            // Handle MongoDB duplicate key error
-            if (err.code === 11000) {
-                if (err.keyPattern?.phone) {
-                    throw new ApiError(400, "Phone number already exists");
-                }
-                if (err.keyPattern?.email) {
-                    throw new ApiError(400, "Email already exists");
-                }
-            }
-            throw err;
-        }
+        await employee.save();
 
         // ✅ Update tool status if assigned
         if (technicianType === "engineer") {
-            for (const t of tools) {
+            for (const t of parsedTools) {
                 await Tool.findByIdAndUpdate(
                     t.toolId,
                     { toolStatus: "assigned", technician: employee._id },
@@ -481,14 +614,16 @@ const add = asyncHandler(async (req, res) => {
             }
         }
 
-        return res
-            .status(201)
-            .json(new ApiResponse(201, employee, "Employee created successfully"));
+        return res.status(201).json(
+            new ApiResponse(201, employee, "Employee created successfully")
+        );
 
     } catch (error) {
+        console.error("Add employee error:", error);
         throw new ApiError(error.statusCode || 500, error.message || "Failed to create employee");
     }
 });
+
 
 
 //not updated
@@ -572,64 +707,88 @@ export const updateById = asyncHandler(async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        const technician = await Technician.findById(id);
-        if (!technician) {
-            throw new ApiError(404, "Technician not found");
+        const employee = await Employee.findById(id);
+        if (!employee) {
+            throw new ApiError(404, "Employee not found");
         }
 
-        // 🔹 For engineers: must have tools
+        // ✅ Parse tools if JSON string
+        let parsedTools = updateData.tools;
+        if (typeof updateData.tools === "string") {
+            try {
+                parsedTools = JSON.parse(updateData.tools);
+            } catch {
+                throw new ApiError(400, "Invalid JSON format for tools");
+            }
+        }
+
+        // ✅ Validate engineer must have at least one tool
         if (
             updateData.technicianType === "engineer" &&
-            (!updateData.tools || updateData.tools.length === 0)
+            (!parsedTools || parsedTools.length === 0)
         ) {
             throw new ApiError(400, "Engineer must be assigned at least one tool.");
         }
 
-        // 🔹 Step 1: Unassign previous tools if role is engineer
-        if (technician.technicianType === "engineer") {
-            await Tools.updateMany(
-                { technician: technician._id },
-                { $set: { technician: null, toolStatus: "unassigned" } }
-            );
-        }
+        // ✅ Handle document uploads (doc1, doc2, doc3)
+        const docKeys = ["doc1", "doc2", "doc3"];
+        const updatedDocs = {};
 
-        // 🔹 Step 2: Assign new tools if engineer
-        if (
-            updateData.technicianType === "engineer" &&
-            Array.isArray(updateData.tools)
-        ) {
-            for (const toolData of updateData.tools) {
-                const { toolId } = toolData;
-                await Tools.findByIdAndUpdate(toolId, {
-                    technician: technician._id,
-                    toolStatus: "assigned",
-                    submitDate: new Date(),
-                });
+        if (req.files) {
+            for (const key of docKeys) {
+                if (req.files[key] && req.files[key][0]) {
+                    const uploadResult = await uploadToS3(req.files[key][0]);
+                    updatedDocs[key] = uploadResult.url;
+                }
             }
         }
 
-        // 🔹 Step 3: Update technician record itself
-        const updatedTechnician = await Technician.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true }
-        )
-            .populate({
-                path: "tools.toolId",
-                model: "Tool",
-            })
-            .lean();
+        // ✅ Merge documents (keep old if not replaced)
+        for (const key of docKeys) {
+            updateData[key] = updatedDocs[key] || employee[key];
+        }
+
+        // ✅ Tool reassignment (for engineers)
+        if (updateData.technicianType === "engineer") {
+            // Unassign old tools
+            await Tool.updateMany(
+                { technician: employee._id },
+                { $set: { technician: null, toolStatus: "unassigned" } }
+            );
+
+            // Assign new tools
+            for (const t of parsedTools) {
+                await Tool.findByIdAndUpdate(
+                    t.toolId,
+                    {
+                        technician: employee._id,
+                        toolStatus: "assigned",
+                        submitDate: new Date(),
+                    },
+                    { new: true }
+                );
+            }
+
+            updateData.tools = parsedTools;
+        }
+
+        // ✅ Update employee record
+        const updatedEmployee = await Employee.findByIdAndUpdate(id, updateData, {
+            new: true,
+        }).populate({
+            path: "tools.toolId",
+            select: "toolId nomenclature manufacturer model SrNo calibrationCertificateNo",
+        });
 
         return res
             .status(200)
-            .json(
-                new ApiResponse(200, updatedTechnician, "Technician updated successfully")
-            );
+            .json(new ApiResponse(200, updatedEmployee, "Employee updated successfully"));
     } catch (error) {
-        console.error("❌ Error in updateById:", error);
-        throw new ApiError(500, error.message || "Failed to update technician");
+        console.error("❌ Update employee error:", error);
+        throw new ApiError(500, error.message || "Failed to update employee");
     }
 });
+
 
 const deleteById = asyncHandler(async (req, res) => {
     try {

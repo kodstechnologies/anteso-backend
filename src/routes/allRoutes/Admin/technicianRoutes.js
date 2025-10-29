@@ -2,11 +2,28 @@ import { Router } from "express";
 import technicianController from "../../../controllers/Admin/technician.controller.js";
 import upload from "../../../middlewares/upload.js";
 const router = Router();
-router.post('/add', technicianController.add)
+// router.post('/add', technicianController.add)
+router.post(
+    '/add',
+    upload.fields([
+        { name: 'doc1', maxCount: 1 },
+        { name: 'doc2', maxCount: 1 },
+        { name: 'doc3', maxCount: 1 },
+    ]),
+    technicianController.add
+);
 router.get('/get-by-id/:id', technicianController.getById)
 router.get('/get-all', technicianController.getAll)
 router.get('/all-employees', technicianController.getAllEmployees)
-router.put('/update-by-id/:id', technicianController.updateById)
+router.put(
+    "/update-by-id/:id",
+    upload.fields([
+        { name: "doc1", maxCount: 1 },
+        { name: "doc2", maxCount: 1 },
+        { name: "doc3", maxCount: 1 },
+    ]),
+    technicianController.updateById
+);
 router.delete('/delete-by-id/:id', technicianController.deleteById)
 router.get('/unassigned-tools', technicianController.getUnassignedTools)
 router.get('/assigned-tools-for-technician/:technicianId', technicianController.assignedToolByTechnicianId)
@@ -36,5 +53,5 @@ router.get('/attendance-summary/:empId', technicianController.getAttendanceSumma
 // router.get('/attendence-status/:employeeId',technicianController.getAttendanceStatus)
 router.get('/attendence-status/:employeeId', technicianController.getAttendanceStatus)
 router.get('/get-payment-details/:employeeId', technicianController.getPaymentDetails)
-router.get('/get-advanced-amount/:employeeId',technicianController.getAdvanceAccountByTechnician)
+router.get('/get-advanced-amount/:employeeId', technicianController.getAdvanceAccountByTechnician)
 export default router

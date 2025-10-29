@@ -95,6 +95,15 @@ const employeeSchema = new Schema({
     password: {
         type: String
     },
+    doc1: {
+        type: String
+    },
+    doc2: {
+        type: String
+    },
+    doc3: {
+        type: String
+    },
     tools: [toolSubSchema], // Embedded tool subdocuments
     // tools: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tool" }]
 }, {
