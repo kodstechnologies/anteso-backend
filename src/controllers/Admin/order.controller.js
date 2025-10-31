@@ -4108,7 +4108,7 @@ const getAllOrdersByHospitalId = asyncHandler(async (req, res) => {
 // });
 
 
- const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
+const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
     try {
         const { hospitalId, orderId } = req.params;
 
@@ -4714,15 +4714,23 @@ const acceptQAReport = asyncHandler(async (req, res) => {
 
 const rejectQAReport = asyncHandler(async (req, res) => {
     const { orderId, serviceId, qaReportId } = req.params;
-    const { remark } = req.body;
+    const remark = req.body?.remark; // ✅ Safe access
 
-    // Validate ObjectIds
+    // ✅ Validate ObjectIds
     if (
         !mongoose.Types.ObjectId.isValid(orderId) ||
         !mongoose.Types.ObjectId.isValid(serviceId) ||
         !mongoose.Types.ObjectId.isValid(qaReportId)
     ) {
         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
+    }
+
+    // ✅ Ensure remark is provided
+    if (!remark || remark.trim() === "") {
+        return res.status(400).json({
+            success: false,
+            message: "Remark is required to reject a QA report",
+        });
     }
 
     const order = await orderModel.findById(orderId).populate({
@@ -4745,15 +4753,15 @@ const rejectQAReport = asyncHandler(async (req, res) => {
     if (!wt)
         return res.status(404).json({ success: false, message: "QA Report not found" });
 
-    // Check if already accepted
     if (wt.QAtest.reportStatus === "accepted") {
-        return res
-            .status(400)
-            .json({ success: false, message: "Cannot reject. QA Report is already accepted." });
+        return res.status(400).json({
+            success: false,
+            message: "Cannot reject. QA Report is already accepted.",
+        });
     }
 
     wt.QAtest.reportStatus = "rejected";
-    wt.QAtest.remark = remark || "Rejected without remark"; // Default fallback remark
+    wt.QAtest.remark = remark.trim();
 
     await wt.QAtest.save();
 
@@ -4763,6 +4771,7 @@ const rejectQAReport = asyncHandler(async (req, res) => {
         report: wt.QAtest,
     });
 });
+
 
 const getEloraReport = asyncHandler(async (req, res) => {
     try {
