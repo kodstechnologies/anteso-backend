@@ -1,23 +1,19 @@
-// utils/generateReadableId.js
-import Order from '../models/order.model.js';
+// utils/generateSRFNumber.js
+import Counter from '../models/counterSRF.model.js';
 
 export const genarateSRFNumber = async () => {
   const prefix = 'ABSRF';
   const now = new Date();
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // 01-12
+  const month = now.getMonth() + 1;
 
-  // Count existing orders in current year and month
-  const startOfMonth = new Date(year, now.getMonth(), 1);
-  const endOfMonth = new Date(year, now.getMonth() + 1, 0, 23, 59, 59);
+  // Atomically increment or create counter
+  const counter = await Counter.findOneAndUpdate(
+    { prefix, year, month },
+    { $inc: { sequenceValue: 1 } },
+    { new: true, upsert: true } // create if doesn't exist
+  );
 
-  const count = await Order.countDocuments({
-    createdAt: {
-      $gte: startOfMonth,
-      $lte: endOfMonth,
-    },
-  });
-
-  const nextNumber = String(count + 1).padStart(4, '0'); // 001, 002, ...
-  return `${prefix}/${year}/${month}/${nextNumber}`;
+  const nextNumber = String(counter.sequenceValue).padStart(4, '0');
+  return `${prefix}/${year}/${String(month).padStart(2, '0')}/${nextNumber}`;
 };
