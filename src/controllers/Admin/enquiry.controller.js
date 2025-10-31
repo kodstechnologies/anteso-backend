@@ -2892,9 +2892,32 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
 
     } catch (error) {
         console.error("❌ Create Direct Order Error:", error);
+
+        // 🧩 Handle Duplicate Key Error (e.g., duplicate email)
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0];
+            const value = error.keyValue?.[field];
+
+            return res.status(409).json({
+                success: false,
+                message: ` A record with the same ${field} (${value}) already exists.`,
+            });
+        }
+
+        // 🧩 Handle Validation Errors (optional improvement)
+        if (error.name === "ValidationError") {
+            const messages = Object.values(error.errors).map((err) => err.message);
+            return res.status(400).json({
+                success: false,
+                message: "Validation failed",
+                errors: messages,
+            });
+        }
+
+        // 🧩 Default Server Error
         return res.status(500).json({
             success: false,
-            message: "Failed to create direct order",
+            message: "Failed to create direct order due to a server error.",
             error: error.message,
         });
     }
