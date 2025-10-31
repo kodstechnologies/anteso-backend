@@ -51,41 +51,27 @@ const getLeaveById = asyncHandler(async (req, res) => {
 
 
 const getAllLeaves = asyncHandler(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    try {
+        const leaves = await Leave.find().sort({ createdAt: -1 });
+        console.log("🚀 ~ leaves:", leaves)
 
-    const skip = (page - 1) * limit;
-    const totalLeaves = await Leave.countDocuments();
+        if (!leaves || leaves.length === 0) {
+            return res.status(200).json(
+                new ApiResponse(200, [], "No leaves found")
+            );
+        }
 
-    // ✅ If no leaves exist, return empty array but still success
-    if (totalLeaves === 0) {
-        return res.status(200).json(
-            new ApiResponse(200, {
-                total: 0,
-                page,
-                limit,
-                totalPages: 0,
-                data: []
-
-            }, "No leaves found")
+        res.status(200).json(
+            new ApiResponse(200, leaves, "Leaves fetched successfully")
+        );
+    } catch (error) {
+        console.error("Error fetching leaves:", error);
+        res.status(500).json(
+            new ApiResponse(500, null, "Server error while fetching leaves")
         );
     }
-
-    const leaves = await Leave.find()
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 });
-
-    res.status(200).json(
-        new ApiResponse(200, {
-            total: totalLeaves,
-            page,
-            limit,
-            totalPages: Math.ceil(totalLeaves / limit),
-            data: leaves
-        }, "Leaves fetched successfully")
-    );
 });
+
 
 // const updateLeaveById = asyncHandler(async (req, res) => {
 //     const { id } = req.params;
@@ -133,11 +119,30 @@ const updateLeaveById = asyncHandler(async (req, res) => {
 
 const deleteLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const deleted = await Leave.findByIdAndDelete(id);
-    if (!deleted) {
+
+    const leave = await Leave.findById(id);
+    if (!leave) {
         throw new ApiError(404, "Leave not found");
     }
-    res.status(200).json(new ApiResponse(200, deleted, "Leave deleted successfully"));
+
+    if (leave.status === "Approved") {
+        await Attendance.updateMany(
+            {
+                employee: leave.employee,
+                leave: leave._id,
+            },
+            {
+                $set: { status: "On leave" },
+                $unset: { leave: "" },
+            }
+        );
+    }
+
+    await Leave.findByIdAndDelete(id);
+
+    res.status(200).json(
+        new ApiResponse(200, null, "Leave deleted successfully and attendance reverted (if approved)")
+    );
 });
 
 const applyForLeave = asyncHandler(async (req, res) => {
@@ -353,10 +358,50 @@ const approveLeave = asyncHandler(async (req, res) => {
     }
 });
 
+// const rejectLeave = asyncHandler(async (req, res) => {
+//     try {
+//         const { employeeId, leaveId } = req.params;
+
+//         const leave = await Leave.findOne({ _id: leaveId, employee: employeeId });
+//         if (!leave) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "Leave request not found for this employee",
+//             });
+//         }
+
+//         // ❌ If already Approved, don't allow rejection
+//         if (leave.status === "Approved") {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Cannot reject an already approved leave",
+//             });
+//         }
+
+//         // ✅ Update status to Rejected (only if Pending or already Rejected)
+//         leave.status = "Rejected";
+//         await leave.save();
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Leave rejected successfully",
+//             data: leave,
+//         });
+//     } catch (error) {
+//         console.error("Reject Leave Error:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Error rejecting leave",
+//             error: error.message,
+//         });
+//     }
+// });
 const rejectLeave = asyncHandler(async (req, res) => {
     try {
         const { employeeId, leaveId } = req.params;
+        const { rejectionReason } = req.body; // ✅ take rejection reason from request body
 
+        // ✅ Find the leave for this employee
         const leave = await Leave.findOne({ _id: leaveId, employee: employeeId });
         if (!leave) {
             return res.status(404).json({
@@ -373,8 +418,9 @@ const rejectLeave = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Update status to Rejected (only if Pending or already Rejected)
+        // ✅ Update status and rejection reason
         leave.status = "Rejected";
+        leave.rejectionReason = rejectionReason || "No reason provided"; // optional fallback
         await leave.save();
 
         res.status(200).json({
@@ -687,5 +733,42 @@ const getStaffLeaveById = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeavesToAll, getAllLeaveAllocations, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById }
-// export default {createLeave,getLeavesByEmployeeId,updateLeaveByEmployee,deleteLeaveByEmployee}
+
+const getPendingLeaveApprovals = asyncHandler(async (req, res) => {
+    try {
+        const { page = 1, limit = 10, year, leaveType } = req.query;
+
+        const filters = { status: 'Pending' };
+        if (year) filters.year = parseInt(year);
+        if (leaveType) filters.leaveType = leaveType;
+
+        const skip = (page - 1) * limit;
+
+        const totalPendingLeaves = await Leave.countDocuments(filters);
+
+        const pendingLeaves = await Leave.find(filters)
+            .populate('employee', 'name email') // populates employee details
+            .sort({ createdAt: -1 }) // newest first
+            .skip(skip)
+            .limit(parseInt(limit));
+
+        return res.status(200).json({
+            success: true,
+            message: 'Pending leave approvals fetched successfully',
+            total: totalPendingLeaves,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalPendingLeaves / limit),
+            data: pendingLeaves,
+        });
+    } catch (error) {
+        console.error('Error fetching pending leave approvals:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching pending leave approvals',
+            error: error.message,
+        });
+    }
+});
+
+
+export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeavesToAll, getAllLeaveAllocations, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById, getPendingLeaveApprovals }

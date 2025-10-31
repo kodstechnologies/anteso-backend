@@ -1322,7 +1322,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
     const order = await Order.findById(orderId)
       .populate({
         path: 'services',
-        select: 'machineType description quantity rate hsnno machineModel workTypeDetails',
+        select: 'machineType totalAmount  machineModel workTypeDetails',
       })
       .populate({
         path: 'additionalServices',
@@ -1333,6 +1333,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
         select: 'total discount subtotal gstRate gstAmount',
       })
       .lean();
+    console.log("🚀 ~ order:", order)
 
     if (!order) {
       return res.status(404).json({

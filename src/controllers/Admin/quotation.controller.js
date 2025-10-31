@@ -707,7 +707,9 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
             discount: discountPercentage, // ✅ Store %
             grandTotal: total,
         });
+        console.log("🚀 ~ Enquiry:----->", Enquiry)
 
+            console.log("🚀 ~ quotation:------->", quotation)
         return res.status(201).json(
             new ApiResponse(201, quotation, 'Quotation created successfully')
         );

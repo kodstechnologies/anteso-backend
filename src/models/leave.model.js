@@ -31,6 +31,9 @@ const leaveSchema = mongoose.Schema({
         type: Schema.Types.ObjectId,
         ref: "User"
     },
+    rejectionReason:{
+        type:String
+    }
 
 }, { timestamps: true })
 const Leave = mongoose.model('Leave', leaveSchema)

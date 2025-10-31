@@ -17,11 +17,11 @@ router.post('/approve-leave/:employeeId/:leaveId', leaveController.approveLeave)
 router.post('/reject-leave/:employeeId/:leaveId', leaveController.rejectLeave)
 
 
-
 router.post("/apply-for-leave", leaveController.applyForLeaveByStaff);
 router.get("/get-all-leaves/:staffId", leaveController.getAllLeavesByStaffId);
 router.get("/get-by-id/:staffId/:leaveId", leaveController.getStaffLeaveById);
 router.put("/edit-leave/:staffId/:leaveId", leaveController.editLeaveByStaffId);
+router.get("/get-pending-leave-approvals", leaveController.getPendingLeaveApprovals);
 
 
 export default router
