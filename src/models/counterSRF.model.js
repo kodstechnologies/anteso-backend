@@ -9,6 +9,6 @@ const counterSchema = new mongoose.Schema({
 });
 
 // ✅ Ensure unique per prefix+year+month combo
-counterSchema.index({ prefix: 1, year: 1, month: 1 }, { unique: true });
+// counterSchema.index({ prefix: 1, year: 1, month: 1 }, { unique: true });
 
 export default mongoose.model("CounterSRF", counterSchema);
