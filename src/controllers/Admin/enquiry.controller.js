@@ -923,1395 +923,10 @@ const add = asyncHandler(async (req, res) => {
     }
 });
 
-// const createDirectOrder = asyncHandler(async (req, res) => {
-
-//     try {
-//         console.log("Direct Order Payload:", req.body);
-//         const {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//         } = req.body;
-
-//         if (
-//             !hospitalName ||
-//             !fullAddress ||
-//             !city ||
-//             !district ||
-//             !state ||
-//             !pinCode ||
-//             !branchName ||
-//             !contactPersonName ||
-//             !contactNumber
-//         ) {
-//             throw new ApiError(400, "Missing required fields");
-//         }
-
-//         // ✅ Handle customer
-//         let customerId = req.body.customer;
-//         if (!customerId) {
-//             let existingCustomer = null;
-//             if (emailAddress) existingCustomer = await User.findOne({ email: emailAddress });
-//             else if (contactNumber) existingCustomer = await User.findOne({ phone: contactNumber });
-//             if (!existingCustomer) {
-//                 const newCustomer = await User.create({
-//                     name: hospitalName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                 });
-//                 customerId = newCustomer._id;
-//             } else {
-//                 customerId = existingCustomer._id;
-//             }
-//         }
-//         // ✅ Handle file upload (work order copy)
-//         let workOrderCopy = "";
-//         if (req.files && req.files.length > 0) {
-//             const uploadPromises = req.files.map(async (file) => {
-//                 const { url } = await uploadToS3(file);
-//                 return url;
-//             });
-//             const uploadedFiles = await Promise.all(uploadPromises);
-//             workOrderCopy = uploadedFiles[0];
-//         }
-
-//         // ✅ Create Service documents first
-//         let serviceIds = [];
-//         if (services && services.length > 0) {
-//             const serviceDocs = await Promise.all(
-//                 services.map(async (s) => {
-//                     const serviceDoc = await Service.create({
-//                         machineType: s.machineType,
-//                         equipmentNo: s.equipmentNo,
-//                         machineModel: s.machineModel,
-//                         serialNumber: s.serialNumber || "",
-//                         remark: s.remark || "",
-//                         workTypeDetails: (s.workType || []).map((wt) => ({
-//                             workType: wt,
-//                             status: "pending"
-//                         }))
-//                     });
-//                     return serviceDoc._id;
-//                 })
-//             );
-//             serviceIds = serviceDocs;
-//         }
-//         // ✅ Create AdditionalService documents (new model expects { name, description, totalAmount })
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices).map(([name, data]) => ({
-//                     name,
-//                     description: data?.description || "",
-//                     totalAmount: data?.totalAmount || 0,
-//                 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map(a => a._id);
-//         }
-//         // ✅ Create Enquiry with references to Service + AdditionalService
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: workOrderCopy,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             quotationStatus: null,
-//             customer: customerId
-//         });
-
-//         // ✅ Create Order and link services + enquiry
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds, // keep reference in order as well
-//             specialInstructions,
-//             workOrderCopy,
-//             customer: customerId,
-//             enquiry: enquiry._id
-//         });
-
-//         return res
-//             .status(201)
-//             .json(
-//                 new ApiResponse(
-//                     201,
-//                     { order: newOrder, enquiry },
-//                     "Order & Enquiry created successfully"
-//                 )
-//             );
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         throw new ApiError(500, "Failed to create direct order", [error.message]);
-//     }
-// });
-
-
-// const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Direct Order Payload:", req.body);
-
-//         const {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//         } = req.body;
-
-//         // ✅ Validation
-//         if (
-//             !hospitalName ||
-//             !fullAddress ||
-//             !city ||
-//             !district ||
-//             !state ||
-//             !pinCode ||
-//             !branchName ||
-//             !contactPersonName ||
-//             !contactNumber
-//         ) {
-//             throw new ApiError(400, "Missing required fields");
-//         }
-
-//         // ✅ Check leadOwner in User table
-//         let leadOwnerUser = null;
-//         if (leadOwner) {
-//             leadOwnerUser = await User.findById(leadOwner);
-//         }
-
-//         // ✅ Handle customer
-//         let customerId = req.body.customer;
-//         if (!customerId) {
-//             let existingCustomer = null;
-//             if (emailAddress) existingCustomer = await User.findOne({ email: emailAddress });
-//             else if (contactNumber) existingCustomer = await User.findOne({ phone: contactNumber });
-
-//             if (!existingCustomer) {
-//                 const newCustomer = await User.create({
-//                     name: hospitalName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                 });
-//                 customerId = newCustomer._id;
-//             } else {
-//                 customerId = existingCustomer._id;
-//             }
-//         }
-
-//         // ✅ Handle file upload (work order copy)
-//         let workOrderCopy = "";
-//         if (req.files && req.files.length > 0) {
-//             const uploadPromises = req.files.map(async (file) => {
-//                 const { url } = await uploadToS3(file);
-//                 return url;
-//             });
-//             const uploadedFiles = await Promise.all(uploadPromises);
-//             workOrderCopy = uploadedFiles[0];
-//         }
-
-//         // ✅ Create Service documents first
-//         let serviceIds = [];
-//         if (services && services.length > 0) {
-//             const serviceDocs = await Promise.all(
-//                 services.map(async (s) => {
-//                     const serviceDoc = await Service.create({
-//                         machineType: s.machineType,
-//                         equipmentNo: s.equipmentNo,
-//                         machineModel: s.machineModel,
-//                         serialNumber: s.serialNumber || "",
-//                         remark: s.remark || "",
-//                         workTypeDetails: (s.workType || []).map((wt) => ({
-//                             workType: wt,
-//                             status: "pending",
-//                         })),
-//                     });
-//                     return serviceDoc._id;
-//                 })
-//             );
-//             serviceIds = serviceDocs;
-//         }
-
-//         // ✅ Create AdditionalService documents
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices).map(([name, data]) => ({
-//                     name,
-//                     description: data?.description || "",
-//                     totalAmount: data?.totalAmount || 0,
-//                 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // ✅ Always create Enquiry
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: workOrderCopy,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             quotationStatus: null,
-//             customer: customerId,
-//         });
-
-//         // ❌ If leadOwner is Employee → Only create Enquiry
-//         if (leadOwnerUser && leadOwnerUser.role === "Employee") {
-//             return res
-//                 .status(201)
-//                 .json(
-//                     new ApiResponse(
-//                         201,
-//                         { enquiry },
-//                         "Enquiry created successfully (Lead Owner is Employee)"
-//                     )
-//                 );
-//         }
-
-//         // ✅ Else → also create Order
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res
-//             .status(201)
-//             .json(
-//                 new ApiResponse(
-//                     201,
-//                     { order: newOrder, enquiry },
-//                     "Order & Enquiry created successfully"
-//                 )
-//             );
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         throw new ApiError(500, "Failed to create direct order", [error.message]);
-//     }
-// });
-
-// const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Direct Order Payload:", req.body);
-
-//         const {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//         } = req.body;
-
-//         // ✅ Validation
-//         if (
-//             !hospitalName ||
-//             !fullAddress ||
-//             !city ||
-//             !district ||
-//             !state ||
-//             !pinCode ||
-//             !branchName ||
-//             !contactPersonName ||
-//             !contactNumber
-//         ) {
-//             throw new ApiError(400, "Missing required fields");
-//         }
-
-//         // ✅ Check leadOwner in User table
-//         let leadOwnerUser = null;
-//         if (leadOwner) {
-//             leadOwnerUser = await User.findById(leadOwner);
-//         }
-
-//         // ✅ Handle customer
-//         let customerId = req.body.customer;
-//         if (!customerId) {
-//             let existingCustomer = null;
-//             if (emailAddress) existingCustomer = await User.findOne({ email: emailAddress });
-//             else if (contactNumber) existingCustomer = await User.findOne({ phone: contactNumber });
-
-//             if (!existingCustomer) {
-//                 const newCustomer = await User.create({
-//                     name: hospitalName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                 });
-//                 customerId = newCustomer._id;
-//             } else {
-//                 customerId = existingCustomer._id;
-//             }
-//         }
-
-//         // ✅ Handle file upload (work order copy)
-//         let workOrderCopy = "";
-//         if (req.files && req.files.length > 0) {
-//             const uploadPromises = req.files.map(async (file) => {
-//                 const { url } = await uploadToS3(file);
-//                 return url;
-//             });
-//             const uploadedFiles = await Promise.all(uploadPromises);
-//             workOrderCopy = uploadedFiles[0];
-//         }
-
-//         // ✅ Create Service documents
-//         let serviceIds = [];
-//         if (services && services.length > 0) {
-//             const serviceDocs = await Promise.all(
-//                 services.map(async (s) => {
-//                     const serviceDoc = await Service.create({
-//                         machineType: s.machineType,
-//                         equipmentNo: s.equipmentNo,
-//                         machineModel: s.machineModel,
-//                         serialNumber: s.serialNumber || "",
-//                         remark: s.remark || "",
-//                         workTypeDetails: (s.workType || []).map((wt) => ({
-//                             workType: wt,
-//                             status: "pending",
-//                         })),
-//                     });
-//                     return serviceDoc._id;
-//                 })
-//             );
-//             serviceIds = serviceDocs;
-//         }
-
-//         // ✅ Create AdditionalService documents
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices).map(([name, data]) => ({
-//                     name,
-//                     description: data?.description || "",
-//                     totalAmount: data?.totalAmount || 0,
-//                 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // ✅ Always create Enquiry first
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: workOrderCopy,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             quotationStatus: "Create", // 🔑 so it can move to quotation next
-//             customer: customerId,
-//         });
-
-//         // ❌ If leadOwner is Employee → Only Enquiry
-//         if (leadOwnerUser && leadOwnerUser.role === "Employee") {
-//             return res
-//                 .status(201)
-//                 .json(
-//                     new ApiResponse(
-//                         201,
-//                         { enquiry },
-//                         "Enquiry created successfully (Lead Owner is Employee). Continue to Quotation."
-//                     )
-//                 );
-//         }
-
-//         // ✅ Else (Admin/Manager/etc.) → create Order as well
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res
-//             .status(201)
-//             .json(
-//                 new ApiResponse(
-//                     201,
-//                     { order: newOrder, enquiry },
-//                     "Order & Enquiry created successfully"
-//                 )
-//             );
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         throw new ApiError(500, "Failed to create direct order", [error.message]);
-//     }
-// });
-
-
-
-// const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Direct Order Payload:", req.body);
-
-//         const {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//         } = req.body;
-
-//         // Validation
-//         if (
-//             !hospitalName ||
-//             !fullAddress ||
-//             !city ||
-//             !district ||
-//             !state ||
-//             !pinCode ||
-//             !branchName ||
-//             !contactPersonName ||
-//             !contactNumber
-//         ) {
-//             throw new ApiError(400, "Missing required fields");
-//         }
-
-//         // Find leadOwner in User
-//         let leadOwnerUser = null;
-//         if (leadOwner) {
-//             leadOwnerUser = await User.findById(leadOwner);
-//         }
-
-//         // Handle customer
-//         let customerId = req.body.customer;
-//         if (!customerId) {
-//             let existingCustomer = null;
-//             if (emailAddress) existingCustomer = await User.findOne({ email: emailAddress });
-//             else if (contactNumber) existingCustomer = await User.findOne({ phone: contactNumber });
-
-//             if (!existingCustomer) {
-//                 // const newCustomer = await User.create({
-//                 //     name: hospitalName,
-//                 //     email: emailAddress,
-//                 //     phone: contactNumber,
-//                 // });
-//                 const newCustomer = await User.create({
-//                     name: hospitalName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                     role: "Customer",   // 👈 ensure discriminator works properly
-//                 });
-//                 customerId = newCustomer._id;
-//             } else {
-//                 customerId = existingCustomer._id;
-//             }
-//         }
-
-//         // File upload
-//         let workOrderCopy = "";
-//         if (req.files && req.files.length > 0) {
-//             const uploadPromises = req.files.map(async (file) => {
-//                 const { url } = await uploadToS3(file);
-//                 return url;
-//             });
-//             const uploadedFiles = await Promise.all(uploadPromises);
-//             workOrderCopy = uploadedFiles[0];
-//         }
-
-//         // Services
-//         let serviceIds = [];
-//         if (services && services.length > 0) {
-//             const serviceDocs = await Promise.all(
-//                 services.map(async (s) => {
-//                     const serviceDoc = await Service.create({
-//                         machineType: s.machineType,
-//                         equipmentNo: s.equipmentNo,
-//                         machineModel: s.machineModel,
-//                         serialNumber: s.serialNumber || "",
-//                         remark: s.remark || "",
-//                         workTypeDetails: (s.workType || []).map((wt) => ({
-//                             workType: wt,
-//                             status: "pending",
-//                         })),
-//                     });
-//                     return serviceDoc._id;
-//                 })
-//             );
-//             serviceIds = serviceDocs;
-//         }
-
-//         // Additional Services
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices).map(([name, data]) => ({
-//                     name,
-//                     description: data?.description || "",
-//                     totalAmount: data?.totalAmount || 0,
-//                 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // Always create enquiry first
-//         const enquiryPayload = {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: workOrderCopy,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//         };
-
-//         // ✨ Differentiate quotation logic by role
-//         if (leadOwnerUser?.role === "Dealer") {
-//             enquiryPayload.quotationStatus = null; // Dealer → no quotation
-//         } else if (leadOwnerUser?.role === "Employee") {
-//             enquiryPayload.quotationStatus = "Create"; // Enquiry only, no order
-//         } else {
-//             enquiryPayload.quotationStatus = "Create"; // Admin/Manager → normal quotation flow
-//         }
-
-//         const enquiry = await Enquiry.create(enquiryPayload);
-
-//         // Employee → stop here
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(
-//                 new ApiResponse(
-//                     201,
-//                     { enquiry },
-//                     "Enquiry created successfully (Lead Owner is Employee). No order created."
-//                 )
-//             );
-//         }
-//         m
-//         // Dealer/Admin/Manager → create Order as well
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-//         return res.status(201).json(
-//             new ApiResponse(
-//                 201,
-//                 { order: newOrder, enquiry },
-//                 leadOwnerUser?.role === "Dealer"
-//                     ? "Direct Order created for Dealer (no quotation)."
-//                     : "Order & Enquiry created successfully"
-//             )
-//         );
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         throw new ApiError(500, "Failed to create direct order", [error.message]);
-//     }
-// });
-
-
-// const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("Direct Order Payload:", req.body);
-//         const {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//         } = req.body;
-
-//         // Validation
-//         if (
-//             !hospitalName ||
-//             !fullAddress ||
-//             !city ||
-//             !district ||
-//             !state ||
-//             !pinCode ||
-//             !branchName ||
-//             !contactPersonName ||
-//             !contactNumber
-//         ) {
-//             throw new ApiError(400, "Missing required fields");
-//         }
-
-//         // Find leadOwner in User
-//         let leadOwnerUser = null;
-//         if (leadOwner) {
-//             leadOwnerUser = await User.findById(leadOwner);
-//         }
-
-//         // ✅ Handle customer
-//         let customerId = req.body.customer;
-//         let customerDoc = null;
-
-//         if (!customerId) {
-//             // Try finding existing customer by email or phone
-//             if (emailAddress) {
-//                 customerDoc = await User.findOne({ email: emailAddress, role: "Customer" });
-//             }
-//             if (!customerDoc && contactNumber) {
-//                 customerDoc = await User.findOne({ phone: contactNumber, role: "Customer" });
-//             }
-
-//             if (!customerDoc) {
-//                 // No existing customer → create a new one
-//                 customerDoc = await User.create({
-//                     name: contactPersonName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                     role: "Customer", // 👈 discriminator role
-//                 });
-//             }
-//             customerId = customerDoc._id;
-//         } else {
-//             customerDoc = await User.findById(customerId);
-//         }
-
-//         if (!customerDoc) {
-//             throw new ApiError(400, "Failed to create or fetch customer");
-//         }
-
-//         // ✅ Handle hospital for this customer
-//         let hospitalDoc = await Hospital.findOne({
-//             name: hospitalName,
-//             phone: contactNumber,
-//             email: emailAddress,
-//         });
-
-//         if (!hospitalDoc) {
-//             hospitalDoc = await Hospital.create({
-//                 name: hospitalName,
-//                 email: emailAddress,
-//                 address: fullAddress,
-//                 branch: branchName,
-//                 phone: contactNumber,
-//                 customer: customerId, // link hospital to customer
-//             });
-
-//             // Link back to customer
-//             await Client.findByIdAndUpdate(customerId, {
-//                 $push: { hospitals: hospitalDoc._id },
-//             });
-//         }
-
-//         // File upload
-//         let workOrderCopy = "";
-//         if (req.files && req.files.length > 0) {
-//             const uploadPromises = req.files.map(async (file) => {
-//                 const { url } = await uploadToS3(file);
-//                 return url;
-//             });
-//             const uploadedFiles = await Promise.all(uploadPromises);
-//             workOrderCopy = uploadedFiles[0];
-//         }
-
-//         // Services
-//         let serviceIds = [];
-//         if (services && services.length > 0) {
-//             const serviceDocs = await Promise.all(
-//                 services.map(async (s) => {
-//                     const serviceDoc = await Service.create({
-//                         machineType: s.machineType,
-//                         equipmentNo: s.equipmentNo,
-//                         machineModel: s.machineModel,
-//                         serialNumber: s.serialNumber || "",
-//                         remark: s.remark || "",
-//                         workTypeDetails: (s.workType || []).map((wt) => ({
-//                             workType: wt,
-//                             status: "pending",
-//                         })),
-//                     });
-//                     return serviceDoc._id;
-//                 })
-//             );
-//             serviceIds = serviceDocs;
-//         }
-
-//         // // Additional Services
-//         let additionalServiceIds = [];
-//         // if (additionalServices && Object.keys(additionalServices).length > 0) {
-//         //     const additionalServiceDocs = await AdditionalService.insertMany(
-//         //         Object.entries(additionalServices).map(([name, data]) => ({
-//         //             name,
-//         //             description: data?.description || "",
-//         //             totalAmount: data?.totalAmount || 0,
-//         //         }))
-//         //     );
-//         //     additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         // }
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices)
-//                     .filter(([_, desc]) => desc !== undefined) // ignore unchecked services
-//                     .map(([name, description]) => ({
-//                         name,
-//                         description: description || "", // frontend sends string here
-//                         totalAmount: 0, // you can extend later if needed
-//                     }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-
-//         // Always create enquiry first
-//         const enquiryPayload = {
-//             leadOwner,
-//             hospital: hospitalDoc._id,   // ✅ hospital reference
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: workOrderCopy,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//         };
-
-//         // ✨ Differentiate quotation logic by role
-//         if (leadOwnerUser?.role === "Dealer") {
-//             enquiryPayload.quotationStatus = null;
-//         } else if (leadOwnerUser?.role === "Employee") {
-//             enquiryPayload.quotationStatus = "Create";
-//         } else {
-//             enquiryPayload.quotationStatus = "Create";
-//         }
-
-//         const enquiry = await Enquiry.create(enquiryPayload);
-//         console.log("HERE IS THE ENQUIRY");
-
-//         console.log("🚀 ~ enquiry:", enquiry)
-
-//         // Employee → stop here
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(
-//                 new ApiResponse(
-//                     201,
-//                     { enquiry },
-//                     "Enquiry created successfully (Lead Owner is Employee). No order created."
-//                 )
-//             );
-//         }
-
-//         // Dealer/Admin/Manager → create Order as well
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res.status(201).json(
-//             new ApiResponse(
-//                 201,
-//                 { order: newOrder, enquiry },
-//                 leadOwnerUser?.role === "Dealer"
-//                     ? "Direct Order created for Dealer (no quotation)."
-//                     : "Order & Enquiry created successfully"
-//             )
-//         );
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         throw new ApiError(500, "Failed to create direct order", [error.message]);
-//     }
-// });
-
-
-
 
 // export const createDirectOrder = asyncHandler(async (req, res) => {
 //     try {
-//         console.log("🚀 ~ Raw body:", req.body);
-//         console.log("🚀 ~ File:", req.file?.originalname);
-
-//         let {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//             customer,
-//         } = req.body;
-
-//         // Parse JSON fields safely
-//         try {
-//             services = services ? JSON.parse(services) : [];
-//         } catch (e) {
-//             services = [];
-//         }
-
-//         try {
-//             additionalServices = additionalServices ? JSON.parse(additionalServices) : {};
-//         } catch (e) {
-//             additionalServices = {};
-//         }
-
-//         // Validate required fields
-//         const requiredFields = { hospitalName, fullAddress, city, state, pinCode, contactPersonName, contactNumber };
-//         const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
-//         if (missing.length) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: `Missing required fields: ${missing.map(([k]) => k).join(", ")}`,
-//             });
-//         }
-
-//         // ✅ Continue with your logic below...
-//         let leadOwnerUser = leadOwner ? await User.findById(leadOwner) : null;
-
-//         let customerDoc = null;
-//         let customerId = customer;
-//         console.log("🚀 ~ customerId:", customerId)
-
-//         if (!customerId) {
-//             customerDoc = await User.findOne({ $or: [{ email: emailAddress }, { phone: contactNumber }], role: "Customer" });
-//             if (!customerDoc) {
-//                 customerDoc = await User.create({
-//                     name: contactPersonName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                     role: "Customer",
-//                 });
-//             }
-//             customerId = customerDoc._id;
-//         } else {
-//             customerDoc = await User.findById(customerId);
-//             console.log("🚀 ~ customerDoc:", customerDoc)
-//         }
-
-//         if (!customerDoc) {
-//             return res.status(400).json({ success: false, message: "Failed to create or fetch customer" });
-//         }
-
-//         // let hospitalDoc = await Hospital.findOne({ name: hospitalName, phone: contactNumber, email: emailAddress });
-//         // console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-//         // if (!hospitalDoc) {
-//         //     hospitalDoc = await Hospital.create({
-//         //         name: hospitalName,
-//         //         email: emailAddress,
-//         //         address: fullAddress,
-//         //         branch: branchName,
-//         //         phone: contactNumber,
-//         //         customer: customerId,
-//         //     });
-//         //     await User.findByIdAndUpdate(customerId, { $push: { hospitals: hospitalDoc._id } });
-//         // }
-//         let hospitalDoc = await Hospital.findOne({ name: hospitalName, customer: customerId });
-//         console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-
-//         if (!hospitalDoc) {
-//             hospitalDoc = await Hospital.create({
-//                 name: hospitalName,
-//                 email: emailAddress,
-//                 address: fullAddress,
-//                 branch: branchName,
-//                 phone: contactNumber,
-//                 customer: customerId,
-//             });
-//             console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-//         }
-
-//         await User.findByIdAndUpdate(customerId, { $addToSet: { hospitals: hospitalDoc._id } });
-
-
-//         // ✅ Handle single file upload
-//         let attachmentUrl = "";
-//         if (req.file) {
-//             const uploadedFile = await uploadToS3(req.file);
-//             attachmentUrl = uploadedFile.url;
-//         }
-
-//         // ✅ Services creation
-//         const serviceIds = await Promise.all(
-//             (services || []).map(async (s) => {
-//                 const serviceDoc = await Service.create({
-//                     machineType: s.machineType,
-//                     equipmentNo: s.equipmentNo,
-//                     machineModel: s.machineModel,
-//                     serialNumber: s.serialNumber || "",
-//                     remark: s.remark || "",
-//                     workTypeDetails: (s.workType || []).map((wt) => ({ workType: wt, status: "pending" })),
-//                 });
-//                 return serviceDoc._id;
-//             })
-//         );
-
-//         // ✅ Additional services
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices)
-//                     .filter(([_, desc]) => desc)
-//                     .map(([name, description]) => ({ name, description, totalAmount: 0 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // ✅ Create enquiry
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: attachmentUrl,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//             quotationStatus: "Create",
-//         });
-
-//         // ✅ If Employee
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
-//         }
-
-//         // ✅ Else create direct order
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy: attachmentUrl,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res.status(201).json(new ApiResponse(201, { order: newOrder, enquiry }, "Order & Enquiry created successfully"));
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         return res.status(500).json({ success: false, message: "Failed to create direct order", error: error.message });
-//     }
-// });
-
-
-// export const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("🚀 ~ Raw body:", req.body);
-//         console.log("🚀 ~ File:", req.file?.originalname);
-
-//         let {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//             customer,
-//         } = req.body;
-
-//         // Parse JSON fields safely
-//         try {
-//             services = services ? JSON.parse(services) : [];
-//         } catch {
-//             services = [];
-//         }
-
-//         try {
-//             additionalServices = additionalServices ? JSON.parse(additionalServices) : {};
-//         } catch {
-//             additionalServices = {};
-//         }
-
-//         // Validate required hospital fields
-//         const requiredFields = { hospitalName, fullAddress, city, state, pinCode, contactPersonName, contactNumber };
-//         const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
-//         if (missing.length) {
-//             return res.status(400).json({
-//                 success: false,
-//                 message: `Missing required fields: ${missing.map(([k]) => k).join(", ")}`,
-//             });
-//         }
-
-//         // Fetch leadOwner user
-//         const leadOwnerUser = leadOwner ? await User.findById(leadOwner) : null;
-
-//         // ✅ Customer handling
-//         let customerDoc = null;
-//         let customerId = customer;
-
-//         if (!customerId) {
-//             if (!emailAddress || !contactNumber || !contactPersonName) {
-//                 return res.status(400).json({ success: false, message: "Customer details are missing" });
-//             }
-
-//             customerDoc = await User.findOne({
-//                 $or: [{ email: emailAddress }, { phone: contactNumber }],
-//                 role: "Customer"
-//             });
-
-//             if (!customerDoc) {
-//                 customerDoc = await User.create({
-//                     name: contactPersonName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                     role: "Customer",
-//                 });
-//             }
-//             customerId = customerDoc._id;
-//         } else {
-//             customerDoc = await User.findById(customerId);
-//         }
-
-//         if (!customerDoc) {
-//             return res.status(400).json({ success: false, message: "Failed to create or fetch customer" });
-//         }
-
-//         // ✅ Hospital handling
-//         let hospitalDoc = await Hospital.findOne({ name: hospitalName, customer: customerId });
-
-//         if (!hospitalDoc) {
-//             hospitalDoc = await Hospital.create({
-//                 name: hospitalName,
-//                 email: emailAddress,
-//                 address: fullAddress,
-//                 branch: branchName,
-//                 phone: contactNumber,
-//                 customer: customerId,
-//             });
-//         }
-
-//         // Ensure hospital is linked to customer
-//         await User.findByIdAndUpdate(customerId, { $addToSet: { hospitals: hospitalDoc._id } });
-
-//         // ✅ File upload
-//         let attachmentUrl = "";
-//         if (req.file) {
-//             const uploadedFile = await uploadToS3(req.file);
-//             attachmentUrl = uploadedFile.url;
-//         }
-
-//         // ✅ Services creation
-//         const serviceIds = await Promise.all(
-//             (services || []).map(async (s) => {
-//                 const serviceDoc = await Service.create({
-//                     machineType: s.machineType,
-//                     equipmentNo: s.equipmentNo,
-//                     machineModel: s.machineModel,
-//                     serialNumber: s.serialNumber || "",
-//                     remark: s.remark || "",
-//                     workTypeDetails: (s.workType || []).map((wt) => ({ workType: wt, status: "pending" })),
-//                 });
-//                 return serviceDoc._id;
-//             })
-//         );
-
-//         // ✅ Additional services
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices)
-//                     .filter(([_, desc]) => desc)
-//                     .map(([name, description]) => ({ name, description, totalAmount: 0 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // ✅ Create enquiry
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: attachmentUrl,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//             quotationStatus: "Create",
-//         });
-
-//         // ✅ If leadOwner is Employee, return enquiry only
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
-//         }
-
-//         // ✅ Else create direct order
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy: attachmentUrl,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res.status(201).json(new ApiResponse(201, { order: newOrder, enquiry }, "Order & Enquiry created successfully"));
-
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         return res.status(500).json({ success: false, message: "Failed to create direct order", error: error.message });
-//     }
-// });
-
-
-// export const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("🚀 Raw body:", req.body);
+//         console.log("🚀 Raw body:-------------------------->", req.body);
 //         console.log("🚀 File:", req.file?.originalname);
 
 //         let {
@@ -2335,11 +950,11 @@ const add = asyncHandler(async (req, res) => {
 //             customer,
 //         } = req.body;
 
-//         // Parse JSON safely
+//         // ✅ Safe JSON parsing
 //         try { services = services ? JSON.parse(services) : []; } catch { services = []; }
 //         try { additionalServices = additionalServices ? JSON.parse(additionalServices) : {}; } catch { additionalServices = {}; }
 
-//         // Validate required fields
+//         // ✅ Validate required fields
 //         const requiredFields = { hospitalName, fullAddress, city, state, pinCode, contactPersonName, contactNumber };
 //         const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
 //         if (missing.length) {
@@ -2349,42 +964,39 @@ const add = asyncHandler(async (req, res) => {
 //             });
 //         }
 
-//         // Fetch leadOwner user
+//         // ✅ Fetch lead owner user
 //         const leadOwnerUser = leadOwner ? await User.findById(leadOwner) : null;
+//         if (!leadOwnerUser) {
+//             return res.status(404).json({ success: false, message: "Lead owner not found" });
+//         }
 
-//         // ✅ Handle Customer (discriminator-safe)
+//         // ✅ Handle Customer
 //         let customerDoc;
 //         let customerId = customer;
-//         console.log("🚀 ~ customerId:", customerId)
-
 //         if (!customerId) {
 //             customerDoc = await Client.findOne({
 //                 $or: [{ email: emailAddress }, { phone: contactNumber }],
 //             });
-//             console.log("🚀 ~ customerDoc:", customerDoc)
 
 //             if (!customerDoc) {
 //                 customerDoc = await Client.create({
 //                     name: contactPersonName,
 //                     email: emailAddress,
 //                     phone: contactNumber,
-//                     hospitals: [], // initialize hospitals array
+//                     hospitals: [],
 //                 });
 //             }
 //             customerId = customerDoc._id;
 //         } else {
 //             customerDoc = await Client.findById(customerId);
-//             console.log("🚀 ~ customerDoc:", customerDoc)
 //         }
 
 //         if (!customerDoc) {
 //             return res.status(400).json({ success: false, message: "Failed to create or fetch customer" });
 //         }
 
-//         // ✅ Handle Hospital (linked to customer)
+//         // ✅ Handle Hospital
 //         let hospitalDoc = await Hospital.findOne({ name: hospitalName, customer: customerId });
-//         console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-
 //         if (!hospitalDoc) {
 //             hospitalDoc = await Hospital.create({
 //                 name: hospitalName,
@@ -2394,22 +1006,17 @@ const add = asyncHandler(async (req, res) => {
 //                 phone: contactNumber,
 //                 customer: customerId,
 //             });
-//             console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-
-//             // Link hospital back to customer using discriminator model
 //             await Client.findByIdAndUpdate(customerId, { $addToSet: { hospitals: hospitalDoc._id } });
 //         }
 
-//         // ✅ File upload
+//         // ✅ File upload (workOrderCopy or attachment)
 //         let attachmentUrl = "";
-//         console.log("🚀 ~ req.file:", req.file)
 //         if (req.file) {
 //             const uploadedFile = await uploadToS3(req.file);
 //             attachmentUrl = uploadedFile.url;
-//             console.log("🚀 ~ attachmentUrl:", attachmentUrl)
 //         }
 
-//         // ✅ Services creation
+//         // ✅ Create service docs
 //         const serviceIds = await Promise.all(
 //             (services || []).map(async (s) => {
 //                 const serviceDoc = await Service.create({
@@ -2418,510 +1025,128 @@ const add = asyncHandler(async (req, res) => {
 //                     machineModel: s.machineModel,
 //                     serialNumber: s.serialNumber || "",
 //                     remark: s.remark || "",
-//                     workTypeDetails: (s.workType || []).map((wt) => ({ workType: wt, status: "pending" })),
+//                     workTypeDetails: (s.workType || []).map((wt) => ({
+//                         workType: wt,
+//                         status: "pending",
+//                     })),
 //                 });
 //                 return serviceDoc._id;
 //             })
 //         );
 
-//         // ✅ Additional services
+//         // ✅ Create additional services
 //         let additionalServiceIds = [];
 //         if (additionalServices && Object.keys(additionalServices).length > 0) {
 //             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices)
-//                     .filter(([_, desc]) => desc)
-//                     .map(([name, description]) => ({ name, description, totalAmount: 0 }))
+//                 Object.entries(additionalServices).map(([name, description]) => ({
+//                     name,
+//                     description: description || "",
+//                     totalAmount: 0,
+//                 }))
 //             );
 //             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
 //         }
 
-//         // ✅ Create Enquiry
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: attachmentUrl,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//             quotationStatus: "Create",
-//         });
+//         // ✅ Role-based flow
+//         if (leadOwnerUser.role === "Employee") {
+//             // 🟢 EMPLOYEE → Only Enquiry
+//             const enquiry = await Enquiry.create({
+//                 leadOwner,
+//                 hospital: hospitalDoc._id,
+//                 hospitalName,
+//                 fullAddress,
+//                 city,
+//                 district,
+//                 state,
+//                 pinCode,
+//                 branch: branchName,
+//                 contactPerson: contactPersonName,
+//                 emailAddress,
+//                 contactNumber,
+//                 designation,
+//                 services: serviceIds,
+//                 additionalServices: additionalServiceIds,
+//                 specialInstructions,
+//                 attachment: attachmentUrl,
+//                 enquiryStatus: "Enquired",
+//                 enquiryStatusDates: { enquiredOn: new Date() },
+//                 customer: customerId,
+//                 quotationStatus: "Create",
+//             });
 
-//         // Employee → stop here
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
+//             return res
+//                 .status(201)
+//                 .json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
 //         }
 
-//         // ✅ Else create Direct Order
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy: attachmentUrl,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
+//         if (leadOwnerUser.role === "Dealer") {
+//             // 🟠 DEALER → Only Direct Order
+//             const newOrder = await orderModel.create({
+//                 leadOwner,
+//                 hospital: hospitalDoc._id,
+//                 hospitalName,
+//                 fullAddress,
+//                 city,
+//                 district,
+//                 state,
+//                 pinCode,
+//                 branchName,
+//                 contactPersonName,
+//                 emailAddress,
+//                 contactNumber,
+//                 designation,
+//                 advanceAmount,
+//                 urgency,
+//                 services: serviceIds,
+//                 additionalServices: additionalServiceIds,
+//                 specialInstructions,
+//                 workOrderCopy: attachmentUrl,
+//                 customer: customerId,
+//             });
 
-//         return res.status(201).json(
-//             new ApiResponse(201, { order: newOrder, enquiry }, "Order & Enquiry created successfully")
-//         );
+//             return res
+//                 .status(201)
+//                 .json(new ApiResponse(201, { order: newOrder }, "Direct Order created successfully (Dealer)"));
+//         }
+
+//         // 🚫 Any other role
+//         return res.status(403).json({
+//             success: false,
+//             message: "Unauthorized role. Only Employee or Dealer can create records.",
+//         });
 
 //     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
-//         return res.status(500).json({
-//             success: false,
-//             message: "Failed to create direct order",
-//             error: error.message,
-//         });
-//     }
-// });
+//         console.error("❌ Create Direct Order Error:", error);
 
+//         // 🧩 Handle Duplicate Key Error (e.g., duplicate email)
+//         if (error.code === 11000) {
+//             const field = Object.keys(error.keyPattern || {})[0];
+//             const value = error.keyValue?.[field];
 
-// export const createDirectOrder = asyncHandler(async (req, res) => {
-//     try {
-//         console.log("🚀 Raw body:", req.body);
-//         console.log("🚀 File:", req.file?.originalname);
+//             return res.status(409).json({
+//                 success: false,
+//                 message: ` A record with the same ${field} (${value}) already exists.`,
+//             });
+//         }
 
-//         let {
-//             leadOwner,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services,
-//             additionalServices,
-//             specialInstructions,
-//             customer,
-//         } = req.body;
-
-//         // Parse JSON safely
-//         try { services = services ? JSON.parse(services) : []; } catch { services = []; }
-//         try { additionalServices = additionalServices ? JSON.parse(additionalServices) : {}; } catch { additionalServices = {}; }
-
-//         // Validate required fields
-//         const requiredFields = { hospitalName, fullAddress, city, state, pinCode, contactPersonName, contactNumber };
-//         const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
-//         if (missing.length) {
+//         // 🧩 Handle Validation Errors (optional improvement)
+//         if (error.name === "ValidationError") {
+//             const messages = Object.values(error.errors).map((err) => err.message);
 //             return res.status(400).json({
 //                 success: false,
-//                 message: `Missing required fields: ${missing.map(([k]) => k).join(", ")}`,
+//                 message: "Validation failed",
+//                 errors: messages,
 //             });
 //         }
 
-//         // Fetch leadOwner user
-//         const leadOwnerUser = leadOwner ? await User.findById(leadOwner) : null;
-
-//         // ✅ Handle Customer (discriminator-safe)
-//         let customerDoc;
-//         let customerId = customer;
-//         console.log("🚀 ~ customerId:", customerId)
-
-//         if (!customerId) {
-//             customerDoc = await Client.findOne({
-//                 $or: [{ email: emailAddress }, { phone: contactNumber }],
-//             });
-//             console.log("🚀 ~ customerDoc:", customerDoc)
-
-//             if (!customerDoc) {
-//                 customerDoc = await Client.create({
-//                     name: contactPersonName,
-//                     email: emailAddress,
-//                     phone: contactNumber,
-//                     hospitals: [], // initialize hospitals array
-//                 });
-//             }
-//             customerId = customerDoc._id;
-//         } else {
-//             customerDoc = await Client.findById(customerId);
-//             console.log("🚀 ~ customerDoc:", customerDoc)
-//         }
-
-//         if (!customerDoc) {
-//             return res.status(400).json({ success: false, message: "Failed to create or fetch customer" });
-//         }
-
-//         // ✅ Handle Hospital (linked to customer)
-//         let hospitalDoc = await Hospital.findOne({ name: hospitalName, customer: customerId });
-//         console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-
-//         if (!hospitalDoc) {
-//             hospitalDoc = await Hospital.create({
-//                 name: hospitalName,
-//                 email: emailAddress,
-//                 address: fullAddress,
-//                 branch: branchName,
-//                 phone: contactNumber,
-//                 customer: customerId,
-//             });
-//             console.log("🚀 ~ hospitalDoc:", hospitalDoc)
-
-//             // Link hospital back to customer using discriminator model
-//             await Client.findByIdAndUpdate(customerId, { $addToSet: { hospitals: hospitalDoc._id } });
-//         }
-
-//         // ✅ File upload
-//         let attachmentUrl = "";
-//         console.log("🚀 ~ req.file:", req.file)
-//         if (req.file) {
-//             const uploadedFile = await uploadToS3(req.file);
-//             attachmentUrl = uploadedFile.url;
-//             console.log("🚀 ~ attachmentUrl:", attachmentUrl)
-//         }
-
-//         // ✅ Services creation
-//         const serviceIds = await Promise.all(
-//             (services || []).map(async (s) => {
-//                 const serviceDoc = await Service.create({
-//                     machineType: s.machineType,
-//                     equipmentNo: s.equipmentNo,
-//                     machineModel: s.machineModel,
-//                     serialNumber: s.serialNumber || "",
-//                     remark: s.remark || "",
-//                     workTypeDetails: (s.workType || []).map((wt) => ({ workType: wt, status: "pending" })),
-//                 });
-//                 return serviceDoc._id;
-//             })
-//         );
-
-//         // ✅ Additional services
-//         let additionalServiceIds = [];
-//         if (additionalServices && Object.keys(additionalServices).length > 0) {
-//             const additionalServiceDocs = await AdditionalService.insertMany(
-//                 Object.entries(additionalServices)
-//                     .map(([name, description]) => ({ name, description: description || '', totalAmount: 0 }))
-//             );
-//             additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-//         }
-
-//         // ✅ Create Enquiry
-//         const enquiry = await Enquiry.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branch: branchName,
-//             contactPerson: contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             attachment: attachmentUrl,
-//             enquiryStatus: "Enquired",
-//             enquiryStatusDates: { enquiredOn: new Date() },
-//             customer: customerId,
-//             quotationStatus: "Create",
-//         });
-
-//         // Employee → stop here
-//         if (leadOwnerUser?.role === "Employee") {
-//             return res.status(201).json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
-//         }
-
-//         // ✅ Else create Direct Order
-//         const newOrder = await orderModel.create({
-//             leadOwner,
-//             hospital: hospitalDoc._id,
-//             hospitalName,
-//             fullAddress,
-//             city,
-//             district,
-//             state,
-//             pinCode,
-//             branchName,
-//             contactPersonName,
-//             emailAddress,
-//             contactNumber,
-//             designation,
-//             advanceAmount,
-//             urgency,
-//             services: serviceIds,
-//             additionalServices: additionalServiceIds,
-//             specialInstructions,
-//             workOrderCopy: attachmentUrl,
-//             customer: customerId,
-//             enquiry: enquiry._id,
-//         });
-
-//         return res.status(201).json(
-//             new ApiResponse(201, { order: newOrder, enquiry }, "Order & Enquiry created successfully")
-//         );
-
-//     } catch (error) {
-//         console.error("Create Direct Order Error:", error);
+//         // 🧩 Default Server Error
 //         return res.status(500).json({
 //             success: false,
-//             message: "Failed to create direct order",
+//             message: "Failed to create direct order due to a server error.",
 //             error: error.message,
 //         });
 //     }
 // });
-
-export const createDirectOrder = asyncHandler(async (req, res) => {
-    try {
-        console.log("🚀 Raw body:-------------------------->", req.body);
-        console.log("🚀 File:", req.file?.originalname);
-
-        let {
-            leadOwner,
-            hospitalName,
-            fullAddress,
-            city,
-            district,
-            state,
-            pinCode,
-            branchName,
-            contactPersonName,
-            emailAddress,
-            contactNumber,
-            designation,
-            advanceAmount,
-            urgency,
-            services,
-            additionalServices,
-            specialInstructions,
-            customer,
-        } = req.body;
-
-        // ✅ Safe JSON parsing
-        try { services = services ? JSON.parse(services) : []; } catch { services = []; }
-        try { additionalServices = additionalServices ? JSON.parse(additionalServices) : {}; } catch { additionalServices = {}; }
-
-        // ✅ Validate required fields
-        const requiredFields = { hospitalName, fullAddress, city, state, pinCode, contactPersonName, contactNumber };
-        const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
-        if (missing.length) {
-            return res.status(400).json({
-                success: false,
-                message: `Missing required fields: ${missing.map(([k]) => k).join(", ")}`,
-            });
-        }
-
-        // ✅ Fetch lead owner user
-        const leadOwnerUser = leadOwner ? await User.findById(leadOwner) : null;
-        if (!leadOwnerUser) {
-            return res.status(404).json({ success: false, message: "Lead owner not found" });
-        }
-
-        // ✅ Handle Customer
-        let customerDoc;
-        let customerId = customer;
-        if (!customerId) {
-            customerDoc = await Client.findOne({
-                $or: [{ email: emailAddress }, { phone: contactNumber }],
-            });
-
-            if (!customerDoc) {
-                customerDoc = await Client.create({
-                    name: contactPersonName,
-                    email: emailAddress,
-                    phone: contactNumber,
-                    hospitals: [],
-                });
-            }
-            customerId = customerDoc._id;
-        } else {
-            customerDoc = await Client.findById(customerId);
-        }
-
-        if (!customerDoc) {
-            return res.status(400).json({ success: false, message: "Failed to create or fetch customer" });
-        }
-
-        // ✅ Handle Hospital
-        let hospitalDoc = await Hospital.findOne({ name: hospitalName, customer: customerId });
-        if (!hospitalDoc) {
-            hospitalDoc = await Hospital.create({
-                name: hospitalName,
-                email: emailAddress,
-                address: fullAddress,
-                branch: branchName,
-                phone: contactNumber,
-                customer: customerId,
-            });
-            await Client.findByIdAndUpdate(customerId, { $addToSet: { hospitals: hospitalDoc._id } });
-        }
-
-        // ✅ File upload (workOrderCopy or attachment)
-        let attachmentUrl = "";
-        if (req.file) {
-            const uploadedFile = await uploadToS3(req.file);
-            attachmentUrl = uploadedFile.url;
-        }
-
-        // ✅ Create service docs
-        const serviceIds = await Promise.all(
-            (services || []).map(async (s) => {
-                const serviceDoc = await Service.create({
-                    machineType: s.machineType,
-                    equipmentNo: s.equipmentNo,
-                    machineModel: s.machineModel,
-                    serialNumber: s.serialNumber || "",
-                    remark: s.remark || "",
-                    workTypeDetails: (s.workType || []).map((wt) => ({
-                        workType: wt,
-                        status: "pending",
-                    })),
-                });
-                return serviceDoc._id;
-            })
-        );
-
-        // ✅ Create additional services
-        let additionalServiceIds = [];
-        if (additionalServices && Object.keys(additionalServices).length > 0) {
-            const additionalServiceDocs = await AdditionalService.insertMany(
-                Object.entries(additionalServices).map(([name, description]) => ({
-                    name,
-                    description: description || "",
-                    totalAmount: 0,
-                }))
-            );
-            additionalServiceIds = additionalServiceDocs.map((a) => a._id);
-        }
-
-        // ✅ Role-based flow
-        if (leadOwnerUser.role === "Employee") {
-            // 🟢 EMPLOYEE → Only Enquiry
-            const enquiry = await Enquiry.create({
-                leadOwner,
-                hospital: hospitalDoc._id,
-                hospitalName,
-                fullAddress,
-                city,
-                district,
-                state,
-                pinCode,
-                branch: branchName,
-                contactPerson: contactPersonName,
-                emailAddress,
-                contactNumber,
-                designation,
-                services: serviceIds,
-                additionalServices: additionalServiceIds,
-                specialInstructions,
-                attachment: attachmentUrl,
-                enquiryStatus: "Enquired",
-                enquiryStatusDates: { enquiredOn: new Date() },
-                customer: customerId,
-                quotationStatus: "Create",
-            });
-
-            return res
-                .status(201)
-                .json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
-        }
-
-        if (leadOwnerUser.role === "Dealer") {
-            // 🟠 DEALER → Only Direct Order
-            const newOrder = await orderModel.create({
-                leadOwner,
-                hospital: hospitalDoc._id,
-                hospitalName,
-                fullAddress,
-                city,
-                district,
-                state,
-                pinCode,
-                branchName,
-                contactPersonName,
-                emailAddress,
-                contactNumber,
-                designation,
-                advanceAmount,
-                urgency,
-                services: serviceIds,
-                additionalServices: additionalServiceIds,
-                specialInstructions,
-                workOrderCopy: attachmentUrl,
-                customer: customerId,
-            });
-
-            return res
-                .status(201)
-                .json(new ApiResponse(201, { order: newOrder }, "Direct Order created successfully (Dealer)"));
-        }
-
-        // 🚫 Any other role
-        return res.status(403).json({
-            success: false,
-            message: "Unauthorized role. Only Employee or Dealer can create records.",
-        });
-
-    } catch (error) {
-        console.error("❌ Create Direct Order Error:", error);
-
-        // 🧩 Handle Duplicate Key Error (e.g., duplicate email)
-        if (error.code === 11000) {
-            const field = Object.keys(error.keyPattern || {})[0];
-            const value = error.keyValue?.[field];
-
-            return res.status(409).json({
-                success: false,
-                message: ` A record with the same ${field} (${value}) already exists.`,
-            });
-        }
-
-        // 🧩 Handle Validation Errors (optional improvement)
-        if (error.name === "ValidationError") {
-            const messages = Object.values(error.errors).map((err) => err.message);
-            return res.status(400).json({
-                success: false,
-                message: "Validation failed",
-                errors: messages,
-            });
-        }
-
-        // 🧩 Default Server Error
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create direct order due to a server error.",
-            error: error.message,
-        });
-    }
-});
 
 
 
@@ -3082,6 +1307,287 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
 //         throw new ApiError(500, "Failed to create enquiry", [error.message]);
 //     }
 // });
+
+export const createDirectOrder = asyncHandler(async (req, res) => {
+    try {
+        console.log("🚀 Raw body:", req.body);
+        console.log("🚀 File:", req.file?.originalname);
+
+        // ✅ Step 1: Parse JSON fields
+        let body = { ...req.body };
+
+        if (typeof body.services === "string") {
+            try {
+                body.services = JSON.parse(body.services);
+            } catch {
+                throw new ApiError(400, "Invalid JSON format in services");
+            }
+        }
+
+        if (typeof body.additionalServices === "string") {
+            try {
+                body.additionalServices = JSON.parse(body.additionalServices);
+            } catch {
+                throw new ApiError(400, "Invalid JSON format in additionalServices");
+            }
+        }
+
+        // ✅ Step 2: Validate required fields
+        const requiredFields = {
+            hospitalName: body.hospitalName,
+            fullAddress: body.fullAddress,
+            city: body.city,
+            state: body.state,
+            pinCode: body.pinCode,
+            contactPersonName: body.contactPersonName,
+            contactNumber: body.contactNumber,
+        };
+        const missing = Object.entries(requiredFields).filter(([_, v]) => !v);
+        if (missing.length) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing required fields: ${missing.map(([k]) => k).join(", ")}`,
+            });
+        }
+
+        // ✅ Step 3: Validate leadOwner
+        const leadOwnerUser = body.leadOwner ? await User.findById(body.leadOwner) : null;
+        if (!leadOwnerUser) {
+            return res.status(404).json(new ApiResponse(404, null, "Lead owner not found"));
+        }
+
+        let customerId = body.customer;
+        let hospitalDoc;
+
+        // ✅ Step 4: Customer Handling (same logic as "add")
+        if (!customerId) {
+            const {
+                emailAddress,
+                contactNumber,
+                hospitalName,
+                fullAddress,
+                branchName,
+                contactPersonName,
+            } = body;
+
+            // 🔍 Check existing by email
+            if (emailAddress) {
+                const existingByEmail = await Client.findOne({ email: emailAddress });
+                if (existingByEmail) {
+                    return res.status(400).json(
+                        new ApiResponse(
+                            400,
+                            { existingByEmail },
+                            "Email already exists. Please enter another email."
+                        )
+                    );
+                }
+            }
+
+            // 🔍 Check existing by phone
+            let existingCustomer = null;
+            if (contactNumber) {
+                existingCustomer = await Client.findOne({ phone: contactNumber });
+            }
+
+            if (existingCustomer) {
+                return res.status(400).json(
+                    new ApiResponse(
+                        400,
+                        { existingCustomer },
+                        "Mobile number already exists. Please enter another mobile number."
+                    )
+                );
+            }
+
+            // ✅ Create Customer (Client)
+            const newCustomer = await Client.create({
+                name: contactPersonName,
+                email: emailAddress,
+                phone: contactNumber,
+            });
+
+            customerId = newCustomer._id;
+
+            // ✅ Create Hospital linked to Customer
+            hospitalDoc = await Hospital.create({
+                name: hospitalName,
+                email: emailAddress,
+                address: fullAddress,
+                branch: branchName,
+                phone: contactNumber,
+                customer: newCustomer._id,
+            });
+
+            await Client.findByIdAndUpdate(customerId, {
+                $push: { hospitals: hospitalDoc._id },
+            });
+        } else {
+            // ✅ Customer already provided — fetch and link hospital
+            const customerDoc = await Client.findById(customerId);
+            if (!customerDoc) {
+                return res.status(404).json(
+                    new ApiResponse(404, null, "Customer ID provided but customer not found.")
+                );
+            }
+
+            hospitalDoc = await Hospital.findOne({
+                name: body.hospitalName,
+                customer: customerId,
+            });
+
+            if (!hospitalDoc) {
+                hospitalDoc = await Hospital.create({
+                    name: body.hospitalName,
+                    email: body.emailAddress,
+                    address: body.fullAddress,
+                    branch: body.branchName,
+                    phone: body.contactNumber,
+                    customer: customerId,
+                });
+
+                await Client.findByIdAndUpdate(customerId, {
+                    $push: { hospitals: hospitalDoc._id },
+                });
+            }
+        }
+
+        // ✅ Step 5: Handle file upload (if any)
+        let attachmentUrl = "";
+        if (req.file) {
+            const uploadedFile = await uploadToS3(req.file);
+            attachmentUrl = uploadedFile.url;
+        }
+
+        // ✅ Step 6: Create Services
+        let serviceIds = [];
+        if (body.services && body.services.length > 0) {
+            const transformedServices = body.services.map((s) => ({
+                machineType: s.machineType,
+                equipmentNo: s.equipmentNo,
+                machineModel: s.machineModel,
+                serialNumber: s.serialNumber || "",
+                remark: s.remark || "",
+                workTypeDetails: (s.workType || []).map((wt) => ({
+                    workType: wt,
+                    status: "pending",
+                })),
+            }));
+            const createdServices = await Service.insertMany(transformedServices);
+            serviceIds = createdServices.map((s) => s._id);
+        }
+
+        // ✅ Step 7: Create Additional Services
+        let additionalServiceIds = [];
+        if (body.additionalServices && Object.keys(body.additionalServices).length > 0) {
+            const createdAdditionalServices = await AdditionalService.insertMany(
+                Object.entries(body.additionalServices).map(([name, data]) => ({
+                    name,
+                    description: data.description || "",
+                    totalAmount: data.totalAmount || 0,
+                }))
+            );
+            additionalServiceIds = createdAdditionalServices.map((a) => a._id);
+        }
+
+        // ✅ Step 8: Role-based Flow
+        if (leadOwnerUser.role === "Employee") {
+            const enquiry = await Enquiry.create({
+                leadOwner: body.leadOwner,
+                hospital: hospitalDoc._id,
+                hospitalName: body.hospitalName,
+                fullAddress: body.fullAddress,
+                city: body.city,
+                district: body.district,
+                state: body.state,
+                pinCode: body.pinCode,
+                branch: body.branchName,
+                contactPerson: body.contactPersonName,
+                emailAddress: body.emailAddress,
+                contactNumber: body.contactNumber,
+                designation: body.designation,
+                services: serviceIds,
+                additionalServices: additionalServiceIds,
+                specialInstructions: body.specialInstructions,
+                attachment: attachmentUrl,
+                enquiryStatus: "Enquired",
+                enquiryStatusDates: { enquiredOn: new Date() },
+                customer: customerId,
+                quotationStatus: "Create",
+            });
+
+            await Client.findByIdAndUpdate(customerId, {
+                $push: { enquiries: enquiry._id },
+            });
+
+            await Hospital.findByIdAndUpdate(hospitalDoc._id, {
+                $push: { enquiries: enquiry._id },
+            });
+
+            return res
+                .status(201)
+                .json(new ApiResponse(201, { enquiry }, "Enquiry created successfully (Employee)"));
+        }
+
+        if (leadOwnerUser.role === "Dealer") {
+            const newOrder = await orderModel.create({
+                leadOwner: body.leadOwner,
+                hospital: hospitalDoc._id,
+                hospitalName: body.hospitalName,
+                fullAddress: body.fullAddress,
+                city: body.city,
+                district: body.district,
+                state: body.state,
+                pinCode: body.pinCode,
+                branchName: body.branchName,
+                contactPersonName: body.contactPersonName,
+                emailAddress: body.emailAddress,
+                contactNumber: body.contactNumber,
+                designation: body.designation,
+                advanceAmount: body.advanceAmount,
+                urgency: body.urgency,
+                services: serviceIds,
+                additionalServices: additionalServiceIds,
+                specialInstructions: body.specialInstructions,
+                workOrderCopy: attachmentUrl,
+                customer: customerId,
+            });
+
+            return res
+                .status(201)
+                .json(new ApiResponse(201, { order: newOrder }, "Direct Order created successfully (Dealer)"));
+        }
+
+        return res.status(403).json({
+            success: false,
+            message: "Unauthorized role. Only Employee or Dealer can create records.",
+        });
+    } catch (error) {
+        console.error("❌ Create Direct Order Error:", error);
+
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0];
+            const value = error.keyValue?.[field];
+            return res
+                .status(409)
+                .json(new ApiResponse(409, null, `A record with the same ${field} (${value}) already exists.`));
+        }
+
+        if (error.name === "ValidationError") {
+            const messages = Object.values(error.errors).map((err) => err.message);
+            return res
+                .status(400)
+                .json(new ApiResponse(400, null, "Validation failed", messages));
+        }
+
+        return res
+            .status(500)
+            .json(new ApiResponse(500, null, "Failed to create direct order", [error.message]));
+    }
+});
+
+
+
 
 const addByHospitalId = asyncHandler(async (req, res) => {
     try {
