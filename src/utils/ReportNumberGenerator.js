@@ -1,5 +1,7 @@
 // // utils/reportGenerator.js
 
+import Counter from "../models/counterForReports.model.js";
+
 // // utils/reportGenerator.js
 
 // const pad = (num, size) => num.toString().padStart(size, '0');
@@ -46,51 +48,35 @@ const pad = (num, size) => num.toString().padStart(size, "0");
 const getCurrentYearTwoDigit = () => new Date().getFullYear().toString().slice(-2);
 const getCurrentMonthTwoDigit = () => pad(new Date().getMonth() + 1, 2);
 
-// ✅ Shared sequence counter (should be persisted later)
-let sharedSequenceCounter = 3182;
+export async function getNextSequence() {
+    const counter = await Counter.findOneAndUpdate(
+        { name: "reportCounter" },
+        { $inc: { value: 1 } },
+        { new: true, upsert: true }
+    );
+    return counter.value;
+}
 
-/**
- * ✅ Generate ULR Report Number
- */
-export function generateULRReportNumber(sequence = sharedSequenceCounter) {
+export async function generateBothReports() {
+    const sequence = await getNextSequence();
+
+    const ulr = generateULRReportNumber(sequence);
+    const qa = generateQATestReportNumber(sequence);
+
+    return { ulr, qa };
+}
+
+export function generateULRReportNumber(sequence) {
     const prefix = "TC9843";
     const year = getCurrentYearTwoDigit();
     const seq = pad(sequence, 9);
     return `${prefix}${year}${seq}`;
 }
 
-/**
- * ✅ Generate QA Test Report Number
- */
-export function generateQATestReportNumber(sequence = sharedSequenceCounter) {
+export function generateQATestReportNumber(sequence) {
     const prefix = "ABQAR";
     const year = getCurrentYearTwoDigit();
     const month = getCurrentMonthTwoDigit();
     const seq = pad(sequence, 5);
     return `${prefix}${year}${month}${seq}`;
-}
-
-/**
- * ✅ Increment shared counter
- */
-export function incrementReportCounters() {
-    sharedSequenceCounter++;
-}
-
-/**
- * ✅ Generate both ULR & QA numbers with same sequence
- */
-export function generateBothReports() {
-    const currentSeq = sharedSequenceCounter;
-    const ulr = generateULRReportNumber(currentSeq);
-    const qa = generateQATestReportNumber(currentSeq);
-    incrementReportCounters();
-    return { ulr, qa };
-}
-
-/**
- * ✅ Get current counter
- */
-export function getCurrentSequence() {
-    return sharedSequenceCounter;
 }
