@@ -46,12 +46,12 @@ const machineSchema = new Schema(
         serialNumber: {
             type: String,
             required: true,
-            unique: true,
+            // unique: true,
         },
         equipmentId: {
             type: String,
             required: true,
-            unique: true,
+            // unique: true,
         },
         qaValidity: {
             type: Date,
