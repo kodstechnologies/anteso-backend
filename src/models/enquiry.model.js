@@ -18,7 +18,7 @@ const enquirySchema = new mongoose.Schema({
     contactPerson: { type: String, required: true },
     emailAddress: { type: String, required: true },
     contactNumber: { type: String, required: true },
-    designation: { type: String, required: true },  
+    designation: { type: String, required: true },
     services: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -44,7 +44,7 @@ const enquirySchema = new mongoose.Schema({
     // Status Tracking
     enquiryStatus: {
         type: String,
-        enum: ['Enquired', 'Quotation Sent', 'Approved', 'Rejected'],  
+        enum: ['Enquired', 'Quotation Sent', 'Approved', 'Rejected'],
         default: 'Enquired'
     },
     enquiryStatusDates: {
@@ -56,10 +56,10 @@ const enquirySchema = new mongoose.Schema({
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'Quotation',
     // },\
-    
+
     quotationStatus: {
         type: String,
-        enum: ['Create', 'Created', 'Accepted', 'Rejected','Pending'],
+        enum: ['Create', 'Created', 'Accepted', 'Rejected', 'Pending'],
         default: 'Create'
     },
     // Customer Reference (from User base model)
@@ -80,6 +80,9 @@ const enquirySchema = new mongoose.Schema({
         type: String
     },
     grandTotal: {
+        type: String
+    },
+    createdBy: {
         type: String
     }
 }, { timestamps: true });

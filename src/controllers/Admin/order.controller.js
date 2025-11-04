@@ -5,7 +5,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import Services from "../../models/Services.js";
 import User from "../../models/user.model.js";
-import { generateULRReportNumber, generateQATestReportNumber } from "../../utils/ReportNumberGenerator.js";
+import { generateULRReportNumber, generateQATestReportNumber, getNextSequence } from "../../utils/ReportNumberGenerator.js";
 import Employee from "../../models/technician.model.js";
 import Client from "../../models/client.model.js";
 import Hospital from "../../models/hospital.model.js";
@@ -960,8 +960,13 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
     }
 
     // Generate or update QA Test report
-    const reportULRNumber = await generateULRReportNumber();
-    const qaTestReportNumber = await generateQATestReportNumber();
+    // const reportULRNumber = await generateULRReportNumber();
+    // const qaTestReportNumber = await generateQATestReportNumber();
+    // Generate or update QA Test report
+    const sequence = await getNextSequence();
+    const reportULRNumber = generateULRReportNumber(sequence);
+    const qaTestReportNumber = generateQATestReportNumber(sequence);
+
 
     let qaTest;
     if (workTypeDetail.QAtest) {
@@ -1000,7 +1005,6 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
         qaTestReportNumber,
     });
 });
-
 
 
 

@@ -1308,6 +1308,8 @@ const add = asyncHandler(async (req, res) => {
 //     }
 // });
 
+
+
 export const createDirectOrder = asyncHandler(async (req, res) => {
     try {
         console.log("🚀 Raw body:", req.body);
@@ -1514,6 +1516,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
                 enquiryStatusDates: { enquiredOn: new Date() },
                 customer: customerId,
                 quotationStatus: "Create",
+                createdBy: req.user?.id || null,
             });
 
             await Client.findByIdAndUpdate(customerId, {
@@ -2558,4 +2561,41 @@ const getAllStates = asyncHandler(async (req, res) => {
     }
 })
 
-export default { add, getById, deleteById, updateById, getAll, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId };
+const getStaffEnquiries = asyncHandler(async (req, res) => {
+    try {
+        // ✅ Ensure user info is available
+        const userId = req.user?._id || req.user?.id;
+        if (!userId) {
+            return res.status(401).json(
+                new ApiResponse(401, null, "Unauthorized: User not found in request.")
+            );
+        }
+
+        // ✅ Fetch all enquiries created by this staff
+        const enquiries = await Enquiry.find({ createdBy: userId })
+            .populate("hospital", "name address branch") // optional: populate related fields
+            .populate("customer", "name email phone")
+            .populate("services") // if needed
+            .populate("additionalServices") // if needed
+            .sort({ createdAt: -1 }); // latest first
+
+        // ✅ If none found
+        if (!enquiries.length) {
+            return res
+                .status(404)
+                .json(new ApiResponse(404, [], "No enquiries found for this staff."));
+        }
+
+        // ✅ Success response
+        return res
+            .status(200)
+            .json(new ApiResponse(200, enquiries, "Enquiries fetched successfully."));
+    } catch (error) {
+        console.error("❌ Error fetching staff enquiries:", error);
+        return res
+            .status(500)
+            .json(new ApiResponse(500, null, "Failed to fetch staff enquiries", [error.message]));
+    }
+});
+
+export default { add, getById, deleteById, updateById, getAll, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId, getStaffEnquiries };

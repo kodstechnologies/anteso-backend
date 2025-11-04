@@ -43,20 +43,38 @@ import Counter from "../models/counterForReports.model.js";
 
 // utils/ReportNumberGenerator.js
 
+
 const pad = (num, size) => num.toString().padStart(size, "0");
 
 const getCurrentYearTwoDigit = () => new Date().getFullYear().toString().slice(-2);
 const getCurrentMonthTwoDigit = () => pad(new Date().getMonth() + 1, 2);
 
+// ✅ Initialize the counter if not present, starting from 3182
+async function ensureCounterExists() {
+    const existing = await Counter.findOne({ name: "reportCounter" });
+    if (!existing) {
+        await Counter.create({ name: "reportCounter", value: 3182 });
+    }
+}
+
+/**
+ * ✅ Get next sequence number
+ */
 export async function getNextSequence() {
+    await ensureCounterExists(); // make sure it exists before incrementing
+
     const counter = await Counter.findOneAndUpdate(
         { name: "reportCounter" },
         { $inc: { value: 1 } },
-        { new: true, upsert: true }
+        { new: true }
     );
+
     return counter.value;
 }
 
+/**
+ * ✅ Generate both ULR and QA report numbers using same sequence
+ */
 export async function generateBothReports() {
     const sequence = await getNextSequence();
 
@@ -66,6 +84,10 @@ export async function generateBothReports() {
     return { ulr, qa };
 }
 
+/**
+ * ✅ Generate ULR Report Number
+ * Format: TC9843 + [YY] + [9-digit seq]
+ */
 export function generateULRReportNumber(sequence) {
     const prefix = "TC9843";
     const year = getCurrentYearTwoDigit();
@@ -73,6 +95,10 @@ export function generateULRReportNumber(sequence) {
     return `${prefix}${year}${seq}`;
 }
 
+/**
+ * ✅ Generate QA Test Report Number
+ * Format: ABQAR + [YY] + [MM] + [5-digit seq]
+ */
 export function generateQATestReportNumber(sequence) {
     const prefix = "ABQAR";
     const year = getCurrentYearTwoDigit();

@@ -1307,22 +1307,134 @@ const getAllOrdersWithType = asyncHandler(async (req, res) => {
 // });
 
 
+// const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required",
+//       });
+//     }
+
+//     // Fetch the order
+//     const order = await Order.findById(orderId)
+//       .populate({
+//         path: 'services',
+//         select: 'machineType totalAmount machineModel workTypeDetails',
+//       })
+//       .populate({
+//         path: 'additionalServices',
+//         select: 'name description totalAmount',
+//       })
+//       .populate({
+//         path: 'quotation',
+//         select: 'total discount subtotal gstRate gstAmount',
+//       })
+//       .lean();
+//     console.log("🚀 ~ order:", order)
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // Extract grand total safely
+//     const grandTotal = order.quotation?.total || 0;
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         ...order,
+//         grandTotal,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching order details:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while fetching order details",
+//     });
+//   }
+// });
+
+
+// const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+//   try {
+//     const { orderId } = req.params;
+
+//     if (!orderId) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "orderId is required",
+//       });
+//     }
+
+//     const order = await Order.findById(orderId)
+//       .populate({
+//         path: 'services',
+//         select: 'machineType machineModel totalAmount workTypeDetails',
+//       })
+//       .populate({
+//         path: 'additionalServices',
+//         select: 'name description totalAmount',
+//       })
+//       .populate({
+//         path: 'quotation',
+//         select: 'total discount subtotal gstRate gstAmount',
+//       })
+//       .lean();
+
+//     if (!order) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Order not found",
+//       });
+//     }
+
+//     // ✅ Ensure service totals are handled
+//     const servicesWithAmount = order.services.map(s => ({
+//       ...s,
+//       totalAmount: s.totalAmount || 0,
+//     }));
+
+//     const serviceTotal = servicesWithAmount.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+//     const additionalTotal = order.additionalServices?.reduce((sum, s) => sum + (s.totalAmount || 0), 0) || 0;
+//     const quotationTotal = order.quotation?.total || 0;
+
+//     const grandTotal = quotationTotal || (serviceTotal + additionalTotal);
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         ...order,
+//         services: servicesWithAmount,
+//         grandTotal,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching order details:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error while fetching order details",
+//     });
+//   }
+// });
+
 const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
   try {
     const { orderId } = req.params;
-
     if (!orderId) {
-      return res.status(400).json({
-        success: false,
-        message: "orderId is required",
-      });
+      return res.status(400).json({ success: false, message: "orderId is required" });
     }
 
-    // Fetch the order
     const order = await Order.findById(orderId)
       .populate({
         path: 'services',
-        select: 'machineType totalAmount  machineModel workTypeDetails',
+        select: 'machineType machineModel totalAmount workTypeDetails',
       })
       .populate({
         path: 'additionalServices',
@@ -1330,25 +1442,41 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
       })
       .populate({
         path: 'quotation',
-        select: 'total discount subtotal gstRate gstAmount',
+        select: 'total discount subtotal gstRate gstAmount enquiry',
+        populate: {
+          path: 'enquiry',
+          populate: { path: 'services', select: 'machineType totalAmount' }
+        }
       })
       .lean();
-    console.log("🚀 ~ order:", order)
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // 🧮 Use service totals from quotation.enquiry if available
+    let servicesWithAmount = order.services;
+    if (order.quotation?.enquiry?.services?.length) {
+      const enquiryServices = order.quotation.enquiry.services;
+      servicesWithAmount = order.services.map(s => {
+        const matched = enquiryServices.find(es => es.machineType === s.machineType);
+        return {
+          ...s,
+          totalAmount: matched?.totalAmount || s.totalAmount || 0,
+        };
       });
     }
 
-    // Extract grand total safely
-    const grandTotal = order.quotation?.total || 0;
+    const serviceTotal = servicesWithAmount.reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+    const additionalTotal = order.additionalServices?.reduce((sum, s) => sum + (s.totalAmount || 0), 0) || 0;
+    const quotationTotal = order.quotation?.total || 0;
+    const grandTotal = quotationTotal || (serviceTotal + additionalTotal);
 
     res.status(200).json({
       success: true,
       data: {
         ...order,
+        services: servicesWithAmount,
         grandTotal,
       },
     });
@@ -1360,6 +1488,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 
 const createInvoice = asyncHandler(async (req, res) => {
@@ -1919,4 +2048,4 @@ const getInvoicePdf = asyncHandler(async (req, res) => {
 
 
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders }
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders }

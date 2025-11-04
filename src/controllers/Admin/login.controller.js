@@ -7,6 +7,7 @@ import { ApiResponse } from "../../utils/ApiResponse.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import Employee from "../../models/technician.model.js";
 import Attendance from '../../models/attendanceSchema.model.js'
+import Leave from "../../models/leave.model.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("🚀 ~ JWT_SECRET:", JWT_SECRET)
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -154,6 +155,7 @@ const adminLogin = asyncHandler(async (req, res) => {
     }
 
     // 3. Check Employee (office-staff only)
+    // 3. Check Employee (office-staff only)
     const employee = await Employee.findOne({ email, status: 'active', technicianType: 'office-staff' });
     if (employee) {
         const isPasswordValid = await bcrypt.compare(password, employee.password);
@@ -170,20 +172,40 @@ const adminLogin = asyncHandler(async (req, res) => {
             { expiresIn: '365d' }
         );
 
-        // ✅ Mark staff as present for today
+        // ✅ Check if employee is on approved leave today
         const today = new Date();
-        today.setHours(0, 0, 0, 0); // normalize to start of day
+        today.setHours(0, 0, 0, 0);
 
-        await Attendance.findOneAndUpdate(
-            { employee: employee._id, date: today },
-            { employee: employee._id, date: today, status: 'Present' },
-            { upsert: true, new: true } // create if not exists
-        );
+        const leaveToday = await Leave.findOne({
+            employee: employee._id,
+            status: 'Approved',
+            startDate: { $lte: today },
+            endDate: { $gte: today },
+        });
+
+        if (leaveToday) {
+            console.log("Employee is on approved leave today, skipping attendance update.");
+
+            // Optional: ensure attendance shows "On Leave" for today
+            await Attendance.findOneAndUpdate(
+                { employee: employee._id, date: today },
+                { employee: employee._id, date: today, status: 'On Leave', leave: leaveToday._id },
+                { upsert: true, new: true }
+            );
+        } else {
+            // ✅ Mark staff as present if not on leave
+            await Attendance.findOneAndUpdate(
+                { employee: employee._id, date: today },
+                { employee: employee._id, date: today, status: 'Present' },
+                { upsert: true, new: true }
+            );
+        }
 
         return res.status(200).json(
             new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
         );
     }
+
 
     // 4. If neither admin nor active staff
     throw new ApiError(401, "Invalid email or password");

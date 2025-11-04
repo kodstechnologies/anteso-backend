@@ -66,10 +66,10 @@ const machineSchema = new Schema(
         //     enum: ['Working', 'Not Working', 'Under Maintenance'],
         //     required: true,
         // },
-        rawDataAttachment: {
-            type: String,
-            default: null,
-        },
+        // rawDataAttachment: {
+        //     type: String,
+        //     default: null,
+        // },
         qaReportAttachment: {
             type: String,
             required: false,

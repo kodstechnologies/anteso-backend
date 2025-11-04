@@ -5,7 +5,7 @@ import machineController from '../../../controllers/Admin/machine.controller.js'
 router.post("/add/:hospitalId", upload.fields([
     { name: "qaReportAttachment", maxCount: 1 },
     { name: "licenseReportAttachment", maxCount: 1 },
-    { name: "rawDataAttachment", maxCount: 1 },
+    // { name: "rawDataAttachment", maxCount: 1 },
 ]), machineController.add);
 router.get('/get-machine-by-hospital/:hospitalId', machineController.getAllMachinesByHospitalId)
 // router.put('/update/:id/:customerId', machineController.updateById)
