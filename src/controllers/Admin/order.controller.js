@@ -283,29 +283,70 @@ const getAllServicesByOrderId = asyncHandler(async (req, res) => {
 //             .json(new ApiError(500, "Internal Server Error", [], error.stack));
 //     }
 // });
+
+
+
+// const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
+//     try {
+//         const { orderId } = req.params;
+
+//         const order = await orderModel.findById(orderId)
+//             .populate({
+//                 path: "services",
+//                 populate: {
+//                     path: "workTypeDetails.QAtest",
+//                     model: "QATest"
+//                 }
+//             });
+
+//         if (!order) {
+//             throw new ApiError(404, "Order not found");
+//         }
+
+//         console.log("🚀 ~ order.services:", JSON.stringify(order.services, null, 2));
+
+//         return res
+//             .status(200)
+//             .json(new ApiResponse(200, order.services, "Machine details fetched"));
+//     } catch (error) {
+//         if (error instanceof ApiError) {
+//             return res.status(error.statusCode).json(error);
+//         }
+//         return res
+//             .status(500)
+//             .json(new ApiError(500, "Internal Server Error", [], error.stack));
+//     }
+// });
 const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
 
+        // Validate ObjectId
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            throw new ApiError(400, "Invalid orderId");
+        }
+
+        // Populate both QAtest and Elora inside workTypeDetails
         const order = await orderModel.findById(orderId)
             .populate({
                 path: "services",
-                populate: {
-                    path: "workTypeDetails.QAtest",
-                    model: "QATest"
-                }
+                populate: [
+                    { path: "workTypeDetails.QAtest", model: "QATest" },
+                    { path: "workTypeDetails.elora", model: "Elora", populate: { path: "officeStaff", model: "Employee" } }
+                ]
             });
 
         if (!order) {
             throw new ApiError(404, "Order not found");
         }
 
-        console.log("🚀 ~ order.services:", JSON.stringify(order.services, null, 2));
+        console.log("🚀 ~ Populated Services:", JSON.stringify(order.services, null, 2));
 
         return res
             .status(200)
-            .json(new ApiResponse(200, order.services, "Machine details fetched"));
+            .json(new ApiResponse(200, order.services, "Machine details fetched successfully"));
     } catch (error) {
+        console.error("❌ Error fetching machine details:", error);
         if (error instanceof ApiError) {
             return res.status(error.statusCode).json(error);
         }
@@ -4917,41 +4958,242 @@ const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
 
 
 
+// const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
+//     try {
+//         const staffId = req.user.id;
+
+//         // Step 1: Populate all services -> workTypeDetails -> QATest
+//         const orders = await orderModel.find({})
+//             .populate({
+//                 path: "services",
+//                 populate: {
+//                     path: "workTypeDetails.QAtest",
+//                     populate: { path: "officeStaff", select: "name email _id" }
+//                 }
+//             })
+//             .populate("customer hospital payment courierDetails quotation additionalServices");
+
+//         // Step 2: Filter orders where the logged-in staff is assigned in QATest
+//         const filteredOrders = orders
+//             .map(order => {
+//                 const filteredServices = order.services.map(service => {
+//                     const filteredWorkTypeDetails = service.workTypeDetails.filter(
+//                         wt => wt.QAtest && wt.QAtest.officeStaff && wt.QAtest.officeStaff._id.toString() === staffId
+//                     );
+//                     return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
+//                 }).filter(s => s.workTypeDetails.length > 0); // keep only services with matching QATest
+
+//                 return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
+//             })
+//             .filter(o => o !== null);
+
+//         res.status(200).json({ success: true, orders: filteredOrders });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ success: false, message: "Server Error", error: error.message });
+//     }
+// });
+
+
+
+// const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
+//     try {
+//         const staffId = req.user.id;
+
+//         // Step 1: Populate all required references including services → workTypeDetails → QATest
+//         let orders = await orderModel.find({})
+//             .populate({
+//                 path: "services",
+//                 populate: {
+//                     path: "workTypeDetails.QAtest",
+//                     populate: { path: "officeStaff", select: "name email _id" }
+//                 }
+//             })
+//             .populate("customer hospital payment courierDetails quotation additionalServices");
+
+//         // Step 2: Filter only those orders where the logged-in staff is assigned in QATest
+//         orders = orders
+//             .map(order => {
+//                 const filteredServices = order.services.map(service => {
+//                     const filteredWorkTypeDetails = service.workTypeDetails.filter(
+//                         wt =>
+//                             wt.QAtest &&
+//                             wt.QAtest.officeStaff &&
+//                             wt.QAtest.officeStaff._id.toString() === staffId
+//                     );
+//                     return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
+//                 }).filter(s => s.workTypeDetails.length > 0);
+
+//                 return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
+//             })
+//             .filter(o => o !== null);
+
+//         // Step 3: Enrich each order with leadOwnerName & leadOwnerType (same as getAllOrders)
+//         orders = await Promise.all(
+//             orders.map(async (order) => {
+//                 let leadOwnerName = "N/A";
+//                 let leadOwnerType = "N/A";
+
+//                 // Try Lead Owner first
+//                 if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+//                     const user = await User.findById(order.leadOwner).select("name role");
+//                     if (user) {
+//                         leadOwnerName = user.name;
+//                         leadOwnerType = user.role;
+//                     }
+//                 }
+
+//                 // Fallback to Customer
+//                 if (
+//                     (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
+//                     order.customer &&
+//                     mongoose.Types.ObjectId.isValid(order.customer)
+//                 ) {
+//                     const customer = await User.findById(order.customer).select("name role");
+//                     if (customer) {
+//                         leadOwnerName = customer.name;
+//                         leadOwnerType = customer.role;
+//                     }
+//                 }
+
+//                 return {
+//                     ...order,
+//                     leadOwner: leadOwnerName,
+//                     leadOwnerType,
+//                 };
+//             })
+//         );
+
+//         // Step 4: Return response
+//         if (!orders || orders.length === 0) {
+//             return res.status(200).json({
+//                 success: true,
+//                 count: 0,
+//                 orders: [],
+//                 message: "No assigned orders found",
+//             });
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             count: orders.length,
+//             message: "Assigned orders fetched successfully",
+//             orders,
+//         });
+//     } catch (error) {
+//         console.error("Error in getAssignedOrdersForStaff:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: "Server Error",
+//             error: error.message,
+//         });
+//     }
+// });
+
+
 const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
     try {
         const staffId = req.user.id;
 
-        // Step 1: Populate all services -> workTypeDetails -> QATest
-        const orders = await orderModel.find({})
+        // Step 1: Populate all references (QATest + Elora)
+        let orders = await orderModel.find({})
             .populate({
                 path: "services",
                 populate: {
-                    path: "workTypeDetails.QAtest",
+                    path: "workTypeDetails.QAtest workTypeDetails.elora",
                     populate: { path: "officeStaff", select: "name email _id" }
                 }
             })
             .populate("customer hospital payment courierDetails quotation additionalServices");
 
-        // Step 2: Filter orders where the logged-in staff is assigned in QATest
-        const filteredOrders = orders
+        // Step 2: Filter only orders where logged-in staff is assigned to either QATest or Elora
+        orders = orders
             .map(order => {
                 const filteredServices = order.services.map(service => {
-                    const filteredWorkTypeDetails = service.workTypeDetails.filter(
-                        wt => wt.QAtest && wt.QAtest.officeStaff && wt.QAtest.officeStaff._id.toString() === staffId
-                    );
+                    const filteredWorkTypeDetails = service.workTypeDetails.filter(wt => {
+                        const qaMatch =
+                            wt.QAtest &&
+                            wt.QAtest.officeStaff &&
+                            wt.QAtest.officeStaff._id.toString() === staffId;
+
+                        const eloraMatch =
+                            wt.elora &&
+                            wt.elora.officeStaff &&
+                            wt.elora.officeStaff._id.toString() === staffId;
+
+                        return qaMatch || eloraMatch; // ✅ include both cases
+                    });
+
                     return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
-                }).filter(s => s.workTypeDetails.length > 0); // keep only services with matching QATest
+                }).filter(s => s.workTypeDetails.length > 0);
 
                 return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
             })
             .filter(o => o !== null);
 
-        res.status(200).json({ success: true, orders: filteredOrders });
+        // Step 3: Enrich with leadOwnerName & leadOwnerType
+        orders = await Promise.all(
+            orders.map(async (order) => {
+                let leadOwnerName = "N/A";
+                let leadOwnerType = "N/A";
+
+                // Try Lead Owner first
+                if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+                    const user = await User.findById(order.leadOwner).select("name role");
+                    if (user) {
+                        leadOwnerName = user.name;
+                        leadOwnerType = user.role;
+                    }
+                }
+
+                // Fallback to Customer
+                if (
+                    (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
+                    order.customer &&
+                    mongoose.Types.ObjectId.isValid(order.customer)
+                ) {
+                    const customer = await User.findById(order.customer).select("name role");
+                    if (customer) {
+                        leadOwnerName = customer.name;
+                        leadOwnerType = customer.role;
+                    }
+                }
+
+                return {
+                    ...order,
+                    leadOwner: leadOwnerName,
+                    leadOwnerType,
+                };
+            })
+        );
+
+        // Step 4: Return response
+        if (!orders || orders.length === 0) {
+            return res.status(200).json({
+                success: true,
+                count: 0,
+                orders: [],
+                message: "No assigned orders found for this staff",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            count: orders.length,
+            message: "Assigned orders (QA Test + Elora) fetched successfully",
+            orders,
+        });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Server Error", error: error.message });
+        console.error("Error in getAssignedOrdersForStaff:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
     }
 });
+
 
 
 const deleteOrderAndReports = asyncHandler(async (req, res) => {

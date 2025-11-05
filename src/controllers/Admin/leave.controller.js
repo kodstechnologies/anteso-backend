@@ -566,6 +566,55 @@ const rejectLeave = asyncHandler(async (req, res) => {
 });
 
 
+// const allocateLeavesToAll = asyncHandler(async (req, res) => {
+//     const { year, totalLeaves } = req.body;
+
+//     if (!year || totalLeaves === undefined) {
+//         return res.status(400).json({ message: 'year and totalLeaves are required' });
+//     }
+
+//     // 1️⃣ Fetch all employees (active + inactive)
+//     const employees = await Employee.find().select('_id');
+//     if (!employees.length) {
+//         return res.status(404).json({ message: 'No employees found' });
+//     }
+
+//     let createdCount = 0;
+//     let updatedCount = 0;
+
+//     // 2️⃣ Loop through all employees and create/update their allocation
+//     for (const emp of employees) {
+//         const existing = await LeaveAllocation.findOne({ employee: emp._id, year });
+
+//         if (existing) {
+//             existing.totalLeaves = totalLeaves;
+//             await existing.save();
+//             updatedCount++;
+//         } else {
+//             await LeaveAllocation.create({
+//                 employee: emp._id,
+//                 year,
+//                 totalLeaves,
+//                 usedLeaves: 0,
+//             });
+//             createdCount++;
+//         }
+//     }
+
+//     // 3️⃣ Calculate total leaves allocated for this year
+//     // const totalLeavesAllocated = employees.length * totalLeaves;
+
+//     return res.status(200).json({
+//         message: 'Leave allocation process completed for all employees',
+//         totalEmployees: employees.length,
+//         createdCount,
+//         updatedCount,
+//         totalLeaves,
+//         // totalLeavesAllocated, // ✅ total leaves allocated for this year
+//         year,
+//     });
+// });
+
 const allocateLeavesToAll = asyncHandler(async (req, res) => {
     const { year, totalLeaves } = req.body;
 
@@ -573,7 +622,7 @@ const allocateLeavesToAll = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: 'year and totalLeaves are required' });
     }
 
-    // 1️⃣ Fetch all employees (active + inactive)
+    // Fetch all employees
     const employees = await Employee.find().select('_id');
     if (!employees.length) {
         return res.status(404).json({ message: 'No employees found' });
@@ -582,7 +631,7 @@ const allocateLeavesToAll = asyncHandler(async (req, res) => {
     let createdCount = 0;
     let updatedCount = 0;
 
-    // 2️⃣ Loop through all employees and create/update their allocation
+    // Loop through all employees
     for (const emp of employees) {
         const existing = await LeaveAllocation.findOne({ employee: emp._id, year });
 
@@ -601,20 +650,15 @@ const allocateLeavesToAll = asyncHandler(async (req, res) => {
         }
     }
 
-    // 3️⃣ Calculate total leaves allocated for this year
-    // const totalLeavesAllocated = employees.length * totalLeaves;
-
     return res.status(200).json({
         message: 'Leave allocation process completed for all employees',
         totalEmployees: employees.length,
         createdCount,
         updatedCount,
-        totalLeaves,
-        // totalLeavesAllocated, // ✅ total leaves allocated for this year
+        leavesPerEmployee: totalLeaves, 
         year,
     });
 });
-
 
 
 const getAllLeaveAllocations = asyncHandler(async (req, res) => {
