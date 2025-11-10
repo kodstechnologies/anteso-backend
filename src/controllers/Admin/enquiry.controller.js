@@ -1567,7 +1567,34 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
                 .status(201)
                 .json(new ApiResponse(201, { order: newOrder }, "Direct Order created successfully (Dealer)"));
         }
+        if (leadOwnerUser.role === "Manufacturer") {
+            const newOrder = await orderModel.create({
+                leadOwner: body.leadOwner,
+                hospital: hospitalDoc._id,
+                hospitalName: body.hospitalName,
+                fullAddress: body.fullAddress,
+                city: body.city,
+                district: body.district,
+                state: body.state,
+                pinCode: body.pinCode,
+                branchName: body.branchName,
+                contactPersonName: body.contactPersonName,
+                emailAddress: body.emailAddress,
+                contactNumber: body.contactNumber,
+                designation: body.designation,
+                advanceAmount: body.advanceAmount,
+                urgency: body.urgency,
+                services: serviceIds,
+                additionalServices: additionalServiceIds,
+                specialInstructions: body.specialInstructions,
+                workOrderCopy: attachmentUrl,
+                customer: customerId,
+            });
 
+            return res
+                .status(201)
+                .json(new ApiResponse(201, { order: newOrder }, "Direct Order created successfully (Dealer)"));
+        }
         return res.status(403).json({
             success: false,
             message: "Unauthorized role. Only Employee or Dealer can create records.",

@@ -1733,14 +1733,11 @@ export const createOrder = asyncHandler(async (req, res) => {
         if (Array.isArray(parsedAdditional) && parsedAdditional.length) {
             additionalServiceDocs = await Promise.all(
                 parsedAdditional.map(async (svc) => {
-                    let doc = await AdditionalService.findOne({ name: svc.name });
-                    if (!doc) {
-                        doc = await AdditionalService.create({
-                            name: svc.name,
-                            description: svc.description || "",
-                            totalAmount: svc.totalAmount ?? 0,
-                        });
-                    }
+                    const doc = await AdditionalService.create({
+                        name: svc.name,
+                        description: svc.description || "",
+                        totalAmount: svc.totalAmount ?? 0,
+                    });
                     return doc._id;
                 })
             );
