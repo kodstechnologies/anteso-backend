@@ -173,7 +173,7 @@ const getAll = asyncHandler(async (req, res) => {
 const getById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
-    const client = await User.findById(id).select('_id name email phone');
+    const client = await User.findById(id).select('_id name email phone address');
     // .populate({
     //     path: 'hospitals',
     //     populate: [{ path: 'institutes' }, { path: 'rsos' }]
