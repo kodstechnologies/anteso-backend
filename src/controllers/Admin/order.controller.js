@@ -92,6 +92,7 @@ import Invoice from "../../models/invoice.model.js";
 //         res.status(500).json({ message: "Server error", error: error.message });
 //     }
 // });
+
 const getAllOrders = asyncHandler(async (req, res) => {
     try {
         let orders = await orderModel.find({}).sort({ createdAt: -1 });
@@ -183,28 +184,38 @@ const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
 const getAdditionalServicesByOrderId = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
+
         if (!orderId) {
-            return res.status(400).json({ message: 'Order ID is required' });
+            return res.status(400).json({ message: "Order ID is required" });
         }
 
-        // ✅ Populate only name & description from AdditionalService
+        // ✅ Populate 'additionalServices' including updatedBy details
         const order = await orderModel
             .findById(orderId)
-            .populate('additionalServices', 'name description remark status report') // 👈 only these fields
-            .select('additionalServices specialInstructions');
+            .populate({
+                path: "additionalServices",
+                select: "name description remark status report updatedBy updatedByModel",
+                populate: {
+                    path: "updatedBy",
+                    select: "name email phone role technicianType", // ✅ include readable user info
+                },
+            })
+            .select("additionalServices specialInstructions");
 
         if (!order) {
-            return res.status(404).json({ message: 'Order not found' });
+            return res.status(404).json({ message: "Order not found" });
         }
 
         res.status(200).json({
             additionalServices: order.additionalServices || [],
-            specialInstructions: order.specialInstructions || ''
+            specialInstructions: order.specialInstructions || "",
         });
     } catch (error) {
-        res.status(500).json({ message: error.message || 'Something went wrong' });
+        console.error("❌ Error fetching additional services:", error);
+        res.status(500).json({ message: error.message || "Something went wrong" });
     }
 });
+
 
 const getAllServicesByOrderId = asyncHandler(async (req, res) => {
     try {
@@ -1713,29 +1724,29 @@ export const createOrder = asyncHandler(async (req, res) => {
         // ✅ Step 5: Parse & upsert additionalServices
         let parsedAdditional = [];
         if (additionalServices) {
-            parsedAdditional =
-                typeof additionalServices === "string"
-                    ? JSON.parse(additionalServices)
-                    : additionalServices;
+            parsedAdditional = typeof additionalServices === "string"
+                ? JSON.parse(additionalServices)
+                : additionalServices;
         }
 
         let additionalServiceDocs = [];
-        if (Array.isArray(parsedAdditional) && parsedAdditional.length > 0) {
+        if (Array.isArray(parsedAdditional) && parsedAdditional.length) {
             additionalServiceDocs = await Promise.all(
                 parsedAdditional.map(async (svc) => {
-                    let existing = await AdditionalService.findOne({ name: svc.name });
-                    if (!existing) {
-                        existing = await AdditionalService.create({
+                    let doc = await AdditionalService.findOne({ name: svc.name });
+                    if (!doc) {
+                        doc = await AdditionalService.create({
                             name: svc.name,
                             description: svc.description || "",
-                            totalAmount: svc.totalAmount || 0,
+                            totalAmount: svc.totalAmount ?? 0,
                         });
                     }
-                    return existing._id;
+                    return doc._id;
                 })
             );
         }
-
+        console.log("Parsed additionalServices:", parsedAdditional);
+        console.log("additionalServiceDocs IDs:", additionalServiceDocs);
         // ✅ Step 6: Create order with hospital reference + S3 file URL
         const order = await orderModel.create({
             leadOwner,
@@ -3282,50 +3293,120 @@ export const editOrder = async (req, res) => {
 //         res.status(500).json({ message: "Server error", error: error.message });
 //     }
 // };
-const updateAdditionalService = async (req, res) => {
+
+
+
+
+// const updateAdditionalService = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const status = req.body?.status;
+//         const remark = req.body?.remark;
+
+//         if (!id) {
+//             return res.status(400).json({ message: "Service ID is required" });
+//         }
+
+//         // Status is mandatory
+//         if (!status) {
+//             return res.status(400).json({ message: "Status is required" });
+//         }
+
+//         const service = await AdditionalService.findById(id);
+//         if (!service) {
+//             return res.status(404).json({ message: "Service not found" });
+//         }
+
+//         // If status is completed, file upload is mandatory
+//         if (status.toLowerCase() === "completed") {
+//             if (!req.file) {
+//                 return res.status(400).json({ message: "File upload is required when status is 'completed'" });
+//             }
+//             const { url } = await uploadToS3(req.file);
+//             service.report = url; // store the file URL
+//         }
+
+//         service.status = status;
+//         service.remark = remark || service.remark;
+
+//         await service.save();
+
+//         res.status(200).json({
+//             message: "Additional Service updated successfully",
+//             service,       // report URL is now included
+//         });
+//     } catch (error) {
+//         console.error("Error updating additional service:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// };
+export const updateAdditionalService = async (req, res) => {
     try {
         const { id } = req.params;
-        const status = req.body?.status;
-        const remark = req.body?.remark;
+        const { status, remark } = req.body;
 
+        // Validate required fields
         if (!id) {
             return res.status(400).json({ message: "Service ID is required" });
         }
 
-        // Status is mandatory
         if (!status) {
             return res.status(400).json({ message: "Status is required" });
         }
 
+        // Find existing service
         const service = await AdditionalService.findById(id);
         if (!service) {
             return res.status(404).json({ message: "Service not found" });
         }
 
-        // If status is completed, file upload is mandatory
+        // ✅ If status is 'completed', file upload is mandatory
         if (status.toLowerCase() === "completed") {
             if (!req.file) {
-                return res.status(400).json({ message: "File upload is required when status is 'completed'" });
+                return res.status(400).json({
+                    message: "File upload is required when status is 'completed'",
+                });
             }
             const { url } = await uploadToS3(req.file);
-            service.report = url; // store the file URL
+            service.report = url; // store uploaded file URL
         }
 
+        // ✅ Update fields
         service.status = status;
         service.remark = remark || service.remark;
 
+        // ✅ Track who updated the record
+        const tokenUser = req.admin || req.user;
+        const updaterId = tokenUser?._id || tokenUser?.id;
+        const updaterModel = tokenUser?.role === "admin" ? "Admin" : "User";
+
+        if (updaterId) {
+            service.updatedBy = updaterId;
+            service.updatedByModel = updaterModel;
+        }
+
+        // ✅ Save updated record
         await service.save();
 
-        res.status(200).json({
+        // ✅ Populate updatedBy for cleaner response
+        const populatedService = await AdditionalService.findById(service._id)
+            .populate({
+                path: "updatedBy",
+                select: "name email phone role technicianType",
+            });
+
+        return res.status(200).json({
             message: "Additional Service updated successfully",
-            service,       // report URL is now included
+            service: populatedService,
         });
     } catch (error) {
-        console.error("Error updating additional service:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
+        console.error("❌ Error updating additional service:", error);
+        return res.status(500).json({
+            message: "Server error while updating additional service",
+            error: error.message,
+        });
     }
 };
-
 
 
 const getUpdatedAdditionalServiceReport = asyncHandler(async (req, res) => {

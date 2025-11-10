@@ -760,6 +760,7 @@ const toolHistory = asyncHandler(async (req, res) => {
         });
     }
 });
+
 const getUnassignedTools = asyncHandler(async (req, res) => {
     try {
         const unassignedTools = await Tools.find({ toolStatus: 'unassigned' })

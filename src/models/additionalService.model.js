@@ -32,6 +32,7 @@
 // );
 
 import mongoose from "mongoose";
+import updatedByPlugin from "./plugins/updatedBy.plugin.js";
 const additionalServiceSchema = new mongoose.Schema(
     {
         name: {
@@ -57,18 +58,20 @@ const additionalServiceSchema = new mongoose.Schema(
         totalAmount: {
             type: Number,
         },
-        status:{
-            type:String
+        status: {
+            type: String
         },
-        remark:{
-            type:String
+        remark: {
+            type: String
         },
-        report:{
-            type:String
+        report: {
+            type: String
         }
     },
     { timestamps: true }
 );
+additionalServiceSchema.plugin(updatedByPlugin);
+
 const AdditionalService = mongoose.model(
     "AdditionalService",
     additionalServiceSchema

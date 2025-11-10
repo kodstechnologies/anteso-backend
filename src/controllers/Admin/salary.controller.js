@@ -105,7 +105,6 @@ const generateSalary = asyncHandler(async (req, res) => {
 const updateSalary = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { status, incentive, leaveDeduction, totalSalary } = req.body;
-
     const salary = await Salary.findById(id);
     if (!salary) throw new ApiError(404, "Salary not found");
 

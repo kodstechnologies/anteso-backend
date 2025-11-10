@@ -154,109 +154,6 @@ import Hospital from '../../models/hospital.model.js'
 //     }
 // });
 
-// const add = asyncHandler(async (req, res) => {
-//     try {
-//         const { hospitalId } = req.params;
-
-//         const {
-//             machineType,
-//             make,
-//             model,
-//             serialNumber,
-//             equipmentId,
-//             qaValidity,
-//             licenseValidity,
-//         } = req.body;
-
-//         // Validate request body
-//         const { error } = machineSchema.validate({
-//             machineType,
-//             make,
-//             model,
-//             serialNumber,
-//             equipmentId,
-//             qaValidity,
-//             licenseValidity,
-//         });
-//         if (error) {
-//             throw new ApiError(400, error.details[0].message);
-//         }
-
-//         // Check hospital exists
-//         const hospital = await Hospital.findById(hospitalId);
-//         if (!hospital) {
-//             throw new ApiError(404, "Hospital not found.");
-//         }
-
-//         // Upload files to S3 (if they exist)
-//         const uploadedFiles = {};
-//         if (req.files) {
-//             for (const [key, fileArray] of Object.entries(req.files)) {
-//                 if (fileArray.length > 0) {
-//                     const s3Result = await uploadToS3(fileArray[0]);
-//                     uploadedFiles[key] = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Result.key}`;
-//                 }
-//             }
-//         }
-
-//         // Compare dates using local 00:00:00 to determine expiry
-//         const isDateExpired = (validityDate) => {
-//             if (!validityDate) return false;
-//             const date = new Date(validityDate);
-//             date.setHours(0, 0, 0, 0); // local 00:00:00
-//             const today = new Date();
-//             today.setHours(0, 0, 0, 0); // local 00:00:00
-//             return date < today;
-//         };
-
-//         const isQaExpired = isDateExpired(qaValidity);
-//         const isLicenseExpired = isDateExpired(licenseValidity);
-
-//         let status = "Active";
-//         const expiredFields = [];
-
-//         if (isQaExpired) expiredFields.push("qaValidity");
-//         if (isLicenseExpired) expiredFields.push("licenseValidity");
-
-//         if (expiredFields.length > 0) {
-//             status = "Expired";
-//         }
-
-//         // Create machine linked to hospital
-//         let machine = await Machine.create({
-//             machineType,
-//             make,
-//             model,
-//             serialNumber,
-//             equipmentId,
-//             qaValidity,
-//             licenseValidity,
-//             status,
-//             rawDataAttachment: uploadedFiles.rawDataAttachment || null,
-//             qaReportAttachment: uploadedFiles.qaReportAttachment || null,
-//             licenseReportAttachment: uploadedFiles.licenseReportAttachment || null,
-//             hospital: hospitalId,
-//         });
-
-//         // Update hospital with this machine
-//         hospital.machines = machine._id;
-//         await hospital.save();
-
-//         // Re-fetch machine with populated hospital (including rsos + institutes + machines)
-//         machine = await Machine.findById(machine._id).populate({
-//             path: "hospital",
-//             populate: ["rsos", "institutes", "machines"],
-//         });
-
-//         res.status(201).json(
-//             new ApiResponse(201, machine, "Machine added successfully to hospital.")
-//         );
-//     } catch (error) {
-//         console.error("❌ Error in addMachine:", error);
-//         throw new ApiError(500, error?.message || "Internal Server Error");
-//     }
-// });
-
 const add = asyncHandler(async (req, res) => {
     try {
         const { hospitalId } = req.params;
@@ -306,9 +203,9 @@ const add = asyncHandler(async (req, res) => {
         const isDateExpired = (validityDate) => {
             if (!validityDate) return false;
             const date = new Date(validityDate);
-            date.setHours(0, 0, 0, 0);
+            date.setHours(0, 0, 0, 0); // local 00:00:00
             const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0); // local 00:00:00
             return date < today;
         };
 
@@ -335,6 +232,7 @@ const add = asyncHandler(async (req, res) => {
             qaValidity,
             licenseValidity,
             status,
+            rawDataAttachment: uploadedFiles.rawDataAttachment || null,
             qaReportAttachment: uploadedFiles.qaReportAttachment || null,
             licenseReportAttachment: uploadedFiles.licenseReportAttachment || null,
             hospital: hospitalId,
@@ -344,7 +242,7 @@ const add = asyncHandler(async (req, res) => {
         hospital.machines = machine._id;
         await hospital.save();
 
-        // Re-fetch machine with populated hospital
+        // Re-fetch machine with populated hospital (including rsos + institutes + machines)
         machine = await Machine.findById(machine._id).populate({
             path: "hospital",
             populate: ["rsos", "institutes", "machines"],
@@ -358,6 +256,108 @@ const add = asyncHandler(async (req, res) => {
         throw new ApiError(500, error?.message || "Internal Server Error");
     }
 });
+
+// const add = asyncHandler(async (req, res) => {
+//     try {
+//         const { hospitalId } = req.params;
+
+//         const {
+//             machineType,
+//             make,
+//             model,
+//             serialNumber,
+//             equipmentId,
+//             qaValidity,
+//             licenseValidity,
+//         } = req.body;
+
+//         // Validate request body
+//         const { error } = machineSchema.validate({
+//             machineType,
+//             make,
+//             model,
+//             serialNumber,
+//             equipmentId,
+//             qaValidity,
+//             licenseValidity,
+//         });
+//         if (error) {
+//             throw new ApiError(400, error.details[0].message);
+//         }
+
+//         // Check hospital exists
+//         const hospital = await Hospital.findById(hospitalId);
+//         if (!hospital) {
+//             throw new ApiError(404, "Hospital not found.");
+//         }
+
+//         // Upload files to S3 (if they exist)
+//         const uploadedFiles = {};
+//         if (req.files) {
+//             for (const [key, fileArray] of Object.entries(req.files)) {
+//                 if (fileArray.length > 0) {
+//                     const s3Result = await uploadToS3(fileArray[0]);
+//                     uploadedFiles[key] = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Result.key}`;
+//                 }
+//             }
+//         }
+
+//         // Compare dates using local 00:00:00 to determine expiry
+//         const isDateExpired = (validityDate) => {
+//             if (!validityDate) return false;
+//             const date = new Date(validityDate);
+//             date.setHours(0, 0, 0, 0);
+//             const today = new Date();
+//             today.setHours(0, 0, 0, 0);
+//             return date < today;
+//         };
+
+//         const isQaExpired = isDateExpired(qaValidity);
+//         const isLicenseExpired = isDateExpired(licenseValidity);
+
+//         let status = "Active";
+//         const expiredFields = [];
+
+//         if (isQaExpired) expiredFields.push("qaValidity");
+//         if (isLicenseExpired) expiredFields.push("licenseValidity");
+
+//         if (expiredFields.length > 0) {
+//             status = "Expired";
+//         }
+
+//         // Create machine linked to hospital
+//         let machine = await Machine.create({
+//             machineType,
+//             make,
+//             model,
+//             serialNumber,
+//             equipmentId,
+//             qaValidity,
+//             licenseValidity,
+//             status,
+//             qaReportAttachment: uploadedFiles.qaReportAttachment || null,
+//             licenseReportAttachment: uploadedFiles.licenseReportAttachment || null,
+//             hospital: hospitalId,
+//         });
+
+//         // Update hospital with this machine
+//         hospital.machines = machine._id;
+//         await hospital.save();
+
+//         // Re-fetch machine with populated hospital
+//         machine = await Machine.findById(machine._id).populate({
+//             path: "hospital",
+//             populate: ["rsos", "institutes", "machines"],
+//         });
+
+//         res.status(201).json(
+//             new ApiResponse(201, machine, "Machine added successfully to hospital.")
+//         );
+//     } catch (error) {
+//         console.error("❌ Error in addMachine:", error);
+//         throw new ApiError(500, error?.message || "Internal Server Error");
+//     }
+// });
 
 // GET ALL MACHINES
 // ✅ Get all machines by Hospital ID

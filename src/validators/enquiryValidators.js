@@ -162,7 +162,6 @@
 //     fullAddress: Joi.string().required(),
 //     city: Joi.string().required(),
 //     district: Joi.string().required(),
-//     state: Joi.string().required(),
 //     pinCode: Joi.string().required(),
 //     branch: Joi.string().required(),
 //     contactPerson: Joi.string().required(),
@@ -229,6 +228,15 @@ const serviceSchema = Joi.object({
         .required(),
 
     machineModel: Joi.string().allow('', null),
+    quantity: Joi.number()
+        .integer()
+        .min(1)
+        .required()
+        .messages({
+            'number.base': 'Quantity must be a number',
+            'number.min': 'Quantity must be at least 1',
+            'any.required': 'Quantity is required'
+        }),
 });
 
 // ✅ Sub-schema for Additional Services
@@ -272,10 +280,10 @@ export const enquirySchema = Joi.object({
     hospitalName: Joi.string().required(),
     fullAddress: Joi.string().required(),
     city: Joi.string().required(),
-    district: Joi.string().required(),
-    state: Joi.string().required(),
+    district: Joi.string().allow("", null),
     pinCode: Joi.string().required(),
-    branch: Joi.string().required(),
+    branch: Joi.string().allow("", null),
+    state: Joi.string().required(),
     contactPerson: Joi.string().required(),
     emailAddress: Joi.string().email().required(),
     contactNumber: Joi.string().required(),

@@ -862,10 +862,12 @@ const add = asyncHandler(async (req, res) => {
         }
 
         // ✅ Step 5: Create Services
+        // Step 5: Create Services
         let serviceIds = [];
         if (value.services && value.services.length > 0) {
             const transformedServices = value.services.map((s) => ({
                 machineType: s.machineType,
+                quantity: s.quantity,                    // NEW: include quantity
                 equipmentNo: s.equipmentNo,
                 machineModel: s.machineModel,
                 serialNumber: s.equipmentNo || "",
@@ -1461,15 +1463,20 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
             attachmentUrl = uploadedFile.url;
         }
 
+
+
+
         // ✅ Step 6: Create Services
         let serviceIds = [];
         if (body.services && body.services.length > 0) {
             const transformedServices = body.services.map((s) => ({
                 machineType: s.machineType,
                 equipmentNo: s.equipmentNo,
+                quantity: s.quantity,
                 machineModel: s.machineModel,
                 serialNumber: s.serialNumber || "",
                 remark: s.remark || "",
+
                 workTypeDetails: (s.workType || []).map((wt) => ({
                     workType: wt,
                     status: "pending",
@@ -1633,6 +1640,7 @@ const addByHospitalId = asyncHandler(async (req, res) => {
             const transformedServices = value.services.map((s) => ({
                 machineType: s.machineType,
                 equipmentNo: s.equipmentNo,
+                quantity: s.quantity,
                 machineModel: s.machineModel,
                 serialNumber: s.serialNumber || "",
                 remark: s.remark || "",
@@ -2422,7 +2430,7 @@ const getByHospitalIdEnquiryId = async (req, res) => {
                 path: "services",
                 model: "Service",
                 select:
-                    "machineType equipmentNo machineModel serialNumber remark workTypeDetails",
+                    "machineType equipmentNo machineModel quantity serialNumber remark workTypeDetails",
             })
             .populate({
                 path: "additionalServices",

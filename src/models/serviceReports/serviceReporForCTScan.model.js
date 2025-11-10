@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import accuracyOfOperatingPotentialModel from "../testTables/accuracyOfOperatingPotential.model";
 const noteSchema = new mongoose.Schema({
     slNo: { type: String },
     text: { type: String },
@@ -8,7 +9,7 @@ const toolDetailsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tool",
     },
-    slNumber: {
+    SrNo: {
         type: String,
     },
     nomenclature: {
@@ -111,4 +112,40 @@ const serviceReportSchema = new mongoose.Schema({
             { slNo: "5.7", text: "Name, Address & Contact detail is provided by Customer." }
         ]
     },
+    accuracyOfOperatingPotentialModel: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfOperatingPotential",
+    },
+    effectiveFocalSpotMeasurement: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotMeasurement",
+    },
+    ExposureRateTableTop: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ExposureRateTableTop'
+    },
+    HighContrastResolution: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'HighContrastResolution'
+    },
+    LowContrastResolution: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LowContrastResolution'
+    },
+    LinearityOfmAsLoading: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LinearityOfmAsLoading'
+    },
+    ConsistencyOfRadiationOutput: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ConsistencyOfRadiationOutput'
+    },
+    RadiationLeakageLevel: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RadiationLeakageLevel'
+    },
+    RadiationProfileWidth: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RadiationProfileWidth'
+    }
 })

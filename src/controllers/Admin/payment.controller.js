@@ -322,6 +322,7 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
             .select("srfNumber hospitalName leadOwner _id")
             .sort({ createdAt: -1 })
             .lean();
+        console.log("🚀 ~ orders:", orders)
 
         if (!orders || orders.length === 0) {
             return res.status(404).json({ message: "No orders found" });
@@ -335,10 +336,12 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                     .filter(id => mongoose.Types.ObjectId.isValid(id))
             )
         ];
+        console.log("🚀 ~ leadOwnerIds:", leadOwnerIds)
 
         const users = await User.find({ _id: { $in: leadOwnerIds } })
             .select("_id name role email")
             .lean();
+        console.log("🚀 ~ users:", users)
 
         const userMap = {};
         users.forEach(u => (userMap[u._id.toString()] = u));
@@ -351,6 +354,7 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
         });
 
         const paidOrders = await Payment.find({}).select("orderId").lean();
+        console.log("🚀 ~ paidOrders:", paidOrders)
         const paidOrderIds = paidOrders.map(p => p.orderId.toString());
         orders = orders.filter(order => !paidOrderIds.includes(order._id.toString()));
 
@@ -362,6 +366,7 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                 leadOwnerDetails: owner,
             };
         });
+        console.log("🚀 ~ formattedOrders:", formattedOrders)
 
         res.status(200).json({
             success: true,

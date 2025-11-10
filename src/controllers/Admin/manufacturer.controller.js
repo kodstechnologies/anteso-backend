@@ -4,237 +4,6 @@ import { ApiError } from '../../utils/ApiError.js';
 
 import { asyncHandler } from '../../utils/AsyncHandler.js'
 
-// const addManufacturer = asyncHandler(async (req, res) => {
-//     try {
-//         const {
-//             name,
-//             email,
-//             phone,
-//             password,
-//             contactPersonName,
-//             city,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests,
-//             services,
-//             travelCost,
-
-//         } = req.body;
-//         const tokenUser = req.admin || req.user; // Admin or Staff
-//         const creatorId = tokenUser?._id || tokenUser?.id;
-//         let creatorModel = "User"; // default
-
-//         if (tokenUser?.role === "admin") {
-//             creatorModel = "Admin";
-//         }
-
-//         if (!creatorId) {
-//             throw new ApiError(401, "Unauthorized: Creator information missing");
-//         }
-//         const manufacturer = new Manufacturer({
-//             name,
-//             email,
-//             phone,
-//             password, // make sure you hash password if required
-//             city,
-//             contactPersonName,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests,
-//             services,
-//             travelCost,
-//             createdBy: creatorId,
-//             createdByModel: creatorModel,
-//             role: "Manufacturer", // optional if you want to distinguish
-//         });
-
-//         await manufacturer.save();
-
-//         res.status(201).json({
-//             success: true,
-//             message: "Manufacturer created successfully",
-//             data: manufacturer,
-//         });
-//     } catch (error) {
-//         console.error("Error creating manufacturer:", error);
-//         res.status(500).json({
-//             success: false,
-//             message: "Failed to create manufacturer",
-//             error: error.message,
-//         });
-//     }
-// });
-
-// const addManufacturer = asyncHandler(async (req, res) => {
-//     try {
-//         const {
-//             name,
-//             email,
-//             phone,
-//             password,
-//             contactPersonName,
-//             city,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests = [],
-//             services = [],
-//             travelCost,
-//         } = req.body;
-
-//         // ✅ Basic validation
-//         if (!name || !email || !phone) {
-//             throw new ApiError(400, "Name, phone, and email are required");
-//         }
-
-//         // ✅ Merge fixed + provided QA tests without duplicates
-//         const mergedQaTests = [...FIXED_QA_TESTS, ...qaTests].reduce((acc, curr) => {
-//             if (!acc.find(test => test.testName.toLowerCase() === curr.testName.toLowerCase())) {
-//                 acc.push(curr);
-//             }
-//             return acc;
-//         }, []);
-
-//         // ✅ Identify creator
-//         const tokenUser = req.admin || req.user; // Admin or Staff
-//         const creatorId = tokenUser?._id || tokenUser?.id;
-//         let creatorModel = "User"; // default
-
-//         if (tokenUser?.role === "admin") {
-//             creatorModel = "Admin";
-//         }
-
-//         if (!creatorId) {
-//             throw new ApiError(401, "Unauthorized: Creator information missing");
-//         }
-
-//         // ✅ Create Manufacturer
-//         const manufacturer = new Manufacturer({
-//             name,
-//             email,
-//             phone,
-//             password, // hash if needed
-//             contactPersonName,
-//             city,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests: mergedQaTests,
-//             services,
-//             travelCost,
-//             role: "Manufacturer", // optional
-//             createdBy: creatorId,
-//             createdByModel: creatorModel,
-//         });
-
-//         await manufacturer.save();
-
-//         // ✅ Populate createdBy for response
-//         const populatedManufacturer = await Manufacturer.findById(manufacturer._id).populate({
-//             path: "createdBy",
-//             select: "name email phone role technicianType",
-//         });
-
-//         res.status(201).json(new ApiResponse(201, populatedManufacturer, "Manufacturer created successfully"));
-//     } catch (error) {
-//         console.error("❌ Manufacturer creation error:", error);
-//         throw new ApiError(error.statusCode || 500, error.message || "Failed to create manufacturer");
-//     }
-// });
-
-
-
-
-// export const addManufacturer = asyncHandler(async (req, res) => {
-//     try {
-//         const {
-//             name,
-//             email,
-//             phone,
-//             password,
-//             contactPersonName,
-//             city,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests = [],
-//             services = [],
-//             travelCost,
-//             cost, // ✅ optional
-//         } = req.body;
-
-//         // ✅ Basic validation
-//         if (!name || !email || !phone) {
-//             throw new ApiError(400, "Name, Email, and Phone are required");
-//         }
-
-//         // ✅ Identify creator (Admin or Staff)
-//         const tokenUser = req.admin || req.user;
-//         const creatorId = tokenUser?._id || tokenUser?.id;
-//         let creatorModel = "User";
-
-//         if (tokenUser?.role === "admin") {
-//             creatorModel = "Admin";
-//         }
-
-//         if (!creatorId) {
-//             throw new ApiError(401, "Unauthorized: Creator information missing");
-//         }
-
-//         // ✅ Handle cost logic
-//         let finalCost = undefined;
-//         if (travelCost === "Fixed Cost") {
-//             if (!cost) {
-//                 throw new ApiError(400, "Cost is required when travel cost type is Fixed Cost");
-//             }
-//             finalCost = cost;
-//         }
-
-//         // ✅ Create manufacturer
-//         const manufacturer = new Manufacturer({
-//             name,
-//             email,
-//             phone,
-//             password, // ⚠️ Hash before saving if used for auth
-//             contactPersonName,
-//             city,
-//             state,
-//             pincode,
-//             branch,
-//             mouValidity,
-//             qaTests,
-//             services,
-//             travelCost,
-//             cost: finalCost, // ✅ Only added when "Fixed Cost"
-//             createdBy: creatorId,
-//             createdByModel: creatorModel,
-//             role: "Manufacturer",
-//         });
-
-//         await manufacturer.save();
-
-//         // ✅ Populate createdBy for cleaner response
-//         const populatedManufacturer = await Manufacturer.findById(manufacturer._id).populate({
-//             path: "createdBy",
-//             select: "name email phone role technicianType",
-//         });
-
-//         res
-//             .status(201)
-//             .json(new ApiResponse(201, populatedManufacturer, "Manufacturer created successfully"));
-//     } catch (error) {
-//         console.error("❌ Error creating manufacturer:", error);
-//         throw new ApiError(500, error.message || "Failed to create manufacturer");
-//     }
-// });
-
 
 export const addManufacturer = asyncHandler(async (req, res) => {
     try {
@@ -258,14 +27,13 @@ export const addManufacturer = asyncHandler(async (req, res) => {
 
         console.log("🚀 ~ req.body:", req.body);
 
-        // ✅ Basic validation
         if (!name || !email || !phone) {
             return res
                 .status(200)
                 .json(new ApiResponse(400, null, "Name, Email, and Phone are required"));
         }
 
-        // ✅ Check for duplicates first
+        // ✅ Check duplicates
         const existingManufacturer = await Manufacturer.findOne({
             $or: [{ phone }, { email }],
         });
@@ -287,11 +55,7 @@ export const addManufacturer = asyncHandler(async (req, res) => {
         // ✅ Identify creator (Admin or Staff)
         const tokenUser = req.admin || req.user;
         const creatorId = tokenUser?._id || tokenUser?.id;
-        let creatorModel = "User";
-
-        if (tokenUser?.role === "admin") {
-            creatorModel = "Admin";
-        }
+        let creatorModel = tokenUser?.role === "admin" ? "Admin" : "User";
 
         if (!creatorId) {
             return res
@@ -312,6 +76,39 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             finalCost = cost;
         }
 
+        // ✅ Handle qaTests parsing
+        let parsedQaTests = [];
+        if (typeof qaTests === "string") {
+            try {
+                parsedQaTests = JSON.parse(qaTests);
+            } catch {
+                parsedQaTests = [];
+            }
+        } else if (Array.isArray(qaTests)) {
+            parsedQaTests = qaTests;
+        }
+
+        // ✅ Handle services parsing
+        let parsedServices = [];
+        if (typeof services === "string") {
+            try {
+                parsedServices = JSON.parse(services);
+            } catch {
+                parsedServices = [];
+            }
+        } else if (Array.isArray(services)) {
+            // normalize serviceName + amount
+            parsedServices = services.map((s) => {
+                if (typeof s === "string") {
+                    return { serviceName: s, amount: 0 };
+                }
+                return {
+                    serviceName: s.serviceName?.trim() || "",
+                    amount: Number(s.amount) || 0,
+                };
+            });
+        }
+
         // ✅ Create manufacturer
         const manufacturer = new Manufacturer({
             name,
@@ -325,8 +122,8 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             pincode,
             branch,
             mouValidity,
-            qaTests,
-            services,
+            qaTests: parsedQaTests,
+            services: parsedServices,
             travelCost,
             cost: finalCost,
             createdBy: creatorId,
@@ -336,7 +133,6 @@ export const addManufacturer = asyncHandler(async (req, res) => {
 
         await manufacturer.save();
 
-        // ✅ Populate creator details for response clarity
         const populatedManufacturer = await Manufacturer.findById(manufacturer._id).populate({
             path: "createdBy",
             select: "name email phone role technicianType",
@@ -354,7 +150,6 @@ export const addManufacturer = asyncHandler(async (req, res) => {
     } catch (error) {
         console.error("❌ Error creating manufacturer:", error);
 
-        // ✅ Handle MongoDB duplicate key error cleanly
         if (error.code === 11000) {
             const duplicateField = Object.keys(error.keyPattern)[0];
             return res
@@ -373,7 +168,6 @@ export const addManufacturer = asyncHandler(async (req, res) => {
             .json(new ApiResponse(500, null, error.message || "Failed to create manufacturer"));
     }
 });
-
 
 const getManufacturerById = asyncHandler(async (req, res) => {
     try {
@@ -407,24 +201,57 @@ const getManufacturerById = asyncHandler(async (req, res) => {
 const editManufacturer = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const updateData = { ...req.body };
 
-        // ✅ Check if manufacturer exists
         let manufacturer = await Manufacturer.findById(id);
         if (!manufacturer) {
             throw new ApiError(404, "Manufacturer not found");
         }
 
-        // ✅ Update manufacturer
+        // ✅ Parse qaTests safely
+        if (updateData.qaTests) {
+            if (typeof updateData.qaTests === "string") {
+                try {
+                    updateData.qaTests = JSON.parse(updateData.qaTests);
+                } catch {
+                    updateData.qaTests = [];
+                }
+            }
+        }
+
+        // ✅ Parse services safely
+        if (updateData.services) {
+            if (typeof updateData.services === "string") {
+                try {
+                    updateData.services = JSON.parse(updateData.services);
+                } catch {
+                    updateData.services = [];
+                }
+            } else if (Array.isArray(updateData.services)) {
+                updateData.services = updateData.services.map((s) => {
+                    if (typeof s === "string") {
+                        return { serviceName: s, amount: 0 };
+                    }
+                    return {
+                        serviceName: s.serviceName?.trim() || "",
+                        amount: Number(s.amount) || 0,
+                    };
+                });
+            }
+        }
+
+        // ✅ Update document
         manufacturer = await Manufacturer.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).select("-password"); // exclude sensitive fields
+        ).select("-password");
 
         return res
             .status(200)
-            .json(new ApiResponse(200, manufacturer, "Manufacturer updated successfully"));
+            .json(
+                new ApiResponse(200, manufacturer, "Manufacturer updated successfully")
+            );
     } catch (error) {
         return res
             .status(error.statusCode || 500)
@@ -437,6 +264,7 @@ const editManufacturer = asyncHandler(async (req, res) => {
             );
     }
 });
+
 
 
 const deleteManufacturer = async (req, res) => {

@@ -1434,7 +1434,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
     const order = await Order.findById(orderId)
       .populate({
         path: 'services',
-        select: 'machineType machineModel totalAmount workTypeDetails',
+        select: 'machineType machineModel totalAmount workTypeDetails quantity',
       })
       .populate({
         path: 'additionalServices',

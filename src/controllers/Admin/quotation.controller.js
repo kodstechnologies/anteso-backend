@@ -557,6 +557,9 @@ import QuotationHistory from "../../routes/allRoutes/Admin/quotationHistory.mode
 //     }
 // });
 
+
+
+
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
@@ -709,7 +712,7 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         });
         console.log("🚀 ~ Enquiry:----->", Enquiry)
 
-            console.log("🚀 ~ quotation:------->", quotation)
+        console.log("🚀 ~ quotation:------->", quotation)
         return res.status(201).json(
             new ApiResponse(201, quotation, 'Quotation created successfully')
         );
@@ -719,6 +722,9 @@ const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
         throw new ApiError(500, 'Failed to create quotation', [error.message]);
     }
 });
+
+
+
 
 // const updateQuotationById = asyncHandler(async (req, res) => {
 //     try {
@@ -1572,19 +1578,127 @@ const getQuotationByIds = asyncHandler(async (req, res) => {
 //     }
 // });
 
+
+
+
+
+// export const acceptQuotation = asyncHandler(async (req, res) => {
+//     try {
+//         const { hospitalId, enquiryId, quotationId } = req.params;
+//         let pdfFile = req.file;
+
+//         const quotation = await Quotation.findOne({
+//             _id: quotationId,
+//             enquiry: enquiryId,
+//             from: hospitalId,
+//         });
+//         if (!quotation)
+//             return res.status(404).json({ message: "Quotation not found for this hospital" });
+
+//         if (pdfFile) {
+//             const { url } = await uploadToS3(pdfFile);
+//             quotation.customersPDF = url;
+//         }
+
+//         quotation.quotationStatus = "Accepted";
+//         await quotation.save();
+
+//         // 🧩 Create quotation history record
+//         await QuotationHistory.create({
+//             quotation: quotation._id,
+//             status: "Accepted",
+//             pdfUrl: quotation.customersPDF || quotation.pdfUrl,
+//             date: new Date(),
+//         });
+
+//         const enquiry = await Enquiry.findOne({
+//             _id: enquiryId,
+//             hospital: hospitalId,
+//         }).populate("services");
+//         if (!enquiry)
+//             return res.status(404).json({ message: "Enquiry not found for this hospital" });
+
+//         enquiry.enquiryStatus = "Approved";
+//         enquiry.quotationStatus = "Accepted";
+//         enquiry.enquiryStatusDates.approvedOn = new Date();
+//         await enquiry.save();
+
+//         const serviceDocs = await Promise.all(
+//             enquiry.services.map(async (service) => {
+//                 const newService = new Services({
+//                     machineType: service.machineType,
+//                     equipmentNo: service.equipmentNo,
+//                     machineModel: service.machineModel,
+//                     workTypeDetails: (service.workTypeDetails || []).map((wt) => ({
+//                         workType: wt.workType,
+//                         serviceName: wt.serviceName,
+//                         status: wt.status || "pending",
+//                     })),
+//                 });
+//                 await newService.save();
+//                 return newService._id;
+//             })
+//         );
+
+//         const order = await orderModel.create({
+//             leadOwner: enquiry.leadOwner,
+//             hospital: hospitalId,
+//             hospitalName: enquiry.hospitalName,
+//             fullAddress: enquiry.fullAddress,
+//             city: enquiry.city,
+//             district: enquiry.district,
+//             state: enquiry.state,
+//             pinCode: enquiry.pinCode,
+//             branchName: enquiry.branch,
+//             contactPersonName: enquiry.contactPerson,
+//             emailAddress: enquiry.emailAddress,
+//             contactNumber: enquiry.contactNumber,
+//             designation: enquiry.designation,
+//             advanceAmount: 0,
+//             workOrderCopy: "",
+//             partyCodeOrSysId: "",
+//             procNoOrPoNo: "",
+//             urgency: "normal",
+//             specialInstructions: enquiry.specialInstructions,
+//             additionalServices: enquiry.additionalServices,
+//             services: serviceDocs,
+//             quotation: quotation._id,
+//             customer: enquiry.customer,
+//         });
+//         console.log("🚀 ~ order:", order)
+
+//         res.status(200).json({
+//             message: "Quotation accepted and order created successfully",
+//             quotation,
+//             order,
+//         });
+//     } catch (error) {
+//         console.error("Error in acceptQuotation:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
 export const acceptQuotation = asyncHandler(async (req, res) => {
     try {
         const { hospitalId, enquiryId, quotationId } = req.params;
         let pdfFile = req.file;
 
+        // 1) Load quotation + assignedEmployee (name only)
         const quotation = await Quotation.findOne({
             _id: quotationId,
             enquiry: enquiryId,
             from: hospitalId,
-        });
-        if (!quotation)
-            return res.status(404).json({ message: "Quotation not found for this hospital" });
+        })
+            .populate({
+                path: "assignedEmployee",
+                select: "fullName name firstName lastName email employeeCode",
+            });
 
+        if (!quotation) {
+            return res.status(404).json({ message: "Quotation not found for this hospital" });
+        }
+
+        // 2) If customer uploaded a PDF, put it on S3
         if (pdfFile) {
             const { url } = await uploadToS3(pdfFile);
             quotation.customersPDF = url;
@@ -1593,7 +1707,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         quotation.quotationStatus = "Accepted";
         await quotation.save();
 
-        // 🧩 Create quotation history record
+        // 3) History
         await QuotationHistory.create({
             quotation: quotation._id,
             status: "Accepted",
@@ -1601,23 +1715,28 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
             date: new Date(),
         });
 
+        // 4) Get enquiry (and its services)
         const enquiry = await Enquiry.findOne({
             _id: enquiryId,
             hospital: hospitalId,
         }).populate("services");
-        if (!enquiry)
+
+        if (!enquiry) {
             return res.status(404).json({ message: "Enquiry not found for this hospital" });
+        }
 
         enquiry.enquiryStatus = "Approved";
         enquiry.quotationStatus = "Accepted";
         enquiry.enquiryStatusDates.approvedOn = new Date();
         await enquiry.save();
 
+        // 5) Clone enquiry.services → Order.services
         const serviceDocs = await Promise.all(
-            enquiry.services.map(async (service) => {
+            (enquiry.services || []).map(async (service) => {
                 const newService = new Services({
                     machineType: service.machineType,
                     equipmentNo: service.equipmentNo,
+                    quantity:service.quantity,
                     machineModel: service.machineModel,
                     workTypeDetails: (service.workTypeDetails || []).map((wt) => ({
                         workType: wt.workType,
@@ -1630,8 +1749,17 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
             })
         );
 
+        // 6) Compute lead owner from quotation.assignedEmployee (fallback to enquiry.leadOwner)
+        const emp = quotation.assignedEmployee;
+        console.log("🚀 ~ emp:", emp)
+        const employeeDisplayName =
+            (emp && (emp.fullName || emp.name || [emp.firstName, emp.lastName].filter(Boolean).join(" "))) || null;
+
+        const leadOwnerForOrder = employeeDisplayName || enquiry.leadOwner || "Unassigned";
+
+        // 7) Create order with the correct leadOwner
         const order = await orderModel.create({
-            leadOwner: enquiry.leadOwner,
+            leadOwner: emp._id, // <-- from assignedEmployee
             hospital: hospitalId,
             hospitalName: enquiry.hospitalName,
             fullAddress: enquiry.fullAddress,
@@ -1666,6 +1794,9 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
+
+
+
 
 // const rejectQuotation = asyncHandler(async (req, res) => {
 //     try {

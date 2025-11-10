@@ -55,7 +55,11 @@ const serviceSchema = new mongoose.Schema({
             'Radiation Survey of Radiation Facility', 'Others'
         ]
     },
-    equipmentNo: String,
+    quantity: {                    
+        type: Number,
+        required: true,
+    },
+        equipmentNo: String,
     machineModel: String,
     serialNumber: String,
     remark: String,
