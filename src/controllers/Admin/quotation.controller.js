@@ -1429,6 +1429,17 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
         }
 
         // Find the quotation associated with the given enquiry ID
+        // const quotation = await Quotation.findOne({ enquiry: id })
+        //     .populate({
+        //         path: 'enquiry',
+        //         populate: [
+        //             { path: 'services', model: 'Service' },
+        //             { path: 'additionalServices', model: 'AdditionalService', select: 'name description totalAmount' },
+        //         ],
+        //     })
+        //     .populate('from', 'name email') // hospital info
+        //     .populate('assignedEmployee', 'name phone') // employee info
+        //     .exec();
         const quotation = await Quotation.findOne({ enquiry: id })
             .populate({
                 path: 'enquiry',
@@ -1437,9 +1448,15 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
                     { path: 'additionalServices', model: 'AdditionalService', select: 'name description totalAmount' },
                 ],
             })
-            .populate('from', 'name email') // hospital info
-            .populate('assignedEmployee', 'empId name phone designation department') // employee info
+            .populate('from', 'name email')
+            .populate({
+                path: 'assignedEmployee',
+                select: 'name phone role', // Add fields you need
+                // Explicitly allow Dealer & Manufacturer
+                match: { role: { $in: ['Employee', 'Dealer', 'Manufacturer'] } }
+            })
             .exec();
+        console.log("🚀 ~ quotation:", quotation)
 
         console.log("🚀 ~ quotation:", quotation)
 
@@ -1736,7 +1753,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
                 const newService = new Services({
                     machineType: service.machineType,
                     equipmentNo: service.equipmentNo,
-                    quantity:service.quantity,
+                    quantity: service.quantity,
                     machineModel: service.machineModel,
                     workTypeDetails: (service.workTypeDetails || []).map((wt) => ({
                         workType: wt.workType,

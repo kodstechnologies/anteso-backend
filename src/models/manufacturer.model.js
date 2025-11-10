@@ -5,9 +5,7 @@ import { generateReadableId } from "../utils/GenerateReadableId.js";
 
 const { Schema } = mongoose;
 
-// ─────────────────────────────────────────────
-// Sub-schema for QA Tests
-// ─────────────────────────────────────────────
+
 const qaTestSchema = new Schema({
     testName: {
         type: String,

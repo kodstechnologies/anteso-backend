@@ -1542,6 +1542,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
         if (leadOwnerUser.role === "Dealer") {
             const newOrder = await orderModel.create({
                 leadOwner: body.leadOwner,
+                assignedEmployee: body.leadOwner,
                 hospital: hospitalDoc._id,
                 hospitalName: body.hospitalName,
                 fullAddress: body.fullAddress,
@@ -1570,6 +1571,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
         if (leadOwnerUser.role === "Manufacturer") {
             const newOrder = await orderModel.create({
                 leadOwner: body.leadOwner,
+                assignedEmployee: body.leadOwner,
                 hospital: hospitalDoc._id,
                 hospitalName: body.hospitalName,
                 fullAddress: body.fullAddress,

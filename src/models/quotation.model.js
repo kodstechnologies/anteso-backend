@@ -69,7 +69,7 @@ const quotationSchema = new Schema(
         },
         assignedEmployee: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Employee', // Reference the Employee model
+            ref: 'User', // Reference the Employee model
         },
         isUploaded: {
             type: Boolean,
