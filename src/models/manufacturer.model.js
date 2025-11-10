@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import createdByPlugin from "./plugins/createdBy.plugin.js";
-import { generateReadableId } from "../utils/generateReadableId.js";
+import { generateReadableId } from "../utils/GenerateReadableId.js";
 
 const { Schema } = mongoose;
 
