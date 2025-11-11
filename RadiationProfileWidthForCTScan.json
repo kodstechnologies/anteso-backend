@@ -1,0 +1,34 @@
+{
+  "info": {
+    "name": "RadiationProfileWidthForCTScan API",
+    "_postman_id": "1f43f4b7-9c34-4b72-9c92-78b492c6f332",
+    "description": "Test the save endpoint for RadiationProfileWidthForCTScan controller",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Save RadiationProfileWidthForCTScan",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-profile-width/672f32c8b3a60d4188e4a5d2",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "radiation-profile-width", "672f32c8b3a60d4188e4a5d2"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    {\n      \"parameter\": \"Detector Width (mm)\",\n      \"measuredValue\": 10.2,\n      \"tolerance\": \"±1.0 mm\",\n      \"result\": \"PASS\"\n    },\n    {\n      \"parameter\": \"Beam Width (mm)\",\n      \"measuredValue\": 9.8,\n      \"tolerance\": \"±1.0 mm\",\n      \"result\": \"PASS\"\n    }\n  ],\n  \"table2\": [\n    {\n      \"parameter\": \"Nominal Collimation\",\n      \"expected\": 10,\n      \"measured\": 9.9,\n      \"difference\": 0.1,\n      \"result\": \"PASS\"\n    },\n    {\n      \"parameter\": \"Slice Thickness\",\n      \"expected\": 5,\n      \"measured\": 5.2,\n      \"difference\": 0.2,\n      \"result\": \"PASS\"\n    }\n  ]\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}

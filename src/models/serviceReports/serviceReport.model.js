@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import accuracyOfOperatingPotentialModel from "../testTables/accuracyOfOperatingPotential.model";
 const noteSchema = new mongoose.Schema({
     slNo: { type: String },
     text: { type: String },
@@ -144,8 +143,45 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RadiationLeakageLevel'
     },
-    RadiationProfileWidth: {
+    RadiationProfileWidthForCTScan: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'RadiationProfileWidth'
-    }
+        ref: 'RadiationProfileWidthForCTScan'
+    },
+    MeasurementOfOperatingPotentialSchema: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MeasurementOfOperatingPotential'
+    },
+    TimerAccuracy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TimerAccuracy'
+    },
+    MeasurementOfMaLinearity: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MeasurementOfMaLinearity'
+    },
+    MeasurementOfCTDI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MeasurementOfCTDI'
+    },
+    LowContrastResolutionForCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LowContrastResolutionForCTScan'
+    },
+    HighContrastResolutionForCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'HighContrastResolutionForCTScan'
+    },
+    TotalFilterationForCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TotalFilterationForCTScan'
+    },
+    RadiationLeakageLevel: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RadiationLeakageLevel'
+    },
+
 })
+export default mongoose.model(
+    "ServiceReport",
+    serviceReportSchema
+);

@@ -3879,9 +3879,10 @@ const getAllOrdersByHospitalId = asyncHandler(async (req, res) => {
 
 
         if (!orders || orders.length === 0) {
-            return res.status(404).json({
+            return res.status(200).json({
                 success: false,
                 message: "No orders found for this hospital",
+                  orders: [],
             });
         }
 
