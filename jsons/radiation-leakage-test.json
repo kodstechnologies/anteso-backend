@@ -1,0 +1,70 @@
+{
+  "info": {
+    "_postman_id": "a5d2a184-5b42-445e-a210-0a7d7d8e2e56",
+    "name": "CT Scan - Radiation Leakage Level API",
+    "description": "Collection for testing Radiation Leakage Level APIs for CT Scan machines. Includes Create, GetById, and Update operations.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create Radiation Leakage Test (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/ct-scan/radiation-leakage/6911b9019e22d35e7bdf6686",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso", "admin", "service-report", "ct-scan", "radiation-leakage", "6911b9019e22d35e7bdf6686"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"workload\": \"500\",\n  \"workloadUnit\": \"mA·min/week\",\n  \"measurementSettings\": [\n    { \"kv\": \"120\", \"ma\": \"100\", \"time\": \"1.0\" },\n    { \"kv\": \"100\", \"ma\": \"80\", \"time\": \"1.2\" }\n  ],\n  \"leakageMeasurements\": [\n    {\n      \"location\": \"Tube Housing\",\n      \"front\": \"0.45\",\n      \"back\": \"0.32\",\n      \"left\": \"0.40\",\n      \"right\": \"0.42\",\n      \"max\": \"0.45\",\n      \"unit\": \"mGy/h\",\n      \"remark\": \"Pass\"\n    },\n    {\n      \"location\": \"Collimator\",\n      \"front\": \"0.35\",\n      \"back\": \"0.38\",\n      \"left\": \"0.36\",\n      \"right\": \"0.34\",\n      \"max\": \"0.38\",\n      \"unit\": \"mGy/h\",\n      \"remark\": \"Pass\"\n    }\n  ],\n  \"maxLeakageResult\": \"0.065\",\n  \"maxRadiationLeakage\": \"0.00057\",\n  \"toleranceValue\": \"1.0\",\n  \"toleranceOperator\": \"less than or equal to\",\n  \"toleranceTime\": \"1\",\n  \"tolerance\": \"≤ 1.0 mGy/h at 1 m distance (AERB limit)\",\n  \"notes\": \"All leakage values are within permissible limits as per AERB.\"\n}"
+        },
+        "description": "Creates a Radiation Leakage Level test record and links it to the Service Report for the given CT Scan service ID."
+      },
+      "response": []
+    },
+    {
+      "name": "2️⃣ Get Radiation Leakage Test by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/ct-scan/radiation-leakage/test/6915b2e1f4b328ab93c94111",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso", "admin", "service-report", "ct-scan", "radiation-leakage", "test", "6915b2e1f4b328ab93c94111"]
+        },
+        "description": "Fetches a specific Radiation Leakage test record by its testId."
+      },
+      "response": []
+    },
+    {
+      "name": "3️⃣ Update Radiation Leakage Test by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/ct-scan/radiation-leakage/test/6915b2e1f4b328ab93c94111",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso", "admin", "service-report", "ct-scan", "radiation-leakage", "test", "6915b2e1f4b328ab93c94111"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"measurementSettings\": [\n    { \"kv\": \"120\", \"ma\": \"90\", \"time\": \"1.1\" }\n  ],\n  \"leakageMeasurements\": [\n    {\n      \"location\": \"Tube Housing\",\n      \"front\": \"0.40\",\n      \"back\": \"0.30\",\n      \"left\": \"0.35\",\n      \"right\": \"0.33\",\n      \"max\": \"0.40\",\n      \"unit\": \"mGy/h\",\n      \"remark\": \"Pass\"\n    }\n  ],\n  \"tolerance\": \"≤ 1.0 mGy/h at 1 m distance (AERB limit)\",\n  \"notes\": \"Re-test completed successfully. Leakage remains within limits.\"\n}"
+        },
+        "description": "Updates an existing Radiation Leakage Level test record by testId."
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "info": {
+    "_postman_id": "a8a44a76-8244-4784-9dc2-83d52cbab437",
+    "name": "CT Scan - Consistency of Radiation Output",
+    "description": "Collection for testing Consistency of Radiation Output APIs (create, get, update) for CT Scan machine type.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create / Update Consistency of Radiation Output (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/consistency-of-radiation-output/6911b9019e22d35e7bdf6686",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "consistency-of-radiation-output", "6911b9019e22d35e7bdf6686"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fcdRows\": [\n    { \"fcd\": \"50\", \"kvp\": \"80\", \"ma\": \"100\", \"time\": \"1.0\", \"mAs\": \"100\" },\n    { \"fcd\": \"100\", \"kvp\": \"100\", \"ma\": \"150\", \"time\": \"0.8\", \"mAs\": \"120\" },\n    { \"fcd\": \"150\", \"kvp\": \"120\", \"ma\": \"200\", \"time\": \"0.5\", \"mAs\": \"100\" }\n  ],\n  \"radiationOutputs\": [\n    { \"fcd\": \"50\", \"readings\": [\"10.2\", \"10.4\", \"10.1\"], \"meanOutput\": \"10.23\" },\n    { \"fcd\": \"100\", \"readings\": [\"15.0\", \"15.2\", \"15.1\"], \"meanOutput\": \"15.1\" },\n    { \"fcd\": \"150\", \"readings\": [\"20.1\", \"20.3\", \"20.0\"], \"meanOutput\": \"20.13\" }\n  ],\n  \"outputHeaders\": [\"FCD\", \"KVP\", \"mA\", \"Time (s)\", \"mAs\", \"Output (mR/mAs)\"],\n  \"tolerance\": \"±10% variation as per AERB guidelines\"\n}"
+        },
+        "description": "Creates or updates a Consistency of Radiation Output test record linked to the given CT Scan service ID."
+      },
+      "response": []
+    },
+    {
+      "name": "2️⃣ Get Consistency of Radiation Output by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/consistency-of-radiation-output/691456e0bcaab39dc80a1134",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "consistency-of-radiation-output", "691456e0bcaab39dc80a1134"]
+        },
+        "description": "Fetches a specific Consistency of Radiation Output test record by its testId."
+      },
+      "response": []
+    },
+    {
+      "name": "3️⃣ Update Consistency of Radiation Output by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/consistency-of-radiation-output/691456e0bcaab39dc80a1134",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "consistency-of-radiation-output", "691456e0bcaab39dc80a1134"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fcdRows\": [\n    { \"fcd\": \"100\", \"kvp\": \"120\", \"ma\": \"150\", \"time\": \"1.2\", \"mAs\": \"180\" }\n  ],\n  \"radiationOutputs\": [\n    { \"fcd\": \"100\", \"readings\": [\"15.5\", \"15.7\", \"15.6\"], \"meanOutput\": \"15.6\" }\n  ],\n  \"outputHeaders\": [\"FCD\", \"KVP\", \"mA\", \"Time (s)\", \"mAs\", \"Output (mR/mAs)\"],\n  \"tolerance\": \"±8% variation after recalibration\"\n}"
+        },
+        "description": "Updates a Consistency of Radiation Output test record by testId."
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "info": {
+    "name": "MeasurementOfOperatingPotential - UPDATE",
+    "_postman_id": "a55a9489-6b5a-4f79-bba1-07d7f42b7b89",
+    "description": "Updates existing MeasurementOfOperatingPotential test data for CT Scan machines by testId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Update MeasurementOfOperatingPotential",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/measurement-of-operating-potential/67324c39d30b42b56f23b5d9",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "measurement-of-operating-potential", "67324c39d30b42b56f23b5d9"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"120 kVp\", \"ma\": \"30 mA\" },\n    { \"kvp\": \"140 kVp\", \"ma\": \"40 mA\" }\n  ],\n  \"table2\": [\n    { \"applied\": \"6.0 mm\", \"measured\": \"5.8 mm\", \"tolerancePlus\": \"+0.5 mm\", \"toleranceMinus\": \"-0.5 mm\", \"remarks\": \"PASS\" },\n    { \"applied\": \"12.0 mm\", \"measured\": \"12.1 mm\", \"tolerancePlus\": \"+0.5 mm\", \"toleranceMinus\": \"-0.5 mm\", \"remarks\": \"PASS\" }\n  ],\n  \"toleranceValue\": \"±3%\",\n  \"toleranceType\": \"percentage\",\n  \"toleranceSign\": \"±\"\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}

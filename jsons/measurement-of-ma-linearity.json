@@ -1,0 +1,70 @@
+{
+  "info": {
+    "_postman_id": "b9ff6317-1b34-47b0-9c77-d512f17b0b4c",
+    "name": "CT Scan - Measurement of mA Linearity APIs",
+    "description": "Collection for Measurement of mA Linearity APIs for CT Scan machines (create, get, update).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create / Update Measurement of mA Linearity (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ma-linearity/6731bc7a90db4e46c9c2a890",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ma-linearity", "6731bc7a90db4e46c9c2a890"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"setMA\": \"100\", \"time\": \"1.0\", \"mAs\": \"100\" },\n    { \"setMA\": \"200\", \"time\": \"0.5\", \"mAs\": \"100\" },\n    { \"setMA\": \"300\", \"time\": \"0.33\", \"mAs\": \"99\" }\n  ],\n  \"table2\": [\n    { \"setMA\": \"100\", \"measuredOutput\": \"10.2\", \"ratio\": \"1.00\", \"remarks\": \"PASS\" },\n    { \"setMA\": \"200\", \"measuredOutput\": \"19.8\", \"ratio\": \"0.99\", \"remarks\": \"PASS\" },\n    { \"setMA\": \"300\", \"measuredOutput\": \"29.7\", \"ratio\": \"0.98\", \"remarks\": \"PASS\" }\n  ],\n  \"tolerance\": \"±10% (AERB standard)\"\n}"
+        },
+        "description": "Creates or updates a Measurement of mA Linearity record for CT Scan by serviceId."
+      },
+      "response": []
+    },
+    {
+      "name": "2️⃣ Get Measurement of mA Linearity by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ma-linearity/6732a47a4b0a3de1e9a80c99",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ma-linearity", "6732a47a4b0a3de1e9a80c99"]
+        },
+        "description": "Fetches Measurement of mA Linearity test details by testId."
+      },
+      "response": []
+    },
+    {
+      "name": "3️⃣ Update Measurement of mA Linearity by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ma-linearity/6732a47a4b0a3de1e9a80c99",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ma-linearity", "6732a47a4b0a3de1e9a80c99"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"setMA\": \"150\", \"time\": \"0.66\", \"mAs\": \"99\" }\n  ],\n  \"table2\": [\n    { \"setMA\": \"150\", \"measuredOutput\": \"14.8\", \"ratio\": \"0.99\", \"remarks\": \"Updated PASS\" }\n  ],\n  \"tolerance\": \"±8% (Updated QA tolerance)\"\n}"
+        },
+        "description": "Updates a Measurement of mA Linearity test record by testId."
+      },
+      "response": []
+    }
+  ]
+}

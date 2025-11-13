@@ -1,0 +1,69 @@
+{
+  "info": {
+    "_postman_id": "f0dbe5c2-912b-4e3d-88c1-9d57a743b3df",
+    "name": "CT Scan - Timer Accuracy APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create / Update Timer Accuracy (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/timer-accuracy/6731bc7a90db4e46c9c2a890",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "timer-accuracy", "6731bc7a90db4e46c9c2a890"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"80\", \"sliceThickness\": \"1.0 mm\", \"ma\": \"100\" },\n    { \"kvp\": \"100\", \"sliceThickness\": \"2.0 mm\", \"ma\": \"150\" }\n  ],\n  \"table2\": [\n    { \"setTime\": \"1.0 s\", \"observedTime\": \"1.02 s\", \"percentError\": \"2%\", \"remarks\": \"PASS\" },\n    { \"setTime\": \"0.5 s\", \"observedTime\": \"0.51 s\", \"percentError\": \"2%\", \"remarks\": \"PASS\" }\n  ],\n  \"tolerance\": \"±5%\"\n}"
+        },
+        "description": "Creates or updates Timer Accuracy test for CT Scan by serviceId."
+      },
+      "response": []
+    },
+    {
+      "name": "2️⃣ Get Timer Accuracy by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/timer-accuracy/6731de2290db4e46c9c2a991",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "timer-accuracy", "6731de2290db4e46c9c2a991"]
+        },
+        "description": "Fetch Timer Accuracy test data by testId."
+      },
+      "response": []
+    },
+    {
+      "name": "3️⃣ Update Timer Accuracy by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/timer-accuracy/6731de2290db4e46c9c2a991",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "timer-accuracy", "6731de2290db4e46c9c2a991"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"120\", \"sliceThickness\": \"2.5 mm\", \"ma\": \"200\" }\n  ],\n  \"table2\": [\n    { \"setTime\": \"2.0 s\", \"observedTime\": \"2.05 s\", \"percentError\": \"2.5%\", \"remarks\": \"PASS\" }\n  ],\n  \"tolerance\": \"±4%\"\n}"
+        },
+        "description": "Updates Timer Accuracy test record by testId."
+      },
+      "response": []
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "info": {
+    "_postman_id": "79b6ed22-916a-49d9-9514-875b5ffb2b4d",
+    "name": "CT Scan - Total Filtration (Frontend Compatible)",
+    "description": "POST, GET, and PUT for Total Filtration For CT Scan with matching frontend field names.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create / Update Total Filtration (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/total-filteration/6911b9019e22d35e7bdf6686",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "ct-scan",
+            "total-filteration",
+            "6911b9019e22d35e7bdf6686"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    { \"appliedKV\": \"120\", \"appliedMA\": \"100\", \"time\": \"1.0\", \"sliceThickness\": \"5.0\", \"measuredTF\": \"2.50\", \"remark\": \"PASS\" },\n    { \"appliedKV\": \"100\", \"appliedMA\": \"80\", \"time\": \"0.8\", \"sliceThickness\": \"5.0\", \"measuredTF\": \"2.40\", \"remark\": \"PASS\" },\n    { \"appliedKV\": \"80\", \"appliedMA\": \"60\", \"time\": \"0.5\", \"sliceThickness\": \"5.0\", \"measuredTF\": \"2.30\", \"remark\": \"PASS\" }\n  ],\n  \"tolerance\": \"±10% as per AERB guidelines\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2️⃣ Get Total Filtration by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/total-filteration/691423b65fcf41ffa9111785",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "ct-scan",
+            "total-filteration",
+            "691423b65fcf41ffa9111785"
+          ]
+        }
+      }
+    },
+    {
+      "name": "3️⃣ Update Total Filtration by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/total-filteration/691423b65fcf41ffa9111785",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "ct-scan",
+            "total-filteration",
+            "691423b65fcf41ffa9111785"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    { \"appliedKV\": \"120\", \"appliedMA\": \"100\", \"time\": \"1.0\", \"sliceThickness\": \"5.0\", \"measuredTF\": \"2.55\", \"remark\": \"Updated PASS\" }\n  ],\n  \"tolerance\": \"±8% as per updated QA guidelines\"\n}"
+        }
+      }
+    }
+  ]
+}

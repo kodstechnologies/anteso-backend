@@ -1,11 +1,11 @@
 // controllers/radiationProfileWidthForCTScan.controller.js
-import { asyncHandler } from "../../../utils/AsyncHandler.js";
-import RadiationProfileWidthForCTScan from "../../../models/testTables/CTScan/RadiationProfileWidth.model.ForCTScan.js";
-import ServiceReport from "../../../models/serviceReports/serviceReport.model.js";
-import Service from "../../../models/Services.js";
+import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+import RadiationProfileWidthForCTScan from "../../../../models/testTables/CTScan/RadiationProfileWidth.model.ForCTScan.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
-const createRadiationProfileWidth = asyncHandler(async (req, res) => {
+const create= asyncHandler(async (req, res) => {
     const { table1, table2 } = req.body;
     const { serviceId } = req.params; // Get from URL params
 
@@ -88,12 +88,14 @@ const createRadiationProfileWidth = asyncHandler(async (req, res) => {
         if (session) session.endSession();
     }
 });
-
-const updateRadiationProfileWidth = asyncHandler(async (req, res) => {
+const update = asyncHandler(async (req, res) => {
     const { table1, table2 } = req.body;
-    const { serviceId } = req.params;
+    const { testId } = req.params; // Use testId from URL
 
-    if (!serviceId) return res.status(400).json({ success: false, message: "serviceId required" });
+    // === Validate ===
+    if (!testId) {
+        return res.status(400).json({ success: false, message: "testId is required in URL" });
+    }
     if (!Array.isArray(table1) || !Array.isArray(table2)) {
         return res.status(400).json({ success: false, message: "table1 and table2 must be arrays" });
     }
@@ -103,31 +105,55 @@ const updateRadiationProfileWidth = asyncHandler(async (req, res) => {
         session = await mongoose.startSession();
         session.startTransaction();
 
-        const testRecord = await RadiationProfileWidthForCTScan.findOne({ serviceId }).session(session);
+        // 1. Find test record by testId
+        const testRecord = await RadiationProfileWidthForCTScan.findById(testId).session(session);
         if (!testRecord) {
             await session.abortTransaction();
-            return res.status(404).json({ success: false, message: "Record not found" });
+            return res.status(404).json({ success: false, message: "Test record not found" });
         }
 
+        // 2. Validate machine type via serviceId
+        const service = await Service.findById(testRecord.serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Associated service not found" });
+        }
+        if (service.machineType !== "CT Scan") {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test can only be updated for CT Scan. Found: ${service.machineType}`,
+            });
+        }
+
+        // 3. Update data
         testRecord.table1 = table1;
         testRecord.table2 = table2;
         await testRecord.save({ session });
 
+        // Commit
         await session.commitTransaction();
 
         return res.json({
             success: true,
             message: "Updated successfully",
-            data: { testId: testRecord._id },
+            data: {
+                testId: testRecord._id,
+                serviceId: testRecord.serviceId,
+            },
         });
     } catch (error) {
         if (session) await session.abortTransaction();
-        return res.status(500).json({ success: false, message: "Update failed", error: error.message });
+        console.error("Update RadiationProfileWidth Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Update failed",
+            error: error.message,
+        });
     } finally {
         if (session) session.endSession();
     }
 });
-
 const getById = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -166,4 +192,6 @@ const getById = asyncHandler(async (req, res) => {
     }
 });
 
-export default { createRadiationProfileWidth, updateRadiationProfileWidth, getById, updateRadiationProfileWidth };
+
+
+export default { create, update, getById };

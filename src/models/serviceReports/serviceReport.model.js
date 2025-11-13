@@ -147,7 +147,7 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RadiationProfileWidthForCTScan'
     },
-    MeasurementOfOperatingPotentialSchema: {
+    MeasurementOfOperatingPotential: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MeasurementOfOperatingPotential'
     },
@@ -178,6 +178,10 @@ const serviceReportSchema = new mongoose.Schema({
     RadiationLeakageLevel: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RadiationLeakageLevel'
+    },
+    serviceId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
     },
 
 })

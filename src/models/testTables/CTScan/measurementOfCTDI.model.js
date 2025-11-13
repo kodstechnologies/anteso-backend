@@ -45,6 +45,10 @@ const MeasurementOfCTDISchema = new Schema(
       ref: 'ServiceReport',
       required: false,
     },
+    serviceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Service",
+    },
   },
   { timestamps: true }
 );
@@ -53,4 +57,4 @@ MeasurementOfCTDISchema.index({ serviceReportId: 1 });
 
 const MeasurementOfCTDI = model('MeasurementOfCTDI', MeasurementOfCTDISchema);
 
-export default MeasyrementOfCTDI;
+export default MeasurementOfCTDI;

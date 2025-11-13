@@ -1,0 +1,34 @@
+{
+  "info": {
+    "name": "MeasurementOfOperatingPotential - CREATE",
+    "_postman_id": "9a7c95a2-5b01-45c5-9a0f-56cbf43cda76",
+    "description": "Creates or updates MeasurementOfOperatingPotential test data for CT Scan machines.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create MeasurementOfOperatingPotential",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/measurement-of-operating-potential/672f32c8b3a60d4188e4a5d2",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "measurement-of-operating-potential", "672f32c8b3a60d4188e4a5d2"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    {\n      \"kvp\": \"80 kVp\",\n      \"ma\": \"10 mA\"\n    },\n    {\n      \"kvp\": \"100 kVp\",\n      \"ma\": \"20 mA\"\n    }\n  ],\n  \"table2\": [\n    {\n      \"applied\": \"5.0 mm\",\n      \"measured\": \"4.9 mm\",\n      \"tolerancePlus\": \"+0.5 mm\",\n      \"toleranceMinus\": \"-0.5 mm\",\n      \"remarks\": \"PASS\"\n    },\n    {\n      \"applied\": \"10.0 mm\",\n      \"measured\": \"9.9 mm\",\n      \"tolerancePlus\": \"+0.5 mm\",\n      \"toleranceMinus\": \"-0.5 mm\",\n      \"remarks\": \"PASS\"\n    }\n  ],\n  \"toleranceValue\": \"±5%\",\n  \"toleranceType\": \"percentage\",\n  \"toleranceSign\": \"±\"\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}

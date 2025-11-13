@@ -1,7 +1,11 @@
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
-
+const ToleranceSchema = new mongoose.Schema({
+    value: { type: String, },
+    type: { type: String, enum: ['percent', 'kvp'],  },
+    sign: { type: String, enum: ['plus', 'minus', 'both'], },
+});
 // Table 1 Row
 const Table1RowSchema = new Schema({
     time: { type: String, default: '', trim: true },
@@ -23,7 +27,7 @@ const MeasurementOfOperatingPotentialSchema = new Schema(
     {
         table1: [Table1RowSchema],
         table2: [Table2RowSchema],
-        tolerance: { type: String, default: '', trim: true },
+        tolerance: { type: ToleranceSchema, required: true },
         serviceReportId: {
             type: Schema.Types.ObjectId,
             ref: 'ServiceReport',

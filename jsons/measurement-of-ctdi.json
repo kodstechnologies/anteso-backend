@@ -1,0 +1,76 @@
+{
+  "info": {
+    "_postman_id": "2c6db71b-f1b8-49f9-a0a9-12093037b90c",
+    "name": "CT Scan - Measurement of CTDI APIs",
+    "description": "APIs for creating, fetching, and updating Measurement of CTDI test data for CT Scan machines.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1️⃣ Create / Update Measurement of CTDI (by Service ID)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ctdi/6731bc7a90db4e46c9c2a890",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ctdi", "6731bc7a90db4e46c9c2a890"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"120\", \"mAs\": \"200\", \"sliceThickness\": \"2.5 mm\" },\n    { \"kvp\": \"100\", \"mAs\": \"150\", \"sliceThickness\": \"1.5 mm\" }\n  ],\n  \"table2\": [\n    { \"result\": \"Central Dose (mGy)\", \"head\": \"3.2\", \"body\": \"5.6\", \"readings\": [] },\n    { \"result\": \"Peripheral Dose (mGy)\", \"head\": \"3.1\", \"body\": \"5.3\", \"readings\": [\n      { \"label\": \"A\", \"head\": \"3.0\", \"body\": \"5.4\" },\n      { \"label\": \"B\", \"head\": \"3.2\", \"body\": \"5.5\" },\n      { \"label\": \"C\", \"head\": \"3.3\", \"body\": \"5.6\" }\n    ] }\n  ],\n  \"tolerance\": {\n    \"expected\": { \"value\": \"±10%\", \"quote\": \"AERB Guidelines\" },\n    \"maximum\": { \"value\": \"±15%\", \"quote\": \"Acceptable range as per QA standard\" }\n  }\n}"
+        },
+        "description": "Creates or updates a Measurement of CTDI test record for CT Scan by serviceId."
+      },
+      "response": []
+    },
+    {
+      "name": "2️⃣ Get Measurement of CTDI by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ctdi/6731de2290db4e46c9c2a991",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ctdi", "6731de2290db4e46c9c2a991"]
+        },
+        "description": "Fetches Measurement of CTDI test details by testId."
+      },
+      "response": []
+    },
+    {
+      "name": "3️⃣ Update Measurement of CTDI by Test ID",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/api/ct-scan/measurement-of-ctdi/6731de2290db4e46c9c2a991",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "ct-scan", "measurement-of-ctdi", "6731de2290db4e46c9c2a991"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"140\", \"mAs\": \"250\", \"sliceThickness\": \"3.0 mm\" }\n  ],\n  \"table2\": [\n    { \"result\": \"Peripheral Dose (mGy)\", \"head\": \"3.4\", \"body\": \"5.9\", \"readings\": [\n      { \"label\": \"A\", \"head\": \"3.3\", \"body\": \"5.8\" }\n    ] }\n  ],\n  \"tolerance\": {\n    \"expected\": { \"value\": \"±8%\", \"quote\": \"Updated Standard\" },\n    \"maximum\": { \"value\": \"±12%\", \"quote\": \"Updated Range\" }\n  }\n}"
+        },
+        "description": "Updates Measurement of CTDI test record by testId."
+      },
+      "response": []
+    }
+  ]
+}

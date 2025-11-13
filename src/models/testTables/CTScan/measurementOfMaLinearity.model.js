@@ -30,6 +30,10 @@ const MeasurementOfMaLinearitySchema = new Schema(
             ref: 'ServiceReport',
             required: false,
         },
+        serviceId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Service",
+        },
     },
     { timestamps: true }
 );

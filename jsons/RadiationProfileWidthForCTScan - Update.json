@@ -1,0 +1,41 @@
+{
+  "info": {
+    "name": "RadiationProfileWidthForCTScan - Update",
+    "_postman_id": "bf73c112-9b72-48b0-a9ef-32582dc93019",
+    "description": "API to update RadiationProfileWidthForCTScan test data by testId.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Update RadiationProfileWidthForCTScan",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/ct-scan/radiation-profile-width/6731bc7a90db4e46c9c2a890",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": [
+            "anteso",
+            "admin",
+            "service-report",
+            "ct-scan",
+            "radiation-profile-width",
+            "6731bc7a90db4e46c9c2a890"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"table1\": [\n    { \"kvp\": \"80 kVp\", \"ma\": \"10 mA\" },\n    { \"kvp\": \"100 kVp\", \"ma\": \"20 mA\" },\n    { \"kvp\": \"120 kVp\", \"ma\": \"30 mA\" }\n  ],\n  \"table2\": [\n    { \"applied\": \"5.0 mm\", \"measured\": \"4.9 mm\", \"tolerancePlus\": \"+0.5 mm\", \"toleranceMinus\": \"-0.5 mm\", \"remarks\": \"PASS\" },\n    { \"applied\": \"10.0 mm\", \"measured\": \"9.8 mm\", \"tolerancePlus\": \"+0.5 mm\", \"toleranceMinus\": \"-0.5 mm\", \"remarks\": \"PASS\" }\n  ]\n}"
+        }
+      },
+      "response": []
+    }
+  ]
+}
