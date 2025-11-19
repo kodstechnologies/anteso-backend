@@ -1,0 +1,41 @@
+{
+  "info": {
+    "name": "Employee Leave Summary API",
+    "_postman_id": "c2b9f45d-1c7b-4f88-9e9c-employee-leave",
+    "description": "Collection for fetching employee leave summary with allocated, used, comp-off, and remaining leaves.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Employee Leave Summary",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/leaves/summary/{{employeeId}}?year={{year}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "leaves", "summary", "{{employeeId}}"],
+          "query": [
+            {
+              "key": "year",
+              "value": "{{year}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "employeeId",
+      "value": "EMPLOYEE_OBJECT_ID"
+    },
+    {
+      "key": "year",
+      "value": "2025"
+    }
+  ]
+}

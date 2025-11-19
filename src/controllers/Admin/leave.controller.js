@@ -655,7 +655,7 @@ const allocateLeavesToAll = asyncHandler(async (req, res) => {
         totalEmployees: employees.length,
         createdCount,
         updatedCount,
-        leavesPerEmployee: totalLeaves, 
+        leavesPerEmployee: totalLeaves,
         year,
     });
 });
@@ -803,6 +803,28 @@ const applyForLeaveByStaff = asyncHandler(async (req, res) => {
 });
 
 // ✅ Get All Leaves (Staff)
+// const getAllLeavesByStaffId = asyncHandler(async (req, res) => {
+//     try {
+//         const { staffId } = req.params;
+//         if (!staffId) {
+//             return res.status(400).json({ message: "Staff ID is required" });
+//         }
+
+//         const leaves = await Leave.find({ employee: staffId })
+//             .populate("employee", "name email empId")
+//             .sort({ createdAt: -1 });
+
+//         return res.status(200).json({
+//             success: true,
+//             count: leaves.length,
+//             data: leaves
+//         });
+//     } catch (error) {
+//         console.error("Error fetching leaves:", error);
+//         res.status(500).json({ message: "Failed to fetch staff leave records" });
+//     }
+// });
+// ✅ Get All Leaves (Staff)
 const getAllLeavesByStaffId = asyncHandler(async (req, res) => {
     try {
         const { staffId } = req.params;
@@ -814,16 +836,34 @@ const getAllLeavesByStaffId = asyncHandler(async (req, res) => {
             .populate("employee", "name email empId")
             .sort({ createdAt: -1 });
 
+        // 🔹 Format response to include rejectionReason only when needed
+        const formattedLeaves = leaves.map((leave) => ({
+            _id: leave._id,
+            startDate: leave.startDate,
+            endDate: leave.endDate,
+            leaveType: leave.leaveType,
+            reason: leave.reason,
+            status: leave.status,
+            createdAt: leave.createdAt,
+            updatedAt: leave.updatedAt,
+            employee: leave.employee,
+            ...(leave.status === "Rejected" && leave.rejectionReason
+                ? { rejectionReason: leave.rejectionReason }
+                : {}
+            )
+        }));
+
         return res.status(200).json({
             success: true,
-            count: leaves.length,
-            data: leaves
+            count: formattedLeaves.length,
+            data: formattedLeaves
         });
     } catch (error) {
         console.error("Error fetching leaves:", error);
         res.status(500).json({ message: "Failed to fetch staff leave records" });
     }
 });
+
 
 // ✅ Edit Leave (Staff)
 const editLeaveByStaffId = asyncHandler(async (req, res) => {
@@ -942,4 +982,52 @@ const getPendingLeaveApprovals = asyncHandler(async (req, res) => {
 });
 
 
-export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeavesToAll, getAllLeaveAllocations, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById, getPendingLeaveApprovals }
+const getEmployeeLeaveSummary = asyncHandler(async (req, res) => {
+    const { employeeId } = req.params;
+    const { year } = req.query;  // year from query
+
+    if (!employeeId) {
+        return res.status(400).json({ message: "employeeId is required" });
+    }
+
+    if (!year) {
+        return res.status(400).json({ message: "year is required in query" });
+    }
+
+    // Fetch allocation
+    const allocation = await LeaveAllocation.findOne({
+        employee: employeeId,
+        year: Number(year)
+    });
+
+    if (!allocation) {
+        return res.status(404).json({ message: "No leave allocation found" });
+    }
+
+    // Global allocated leaves (initial assigned)
+    const allocatedLeaves = allocation.globalLeaves ?? allocation.totalLeaves;
+
+    // Comp-off earned leaves
+    const compOffLeaves = allocation.totalLeaves - allocatedLeaves;
+
+    // Used leaves
+    const usedLeaves = allocation.usedLeaves ?? 0;
+
+    // Remaining
+    const remainingLeaves = allocation.totalLeaves - usedLeaves;
+
+    return res.status(200).json({
+        message: "Leave summary fetched successfully",
+        data: {
+            year: Number(year),
+            allocatedLeaves,
+            compOffLeaves,
+            totalLeaves: allocation.totalLeaves,
+            usedLeaves,
+            remainingLeaves
+        }
+    });
+});
+
+
+export default { add, getLeaveById, getAllLeaves, updateLeaveById, deleteLeaveById, applyForLeave, getAllLeavesByCustomerId, approveLeave, rejectLeave, allocateLeavesToAll, getAllLeaveAllocations, attendanceSummary, applyForLeaveByStaff, getAllLeavesByStaffId, editLeaveByStaffId, getStaffLeaveById, getPendingLeaveApprovals, getEmployeeLeaveSummary }

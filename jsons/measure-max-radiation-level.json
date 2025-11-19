@@ -1,0 +1,69 @@
+{
+  "info": {
+    "_postman_id": "db7d2fd3-4b56-4f91-9e13-3db2a34ab111",
+    "name": "Measure Max Radiation Level API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create – Radiation Level",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"6914f2e5fa652059f4ff02c2\",\n  \"readings\": [\n    { \"location\": \"Control Room Door\", \"mRPerHr\": \"1.5\", \"mRPerWeek\": \"6.250\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Operator Console\", \"mRPerHr\": \"0.8\", \"mRPerWeek\": \"3.333\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Entrance Corridor\", \"mRPerHr\": \"0.2\", \"mRPerWeek\": \"0.833\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Patient Waiting\", \"mRPerHr\": \"0.1\", \"mRPerWeek\": \"0.417\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"Staff Room\", \"mRPerHr\": \"0.05\", \"mRPerWeek\": \"0.208\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"Store Room\", \"mRPerHr\": \"0.04\", \"mRPerWeek\": \"0.167\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"CT Gantry Entrance\", \"mRPerHr\": \"1.9\", \"mRPerWeek\": \"7.917\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Back Wall\", \"mRPerHr\": \"0.3\", \"mRPerWeek\": \"1.250\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Left Wall\", \"mRPerHr\": \"0.15\", \"mRPerWeek\": \"0.625\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Right Wall\", \"mRPerHr\": \"0.12\", \"mRPerWeek\": \"0.500\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" }\n  ],\n  \"maxWorkerMRPerWeek\": \"8.333\",\n  \"maxPublicMRPerWeek\": \"0.417\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/radiation/max-level",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "radiation", "max-level"]
+        }
+      }
+    },
+    {
+      "name": "Get by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000/api/radiation/max-level/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "radiation", "max-level", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update – Radiation Level",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"readings\": [\n    { \"location\": \"Control Room Door\", \"mRPerHr\": \"1.7\", \"mRPerWeek\": \"7.083\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Operator Console\", \"mRPerHr\": \"0.9\", \"mRPerWeek\": \"3.750\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Entrance Corridor\", \"mRPerHr\": \"0.25\", \"mRPerWeek\": \"1.042\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Patient Waiting\", \"mRPerHr\": \"0.12\", \"mRPerWeek\": \"0.500\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"Staff Room\", \"mRPerHr\": \"0.08\", \"mRPerWeek\": \"0.333\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"Store Room\", \"mRPerHr\": \"0.06\", \"mRPerWeek\": \"0.250\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 0.2 mR/hr\" },\n    { \"location\": \"CT Gantry Entrance\", \"mRPerHr\": \"1.6\", \"mRPerWeek\": \"6.667\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Back Wall\", \"mRPerHr\": \"0.35\", \"mRPerWeek\": \"1.458\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Left Wall\", \"mRPerHr\": \"0.18\", \"mRPerWeek\": \"0.750\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" },\n    { \"location\": \"Right Wall\", \"mRPerHr\": \"0.15\", \"mRPerWeek\": \"0.625\", \"result\": \"Pass\", \"permissibleLimit\": \"≤ 2 mR/hr\" }\n  ],\n  \"maxWorkerMRPerWeek\": \"7.083\",\n  \"maxPublicMRPerWeek\": \"0.500\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/radiation/max-level/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "radiation", "max-level", "{{testId}}"]
+        }
+      }
+    }
+  ]
+}

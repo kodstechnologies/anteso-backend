@@ -316,74 +316,236 @@ const addPayment = asyncHandler(async (req, res) => {
 // });
 
 
+// const allOrdersWithClientName = asyncHandler(async (req, res) => {
+//     try {
+//         let orders = await orderModel.find({})
+//             .select("srfNumber hospitalName leadOwner _id")
+//             .sort({ createdAt: -1 })
+//             .lean();
+//         console.log("🚀 ~ orders:", orders)
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(404).json({ message: "No orders found" });
+//         }
+
+//         // Filter valid ObjectId leadOwner values only
+//         const leadOwnerIds = [
+//             ...new Set(
+//                 orders
+//                     .map(o => o.leadOwner)
+//                     .filter(id => mongoose.Types.ObjectId.isValid(id))
+//             )
+//         ];
+//         console.log("🚀 ~ leadOwnerIds:", leadOwnerIds)
+
+//         const users = await User.find({ _id: { $in: leadOwnerIds } })
+//             .select("_id name role email")
+//             .lean();
+//         console.log("🚀 ~ users:", users)
+
+//         const userMap = {};
+//         users.forEach(u => (userMap[u._id.toString()] = u));
+
+//         // Filter out Dealer orders
+//         orders = orders.filter(order => {
+//             if (!order.leadOwner) return true;
+//             const owner = userMap[order.leadOwner];
+//             return owner && owner.role !== "Dealer";
+//         });
+
+//         const paidOrders = await Payment.find({}).select("orderId").lean();
+//         console.log("🚀 ~ paidOrders:", paidOrders)
+//         const paidOrderIds = paidOrders.map(p => p.orderId.toString());
+//         orders = orders.filter(order => !paidOrderIds.includes(order._id.toString()));
+
+//         const formattedOrders = orders.map(order => {
+//             const owner = order.leadOwner ? userMap[order.leadOwner] : null;
+//             return {
+//                 ...order,
+//                 srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
+//                 leadOwnerDetails: owner,
+//             };
+//         });
+//         console.log("🚀 ~ formattedOrders:", formattedOrders)
+
+//         res.status(200).json({
+//             success: true,
+//             count: formattedOrders.length,
+//             orders: formattedOrders,
+//         });
+//     } catch (error) {
+//         console.error("❌ Error fetching orders:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Internal Server Error",
+//         });
+//     }
+// });
+
+// const allOrdersWithClientName = asyncHandler(async (req, res) => {
+//     try {
+//         let orders = await orderModel.find({})
+//             .select("srfNumber hospitalName leadOwner _id")
+//             .sort({ createdAt: -1 })
+//             .lean();
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(404).json({ message: "No orders found" });
+//         }
+
+//         const leadOwnerIds = [
+//             ...new Set(
+//                 orders
+//                     .map(o => o.leadOwner)
+//                     .filter(id => mongoose.Types.ObjectId.isValid(id))
+//             )
+//         ];
+
+//         const users = await User.find({ _id: { $in: leadOwnerIds } })
+//             .select("_id name role email")
+//             .lean();
+
+//         const userMap = {};
+//         users.forEach(u => (userMap[u._id.toString()] = u));
+
+//         const paidOrders = await Payment.find({}).select("orderId").lean();
+//         const paidOrderIds = paidOrders.map(p => p.orderId.toString());
+
+//         // 🔹 Keep only unpaid orders
+//         orders = orders.filter(order => !paidOrderIds.includes(order._id.toString()));
+
+//         const formattedOrders = orders.map(order => {
+//             const owner = order.leadOwner ? userMap[order.leadOwner] : null;
+//             return {
+//                 ...order,
+//                 srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
+//                 leadOwnerDetails: owner
+//             };
+//         });
+
+//         res.status(200).json({
+//             success: true,
+//             count: formattedOrders.length,
+//             orders: formattedOrders,
+//         });
+
+//     } catch (error) {
+//         console.error("❌ Error fetching orders:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Internal Server Error",
+//         });
+//     }
+// });
+
+// In your order controller
 const allOrdersWithClientName = asyncHandler(async (req, res) => {
     try {
-        let orders = await orderModel.find({})
-            .select("srfNumber hospitalName leadOwner _id")
+        // 1. Fetch all orders (unpaid later)
+        let orders = await orderModel
+            .find({})
+            .select('srfNumber hospitalName leadOwner _id createdAt')
             .sort({ createdAt: -1 })
             .lean();
-        console.log("🚀 ~ orders:", orders)
 
         if (!orders || orders.length === 0) {
-            return res.status(404).json({ message: "No orders found" });
+            return res.status(404).json({ message: 'No orders found' });
         }
 
-        // Filter valid ObjectId leadOwner values only
+        // 2. Extract valid leadOwner IDs
         const leadOwnerIds = [
             ...new Set(
                 orders
                     .map(o => o.leadOwner)
-                    .filter(id => mongoose.Types.ObjectId.isValid(id))
+                    .filter(id => id && mongoose.Types.ObjectId.isValid(id))
             )
         ];
-        console.log("🚀 ~ leadOwnerIds:", leadOwnerIds)
 
+        // 3. Fetch basic user info (name, role, email)
         const users = await User.find({ _id: { $in: leadOwnerIds } })
-            .select("_id name role email")
+            .select('_id name role email')
             .lean();
-        console.log("🚀 ~ users:", users)
 
         const userMap = {};
-        users.forEach(u => (userMap[u._id.toString()] = u));
-
-        // Filter out Dealer orders
-        orders = orders.filter(order => {
-            if (!order.leadOwner) return true;
-            const owner = userMap[order.leadOwner];
-            return owner && owner.role !== "Dealer";
-        });
-
-        const paidOrders = await Payment.find({}).select("orderId").lean();
-        console.log("🚀 ~ paidOrders:", paidOrders)
-        const paidOrderIds = paidOrders.map(p => p.orderId.toString());
-        orders = orders.filter(order => !paidOrderIds.includes(order._id.toString()));
-
-        const formattedOrders = orders.map(order => {
-            const owner = order.leadOwner ? userMap[order.leadOwner] : null;
-            return {
-                ...order,
-                srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
-                leadOwnerDetails: owner,
+        users.forEach(u => {
+            userMap[u._id.toString()] = {
+                _id: u._id,
+                name: u.name,
+                role: u.role || 'Unknown',
+                email: u.email,
             };
         });
-        console.log("🚀 ~ formattedOrders:", formattedOrders)
+
+        // 4. Fetch custom pricing for Dealer & Manufacturer (safe query — no discriminator needed)
+        const pricingMap = {}; // This will hold qaTests + services for both roles
+
+        if (leadOwnerIds.length > 0) {
+            const privilegedUsers = await User.find({
+                _id: { $in: leadOwnerIds },
+                role: { $in: ['Dealer', 'Manufacturer'] }
+            })
+                .select('_id role qaTests services')
+                .lean();
+
+            privilegedUsers.forEach(user => {
+                const id = user._id.toString();
+
+                if (user.role === 'Dealer') {
+                    pricingMap[id] = {
+                        type: 'Dealer',
+                        qaTests: user.qaTests || [],
+                        services: []
+                    };
+                }
+
+                if (user.role === 'Manufacturer') {
+                    pricingMap[id] = {
+                        type: 'Manufacturer',
+                        qaTests: user.qaTests || [],
+                        services: user.services || [] // ← includes serviceName + amount
+                    };
+                }
+            });
+        }
+
+        // 5. Get paid orders to filter them out
+        const paidOrders = await Payment.find({}).select('orderId').lean();
+        const paidOrderIds = new Set(paidOrders.map(p => p.orderId?.toString()).filter(Boolean));
+
+        // 6. Final enriched orders
+        const formattedOrders = orders
+            .filter(order => !paidOrderIds.has(order._id.toString()))
+            .map(order => {
+                const owner = order.leadOwner ? userMap[order.leadOwner.toString()] : null;
+                const pricing = order.leadOwner ? pricingMap[order.leadOwner.toString()] : null;
+
+                return {
+                    ...order,
+                    srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
+                    leadOwnerDetails: owner,
+                    isPrivilegedOrder: !!pricing,
+                    pricingType: pricing?.type || null,
+                    customPricing: {
+                        qaTests: pricing?.qaTests || [],
+                        services: pricing?.services || []
+                    }
+                };
+            });
 
         res.status(200).json({
             success: true,
             count: formattedOrders.length,
             orders: formattedOrders,
         });
+
     } catch (error) {
-        console.error("❌ Error fetching orders:", error);
+        console.error('Error fetching orders:', error);
         res.status(500).json({
             success: false,
-            message: error.message || "Internal Server Error",
+            message: error.message || 'Internal Server Error',
         });
     }
 });
-
-
-
 // const getTotalAmount = asyncHandler(async (req, res) => {
 
 //     try {
@@ -786,5 +948,8 @@ const getPaymentDetailsByOrderId = async (req, res) => {
         });
     }
 };
+
+
+
 
 export default { addPayment, allOrdersWithClientName, getTotalAmount, getAllPayments, getPaymentsBySrf, getPaymentById, searchBySRF, deletePayment, editPaymentById, getPaymentDetailsByOrderId };

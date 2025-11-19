@@ -27,6 +27,7 @@ import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddl
 import { verifyAccessToken } from '../../../middlewares/adminAuthMiddleware.js';
 import { authorizeRoles } from '../../../middlewares/authorizeRoles.js';
 const router = Router();
+
 router.use('/auth', AuthRouter)
 // router.use('/refresh', refreshAccessToken);
 router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Employee", "staff"))

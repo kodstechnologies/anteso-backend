@@ -1,0 +1,60 @@
+{
+  "info": {
+    "_postman_id": "31e3b61a-9075-4db3-9d6b-b1859c752123",
+    "name": "CT Scan - Report Header APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Save Report Header (Update Only)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerName\": \"Fortis Hospital\",\n  \"address\": \"Bengaluru, India\",\n  \"srfNumber\": \"SRF-98765\",\n  \"srfDate\": \"2025-11-12\",\n  \"testReportNumber\": \"TR-DO-2025-348\",\n  \"issueDate\": \"2025-11-16\",\n  \"nomenclature\": \"CT Scanner\",\n  \"make\": \"Philips\",\n  \"model\": \"Brilliance 16\",\n  \"slNumber\": \"PH-CT-5567\",\n  \"condition\": \"In Good Condition\",\n  \"testingProcedureNumber\": \"TP-CT-2025-A\",\n  \"engineerNameRPId\": \"ENG001\",\n  \"pages\": \"30\",\n  \"testDate\": \"2025-11-10\",\n  \"testDueDate\": \"2026-11-10\",\n  \"location\": \"Radiology Room 1\",\n  \"temperature\": \"23\",\n  \"humidity\": \"48\",\n  \"toolsUsed\": [\n    {\n      \"toolId\": \"{{toolId1}}\",\n      \"SrNo\": \"99876\",\n      \"nomenclature\": \"Dose Measurement Meter\",\n      \"make\": \"Fluke\",\n      \"model\": \"Victoreen 660\",\n      \"range\": \"0-10,000 μGy/h\",\n      \"calibrationCertificateNo\": \"CAL-FL-667\",\n      \"calibrationValidTill\": \"2026-06-30\",\n      \"certificate\": \"CERT-0987\",\n      \"uncertainity\": \"±3%\"\n    }\n  ],\n  \"notes\": [\n    {\n      \"slNo\": \"1\",\n      \"text\": \"Unit tested as per AERB guidelines\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/{{serviceId}}/header",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso","admin","service-report","{{serviceId}}","header"]
+        }
+      }
+    },
+    {
+      "name": "Get Report Header",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/{{serviceId}}/header",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso","admin","service-report","{{serviceId}}","header"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "token", "value": "" },
+    { "key": "serviceId", "value": "6911b9019e22d35e7bdf6686" },
+    { "key": "toolId1", "value": "692233faad88df9e981cc77e" }
+  ]
+}

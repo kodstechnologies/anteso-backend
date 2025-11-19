@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { sendOtp, verifyOtp, logout, resetPassword } from '../../../controllers/users/login.controller.js';
+import { sendOtp, verifyOtp, logout } from '../../../controllers/users/login.controller.js';
 import { verifyUserJWT } from '../../../middlewares/userAuthMiddleware.js';
 import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js';
 import { authorizeRoles } from '../../../middlewares/authorizeRoles.js'
@@ -7,7 +7,7 @@ import machineRoutes from '../../../routes/allRoutes/User/machineRoutes.js'
 const router = Router();
 router.post('/send-otp', sendOtp)
 router.post('/verify-otp', verifyOtp)
-router.post('/reset-password',resetPassword)
+// router.post('/reset-password',resetPassword)
 router.post('/refresh', refreshAccessToken)
 router.post("/logout", logout);
 // router.post('/refresh', (req, res, next) => {

@@ -111,38 +111,38 @@ const serviceReportSchema = new mongoose.Schema({
             { slNo: "5.7", text: "Name, Address & Contact detail is provided by Customer." }
         ]
     },
-    accuracyOfOperatingPotentialModel: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "AccuracyOfOperatingPotential",
-    },
-    effectiveFocalSpotMeasurement: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "EffectiveFocalSpotMeasurement",
-    },
-    ExposureRateTableTop: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ExposureRateTableTop'
-    },
-    HighContrastResolution: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'HighContrastResolution'
-    },
-    LowContrastResolution: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'LowContrastResolution'
-    },
-    LinearityOfmAsLoading: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'LinearityOfmAsLoading'
-    },
-    ConsistencyOfRadiationOutput: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'ConsistencyOfRadiationOutput'
-    },
-    RadiationLeakageLevel: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'RadiationLeakageLevel'
-    },
+    // accuracyOfOperatingPotentialModel: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "AccuracyOfOperatingPotential",
+    // },
+    // effectiveFocalSpotMeasurement: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: "EffectiveFocalSpotMeasurement",
+    // },
+    // ExposureRateTableTop: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'ExposureRateTableTop'
+    // },
+    // HighContrastResolution: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'HighContrastResolution'
+    // },
+    // LowContrastResolution: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'LowContrastResolution'
+    // },
+    // LinearityOfmAsLoading: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'LinearityOfmAsLoading'
+    // },
+    // ConsistencyOfRadiationOutput: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'ConsistencyOfRadiationOutput'
+    // },
+    // RadiationLeakageLevel: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'RadiationLeakageLevel'
+    // },
     RadiationProfileWidthForCTScan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RadiationProfileWidthForCTScan'
@@ -163,14 +163,14 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MeasurementOfCTDI'
     },
-    LowContrastResolutionForCTScan: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'LowContrastResolutionForCTScan'
-    },
-    HighContrastResolutionForCTScan: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'HighContrastResolutionForCTScan'
-    },
+    // LowContrastResolutionForCTScan: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'LowContrastResolutionForCTScan'
+    // },
+    // HighContrastResolutionForCTScan: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'HighContrastResolutionForCTScan'
+    // },
     TotalFilterationForCTScan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TotalFilterationForCTScan'
@@ -179,11 +179,22 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'RadiationLeakageLevel'
     },
+    MeasureMaxRadiationLevel: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'MeasureMaxRadiationLevel'
+    },
+    OutputConsistency: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "OutputConsistency",
+    },
     serviceId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Service",
     },
-
+    // mainTestTable: {
+    //     type: mongoose.Schema.Types.ObjectId,
+    //     ref: 'MainTestTable',
+    // },
 })
 export default mongoose.model(
     "ServiceReport",

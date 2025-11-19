@@ -22,6 +22,7 @@ router.get("/get-all-leaves/:staffId", leaveController.getAllLeavesByStaffId);
 router.get("/get-by-id/:staffId/:leaveId", leaveController.getStaffLeaveById);
 router.put("/edit-leave/:staffId/:leaveId", leaveController.editLeaveByStaffId);
 router.get("/get-pending-leave-approvals", leaveController.getPendingLeaveApprovals);
+router.get('/get-leaves-for-employee/:employeeId',leaveController.getEmployeeLeaveSummary)
 
 
 export default router

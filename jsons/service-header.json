@@ -1,0 +1,69 @@
+{
+  "info": {
+    "_postman_id": "c5f8df89-1ea4-4129-9c17-99e94edcea56",
+    "name": "Service Report Header",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Save Report Header",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"customerName\": \"Test Hospital Pvt Ltd\",\n    \"address\": \"Pune, Maharashtra, India\",\n    \"srfNumber\": \"SRF-00123\",\n    \"srfDate\": \"2025-11-15\",\n    \"testReportNumber\": \"TR-56789\",\n    \"issueDate\": \"2025-11-16\",\n    \"nomenclature\": \"CT Scan Machine\",\n    \"make\": \"GE Healthcare\",\n    \"model\": \"Revolution EVO\",\n    \"slNumber\": \"CT-9087\",\n    \"condition\": \"Working\",\n    \"testingProcedureNumber\": \"QA-CT-2025\",\n    \"engineerNameRPId\": \"Eng-0022\",\n    \"pages\": \"20\",\n    \"testDate\": \"2025-11-12\",\n    \"testDueDate\": \"2026-11-12\",\n    \"location\": \"Radiology Dept\",\n    \"temperature\": \"22\",\n    \"humidity\": \"45\",\n    \"toolsUsed\": [\n        {\n            \"toolId\": \"{{toolId1}}\",\n            \"SrNo\": \"12345\",\n            \"nomenclature\": \"Radiation Meter\",\n            \"make\": \"Fluke\",\n            \"model\": \"451P\",\n            \"range\": \"0-5R/h\",\n            \"calibrationCertificateNo\": \"CAL001\",\n            \"calibrationValidTill\": \"2025-12-30\",\n            \"certificate\": \"C001234\",\n            \"uncertainity\": \"±5%\"\n        }\n    ],\n    \"notes\": [\n        { \"slNo\": \"1\", \"text\": \"Machine tested successfully\" }\n    ]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/{{serviceId}}/header",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso", "admin", "service-report", "{{serviceId}}", "header"]
+        }
+      }
+    },
+    {
+      "name": "Get Report Header",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8000/anteso/admin/service-report/{{serviceId}}/header",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["anteso", "admin", "service-report", "{{serviceId}}", "header"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "serviceId",
+      "value": "6911b9019e22d35e7bdf6686"
+    },
+    {
+      "key": "toolId1",
+      "value": "692233faad88df9e981cc77e"
+    }
+  ]
+}

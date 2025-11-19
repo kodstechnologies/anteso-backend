@@ -41,7 +41,9 @@ const workTypeDetailSchema = new mongoose.Schema({
     // qaTestReportNumber: {
     //     type: String
     // }
-    isSubmitted: { type: Boolean, default: false }
+    isSubmitted: { type: Boolean, default: false },
+    assignedAt: Date,
+    completedAt: { type: Date }
 }, { _id: false });
 const serviceSchema = new mongoose.Schema({
     machineType: {
@@ -55,11 +57,11 @@ const serviceSchema = new mongoose.Schema({
             'Radiation Survey of Radiation Facility', 'Others'
         ]
     },
-    quantity: {                    
+    quantity: {
         type: Number,
         required: true,
     },
-        equipmentNo: String,
+    equipmentNo: String,
     machineModel: String,
     serialNumber: String,
     remark: String,

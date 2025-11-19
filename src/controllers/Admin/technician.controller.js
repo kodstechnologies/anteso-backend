@@ -549,11 +549,26 @@ const add = asyncHandler(async (req, res) => {
         }
 
         // ✅ Engineer-specific tool validation
-        if (technicianType === "engineer") {
-            if (!parsedTools || !Array.isArray(parsedTools) || parsedTools.length === 0) {
-                throw new ApiError(400, "Engineer must be assigned at least one tool.");
-            }
+        // if (technicianType === "engineer") {
+        //     if (!parsedTools || !Array.isArray(parsedTools) || parsedTools.length === 0) {
+        //         throw new ApiError(400, "Engineer must be assigned at least one tool.");
+        //     }
 
+        //     for (const t of parsedTools) {
+        //         const toolDoc = await Tool.findById(t.toolId);
+        //         if (!toolDoc) {
+        //             throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
+        //         }
+        //         if (toolDoc.toolStatus === "assigned") {
+        //             throw new ApiError(
+        //                 400,
+        //                 `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`
+        //             );
+        //         }
+        //     }
+        // }
+        // ✅ Engineer optional tools validation
+        if (technicianType === "engineer" && parsedTools?.length > 0) {
             for (const t of parsedTools) {
                 const toolDoc = await Tool.findById(t.toolId);
                 if (!toolDoc) {
@@ -594,6 +609,7 @@ const add = asyncHandler(async (req, res) => {
             tools: technicianType === "engineer" ? parsedTools : [],
             ...uploadedDocs,
         };
+        console.log("🚀 ~ employeeData:", employeeData)
 
         if (technicianType === "office-staff") {
             employeeData.password = hashedPassword;
@@ -601,6 +617,7 @@ const add = asyncHandler(async (req, res) => {
 
         // ✅ Create employee
         const employee = new Employee(employeeData);
+        console.log("🚀 ~ employee:", employee)
         await employee.save();
 
         // ✅ Update tool status if assigned
@@ -712,67 +729,73 @@ export const updateById = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Employee not found");
         }
 
-        // ✅ Parse tools if JSON string
+        // Parse tools if JSON string
         let parsedTools = updateData.tools;
-        if (typeof updateData.tools === "string") {
+        if (typeof parsedTools === "string") {
             try {
-                parsedTools = JSON.parse(updateData.tools);
+                parsedTools = JSON.parse(parsedTools);
             } catch {
                 throw new ApiError(400, "Invalid JSON format for tools");
             }
         }
 
-        // ✅ Validate engineer must have at least one tool
-        if (
-            updateData.technicianType === "engineer" &&
-            (!parsedTools || parsedTools.length === 0)
-        ) {
-            throw new ApiError(400, "Engineer must be assigned at least one tool.");
-        }
-
-        // ✅ Handle document uploads (doc1, doc2, doc3)
+        // Handle document uploads
         const docKeys = ["doc1", "doc2", "doc3"];
         const updatedDocs = {};
 
         if (req.files) {
             for (const key of docKeys) {
-                if (req.files[key] && req.files[key][0]) {
+                if (req.files[key]?.[0]) {
                     const uploadResult = await uploadToS3(req.files[key][0]);
                     updatedDocs[key] = uploadResult.url;
                 }
             }
         }
 
-        // ✅ Merge documents (keep old if not replaced)
+        // Keep old docs if not replaced
         for (const key of docKeys) {
-            updateData[key] = updatedDocs[key] || employee[key];
+            updateData[key] = updatedDocs[key] || employee[key] || null;
         }
 
-        // ✅ Tool reassignment (for engineers)
+        // === TOOL LOGIC (Optional for engineers) ===
         if (updateData.technicianType === "engineer") {
-            // Unassign old tools
+
+            if (Array.isArray(parsedTools)) {
+                // Remove old assigned tools
+                await Tool.updateMany(
+                    { technician: employee._id },
+                    { $set: { technician: null, toolStatus: "unassigned" } }
+                );
+
+                // Assign new tools
+                for (const t of parsedTools) {
+                    await Tool.findByIdAndUpdate(
+                        t.toolId,
+                        {
+                            technician: employee._id,
+                            toolStatus: "assigned",
+                            submitDate: new Date(),
+                        }
+                    );
+                }
+
+                updateData.tools = parsedTools;
+
+            } else {
+                // If no tools provided, keep existing assigned tools
+                updateData.tools = employee.tools;
+            }
+
+        } else {
+            // If role changed to office-staff, clear all tools
+            updateData.tools = [];
             await Tool.updateMany(
                 { technician: employee._id },
                 { $set: { technician: null, toolStatus: "unassigned" } }
             );
-
-            // Assign new tools
-            for (const t of parsedTools) {
-                await Tool.findByIdAndUpdate(
-                    t.toolId,
-                    {
-                        technician: employee._id,
-                        toolStatus: "assigned",
-                        submitDate: new Date(),
-                    },
-                    { new: true }
-                );
-            }
-
-            updateData.tools = parsedTools;
         }
 
-        // ✅ Update employee record
+        // Save employee
         const updatedEmployee = await Employee.findByIdAndUpdate(id, updateData, {
             new: true,
         }).populate({
@@ -783,11 +806,13 @@ export const updateById = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .json(new ApiResponse(200, updatedEmployee, "Employee updated successfully"));
+
     } catch (error) {
         console.error("❌ Update employee error:", error);
-        throw new ApiError(500, error.message || "Failed to update employee");
+        throw new ApiError(error.statusCode || 500, error.message || "Failed to update employee");
     }
 });
+
 
 
 const deleteById = asyncHandler(async (req, res) => {
@@ -821,6 +846,7 @@ const getUnassignedTools = asyncHandler(async (req, res) => {
         throw new Error('Failed to fetch unassigned tools');
     }
 });
+
 const assignedToolByTechnicianId = asyncHandler(async (req, res) => {
     try {
         const { technicianId } = req.params;
@@ -864,6 +890,7 @@ const getAllOfficeStaff = asyncHandler(async (req, res) => {
         throw new ApiError(500, error.message || "Failed to fetch office staff");
     }
 });
+
 // const getAllEngineers = asyncHandler(async (req, res) => {
 //     try {
 //         const engineers = await Employee.find({ technicianType: 'engineer' }).select("-password");

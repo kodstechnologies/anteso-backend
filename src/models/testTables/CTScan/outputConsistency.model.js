@@ -1,85 +1,42 @@
 import mongoose from "mongoose";
 
-// Table 1 — FCD values
-const fcdRowSchema = new mongoose.Schema({
-    fcd: {
-        type: String,
-        required: false,
-    },
+const { Schema } = mongoose;
+
+// Parameters (mAs, slice thickness, time)
+const parametersSchema = new Schema({
+    mas: { type: String, trim: true },
+    sliceThickness: { type: String, trim: true },
+    time: { type: String, trim: true },
 });
 
-const radiationOutputRowSchema = new mongoose.Schema({
-    kv: {
-        type: String,
-        required: false,
-    },
-    mas: {
-        type: String,
-        required: false,
-    },
-    outputs: {
-        type: [String], 
-        default: [],
-    },
-    avg: {
-        type: String,
-        required: false,
-    },
-    remark: {
-        type: String,
-        required: false,
-    },
+// Each row: kVp + measurements + calculated mean & COV
+const outputRowSchema = new Schema({
+    kvp: { type: String, trim: true },
+    outputs: [{ type: String, trim: true }],  // raw measurements
+    mean: { type: String, trim: true },       // calculated mean
+    cov: { type: String, trim: true },        // coefficient of variation
 });
 
-// Main schema for the test
-const consistencyOfRadiationOutputSchema = new mongoose.Schema(
+const OutputConsistencySchema = new Schema(
     {
-        testName: {
-            type: String,
-            default: "Consistency of Radiation Output",
-        },
+        parameters: parametersSchema,
+        outputRows: [outputRowSchema],
+        measurementHeaders: [{ type: String, trim: true }],  // Meas 1, Meas 2...
+        tolerance: { type: String, trim: true, default: "" },
 
-        // Table 1: FCD values
-        fcdRows: {
-            type: [fcdRowSchema],
-            default: [],
-        },
-
-        // Table 2: Radiation Output results
-        radiationOutputs: {
-            type: [radiationOutputRowSchema],
-            default: [],
-        },
-
-        // Dynamic headers (Meas 1, Meas 2, Meas 3, etc.)
-        outputHeaders: {
-            type: [String],
-            default: [],
-        },
-
-        // Tolerance value (e.g., ≤ 5%)
-        tolerance: {
-            type: String,
-            default: "",
-        },
-
-        reportId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "ServiceReport",
-        },
         serviceId: {
-            type: mongoose.Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId,
             ref: "Service",
+            required: true,
         },
-        createdAt: {
-            type: Date,
-            default: Date.now,
+        reportId: {
+            type: Schema.Types.ObjectId,
+            ref: "ServiceReport",
         },
     },
     { timestamps: true }
 );
 
-export default mongoose.model(
-    "ConsistencyOfRadiationOutput",
-    consistencyOfRadiationOutputSchema
-);
+OutputConsistencySchema.index({ serviceId: 1 });
+
+export default mongoose.model("OutputConsistency", OutputConsistencySchema);

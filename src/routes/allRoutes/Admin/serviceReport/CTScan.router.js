@@ -8,6 +8,8 @@ import totalFilterationForCTScan from "../../../../controllers/Admin/serviceRepo
 import measurementOfMaLinearityController from "../../../../controllers/Admin/serviceReport/CTScan/measurementOfMaLinearity.controller.js";
 import outputConsistencyController from "../../../../controllers/Admin/serviceReport/CTScan/outputConsistency.controller.js";
 import radiationLeakageLevelFromXRayTubeHouseController from "../../../../controllers/Admin/serviceReport/CTScan/radiationLeakageLevelFromXRayTubeHouse.controller.js";
+import measureMaxRadiationLevelControler from "../../../../controllers/Admin/serviceReport/CTScan/measureMaxRadiationLevel.controler.js";
+
 
 
 router.post('/radiation-profile-width/:serviceId', radiationProfileWidthController.create)
@@ -44,6 +46,12 @@ router.put('/output-consistency/:testId', outputConsistencyController.update)
 router.post('/radiation-leakage/:serviceId', radiationLeakageLevelFromXRayTubeHouseController.create)
 router.get('/radiation-leakage/:testId', radiationLeakageLevelFromXRayTubeHouseController.getById)
 router.put('/radiation-leakage/:testId', radiationLeakageLevelFromXRayTubeHouseController.update)
+
+
+router.post('/measure-max-radiation-level/:serviceId', measureMaxRadiationLevelControler.create)
+router.get('/measure-max-radiation-level/:testId', measureMaxRadiationLevelControler.getById)
+router.put('/measure-max-radiation-level/:testId', measureMaxRadiationLevelControler.update)
+
 
 
 export default router

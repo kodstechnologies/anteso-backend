@@ -21,7 +21,8 @@ const qaTestSchema = new Schema({
     },
     remark: {
         type: String
-    }
+    },
+    assignedAt: Date
 }, { timestamps: true });
 
 const QATest = mongoose.model("QATest", qaTestSchema);

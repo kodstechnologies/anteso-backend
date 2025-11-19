@@ -80,7 +80,8 @@ router.put(
     "/update-additional-service/:id",
     upload.single("file"), // single file key: 'file'
     orderController.updateAdditionalService
-);// router.get('/',)
+);
+// router.get('/',)
 // router.post('/status-paid')
 router.get('/additional-service-report/:orderId/:additionalServiceId', orderController.getUpdatedAdditionalServiceReport)
 router.patch(
