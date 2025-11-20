@@ -1,0 +1,63 @@
+{
+  "info": {
+    "_postman_id": "c5df0c2a-42a1-4b32-9d29-ct-low-contrast",
+    "name": "LowContrastResolutionForCTScan",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Low Contrast Resolution (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/ct-scan/low-contrast-resolution/create/{{serviceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["ct-scan", "low-contrast-resolution", "create", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"acquisitionParams\": {\n    \"kvp\": \"120\",\n    \"ma\": \"200\",\n    \"sliceThickness\": \"5.0\",\n    \"ww\": \"400\"\n  },\n  \"result\": {\n    \"observedSize\": \"4.5\",\n    \"contrastLevel\": \"1.0\"\n  },\n  \"tolerances\": [\n    { \"size\": \"5.0\", \"contrast\": \"1.0\", \"unit\": \"mm\", \"description\": \"minimum\" },\n    { \"size\": \"2.5\", \"contrast\": \"0.5\", \"unit\": \"mm\", \"description\": \"expected\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Update Low Contrast Resolution (PUT)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/ct-scan/low-contrast-resolution/update/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["ct-scan", "low-contrast-resolution", "update", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"acquisitionParams\": {\n    \"kvp\": \"130\",\n    \"ma\": \"220\",\n    \"sliceThickness\": \"4.0\",\n    \"ww\": \"350\"\n  },\n  \"result\": {\n    \"observedSize\": \"4.2\",\n    \"contrastLevel\": \"0.9\"\n  },\n  \"tolerances\": [\n    { \"size\": \"4.0\", \"contrast\": \"0.8\", \"unit\": \"mm\", \"description\": \"updated tolerance\" }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Low Contrast Resolution By ID (GET)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/ct-scan/low-contrast-resolution/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["ct-scan", "low-contrast-resolution", "{{testId}}"]
+        }
+      }
+    }
+  ]
+}

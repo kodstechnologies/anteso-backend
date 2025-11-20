@@ -9,7 +9,7 @@ import measurementOfMaLinearityController from "../../../../controllers/Admin/se
 import outputConsistencyController from "../../../../controllers/Admin/serviceReport/CTScan/outputConsistency.controller.js";
 import radiationLeakageLevelFromXRayTubeHouseController from "../../../../controllers/Admin/serviceReport/CTScan/radiationLeakageLevelFromXRayTubeHouse.controller.js";
 import measureMaxRadiationLevelControler from "../../../../controllers/Admin/serviceReport/CTScan/measureMaxRadiationLevel.controler.js";
-
+import lowContrastResolutionForCTScanController from "../../../../controllers/Admin/serviceReport/CTScan/lowContrastResolutionForCTScan.controller.js";
 
 
 router.post('/radiation-profile-width/:serviceId', radiationProfileWidthController.create)
@@ -52,6 +52,9 @@ router.post('/measure-max-radiation-level/:serviceId', measureMaxRadiationLevelC
 router.get('/measure-max-radiation-level/:testId', measureMaxRadiationLevelControler.getById)
 router.put('/measure-max-radiation-level/:testId', measureMaxRadiationLevelControler.update)
 
+router.post('/low-contrast-resolution/:serviceId', lowContrastResolutionForCTScanController.create)
+router.get('/low-contrast-resolution/:testId', lowContrastResolutionForCTScanController.getById)
+router.put('/low-contrast-resolution/:testId', lowContrastResolutionForCTScanController.update)
 
 
 export default router

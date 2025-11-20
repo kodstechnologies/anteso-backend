@@ -1708,10 +1708,10 @@ export const createOrder = asyncHandler(async (req, res) => {
             !hospitalName ||
             !fullAddress ||
             !city ||
-            !district ||
+      
             !state ||
             !pinCode ||
-            !branchName ||
+          
             !contactPersonName ||
             !emailAddress ||
             !contactNumber
