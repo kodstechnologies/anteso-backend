@@ -11,6 +11,7 @@ import Leave from "../../models/leave.model.js";
 import Joi from "joi";
 import sendSMS from "../../utils/SendSMS.js";
 import LoginOtp from "../../models/otpLogins.model.js";
+import {LeaveAllocation} from "../../models/allocateLeaves.model.js"
 
 const JWT_SECRET = process.env.JWT_SECRET;
 console.log("🚀 ~ JWT_SECRET:", JWT_SECRET)

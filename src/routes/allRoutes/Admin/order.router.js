@@ -35,7 +35,7 @@ router.patch(
     '/update-machine-details-by-technician/:technicianId/:orderId/:serviceId/:machineType/:workType',
     upload.fields([
         { name: 'uploadFile', maxCount: 1 },  // single file
-        { name: 'viewFile', maxCount: 10 }    // multiple files
+        { name: 'viewFile', maxCount: 10 }    // multiple filess
     ]),
     orderController.updateServiceWorkType
 );
@@ -53,7 +53,7 @@ router.get(
 router.get('/get/:technicianId/:orderId/:serviceId/:workType', orderController.getUpdatedOrderServices2)
 //web-get the updated services buy technician
 // router.get()
-//routes for qa raw-- assigning to technician   
+//routes for qa raw-- assigning to technician
 router.put('/assign-to-technician/:orderId/:serviceId/:technicianId/:workType', orderController.assignTechnicianByQARaw)
 
 //has to be changed

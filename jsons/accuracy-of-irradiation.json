@@ -1,0 +1,77 @@
+{
+  "info": {
+    "_postman_id": "b78b91ae-244c-4b61-8fcf-accuracy-ir-time",
+    "name": "Accuracy Of Irradiation Time",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create / Upsert Accuracy Irradiation Time (POST)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/inventional-radiology/accuracy-irradiation-time/{{serviceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": [
+            "inventional-radiology",
+            "accuracy-irradiation-time",
+            "{{serviceId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"testConditions\": {\n    \"fcd\": \"100cm\",\n    \"kv\": \"80\",\n    \"ma\": \"20\"\n  },\n  \"irradiationTimes\": [\n    { \"set\": \"100ms\", \"observed\": \"98ms\" },\n    { \"set\": \"200ms\", \"observed\": \"198ms\" }\n  ],\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": \"5%\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Accuracy Irradiation Time (GET by testId)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/inventional-radiology/accuracy-irradiation-time/test/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": [
+            "inventional-radiology",
+            "accuracy-irradiation-time",
+            "test",
+            "{{testId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Accuracy Irradiation Time (PUT by testId)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/inventional-radiology/accuracy-irradiation-time/update/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": [
+            "inventional-radiology",
+            "accuracy-irradiation-time",
+            "update",
+            "{{testId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"testConditions\": {\n    \"fcd\": \"110cm\",\n    \"kv\": \"90\",\n    \"ma\": \"25\"\n  },\n  \"irradiationTimes\": [\n    { \"set\": \"150ms\", \"observed\": \"147ms\" }\n  ],\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": \"4%\"\n  }\n}"
+        }
+      }
+    }
+  ]
+}

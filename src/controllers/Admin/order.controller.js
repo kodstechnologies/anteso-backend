@@ -383,6 +383,62 @@ const getAllServicesByOrderId = asyncHandler(async (req, res) => {
 //     }
 // });
 
+// const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
+//     try {
+//         const { orderId } = req.params;
+
+//         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+//             throw new ApiError(400, "Invalid orderId");
+//         }
+
+//         // Populate services → workTypeDetails → QATest + Elora
+//         const order = await orderModel.findById(orderId)
+//             .populate({
+//                 path: "services",
+//                 populate: [
+//                     { path: "workTypeDetails.QAtest", model: "QATest" },
+//                     {
+//                         path: "workTypeDetails.elora",
+//                         model: "Elora",
+//                         populate: { path: "officeStaff", model: "Employee" }
+//                     }
+//                 ]
+//             })
+//             .lean();
+
+//         if (!order) {
+//             throw new ApiError(404, "Order not found");
+//         }
+
+//         // 🔥 Ensure assignedAt + completedAt are included
+//         const servicesWithTimeFields = order.services.map(service => ({
+//             ...service,
+//             workTypeDetails: service.workTypeDetails.map(w => ({
+//                 ...w,
+//                 assignedAt: w.assignedAt || null,     // existing
+//                 completedAt: w.completedAt || null,   // ⭐ newly added
+//             }))
+//         }));
+
+//         console.log("🚀 Final Output with assignedAt + completedAt:",
+//             JSON.stringify(servicesWithTimeFields, null, 2)
+//         );
+
+//         return res.status(200).json(
+//             new ApiResponse(200, servicesWithTimeFields, "Machine details fetched successfully")
+//         );
+
+//     } catch (error) {
+//         console.error("❌ Error fetching machine details:", error);
+//         if (error instanceof ApiError) {
+//             return res.status(error.statusCode).json(error);
+//         }
+//         return res.status(500).json(
+//             new ApiError(500, "Internal Server Error", [], error.stack)
+//         );
+//     }
+// });
+
 const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -391,16 +447,38 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid orderId");
         }
 
-        // Populate services → workTypeDetails → QATest + Elora
+        // Populate services → workTypeDetails → QATest + Elora + Employee
         const order = await orderModel.findById(orderId)
             .populate({
                 path: "services",
                 populate: [
-                    { path: "workTypeDetails.QAtest", model: "QATest" },
+                    {
+                        path: "workTypeDetails.QAtest",
+                        model: "QATest",
+                        populate: {
+                            path: "officeStaff",
+                            model: "Employee"
+                        }
+                    },
                     {
                         path: "workTypeDetails.elora",
                         model: "Elora",
-                        populate: { path: "officeStaff", model: "Employee" }
+                        populate: {
+                            path: "officeStaff",
+                            model: "Employee",
+                            select: "name email phone"
+                        }
+                    },
+                    {
+                        path: "workTypeDetails.engineer",
+                        model: "Employee",
+                        select: "name email phone"
+                    },
+                    // THIS IS THE MISSING LINE
+                    {
+                        path: "workTypeDetails.statusHistory.updatedBy",
+                        model: "Employee",
+                        select: "name"
                     }
                 ]
             })
@@ -410,17 +488,31 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Order not found");
         }
 
-        // 🔥 Ensure assignedAt + completedAt are included
+        // Enhanced mapping: include assignedAt, completedAt, and full statusHistory with populated updatedBy
         const servicesWithTimeFields = order.services.map(service => ({
             ...service,
-            workTypeDetails: service.workTypeDetails.map(w => ({
-                ...w,
-                assignedAt: w.assignedAt || null,     // existing
-                completedAt: w.completedAt || null,   // ⭐ newly added
-            }))
+            workTypeDetails: service.workTypeDetails.map(w => {
+                // Safely extract and populate updatedBy names in history (optional enhancement)
+                const enrichedHistory = (w.statusHistory || []).map(hist => ({
+                    oldStatus: hist.oldStatus,
+                    newStatus: hist.newStatus,
+                    updatedAt: hist.updatedAt,
+                    updatedBy: hist.updatedBy ? {
+                        _id: hist.updatedBy._id || hist.updatedBy,
+                        name: hist.updatedBy.name || "Unknown User"
+                    } : { _id: null, name: "System" }
+                }));
+
+                return {
+                    ...w,
+                    assignedAt: w.assignedAt || null,
+                    completedAt: w.completedAt || null,
+                    statusHistory: enrichedHistory // Full audit trail with readable names
+                };
+            })
         }));
 
-        console.log("🚀 Final Output with assignedAt + completedAt:",
+        console.log("Final Output with assignedAt, completedAt & statusHistory:",
             JSON.stringify(servicesWithTimeFields, null, 2)
         );
 
@@ -429,7 +521,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
         );
 
     } catch (error) {
-        console.error("❌ Error fetching machine details:", error);
+        console.error("Error fetching machine details:", error);
         if (error instanceof ApiError) {
             return res.status(error.statusCode).json(error);
         }
@@ -438,6 +530,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
         );
     }
 });
+
 
 const getQARawByOrderId = asyncHandler(async (req, res) => {
     try {
@@ -1708,10 +1801,10 @@ export const createOrder = asyncHandler(async (req, res) => {
             !hospitalName ||
             !fullAddress ||
             !city ||
-      
+
             !state ||
             !pinCode ||
-          
+
             !contactPersonName ||
             !emailAddress ||
             !contactNumber
@@ -2714,17 +2807,96 @@ const assignTechnicianByQARaw = asyncHandler(async (req, res) => {
 // });
 
 
+
+
+//21-11
+// const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
+//     try {
+//         const { orderId, serviceId, officeStaffId, workType, status } = req.params;
+
+//         console.log("🚀 officeStaffId:", officeStaffId);
+//         console.log("🚀 serviceId:", serviceId);
+//         console.log("🚀 orderId:", orderId);
+//         console.log("🚀 workType:", workType);
+//         console.log("🚀 status:", status);
+
+//         // 1️⃣ Validate order
+//         const order = await orderModel.findById(orderId);
+//         if (!order) return res.status(404).json({ message: 'Order not found' });
+
+//         if (!order.services.includes(serviceId)) {
+//             return res.status(400).json({ message: 'Service not linked to this order' });
+//         }
+
+//         // 2️⃣ Validate service
+//         const service = await Services.findById(serviceId);
+//         if (!service) return res.status(404).json({ message: 'Service not found' });
+
+//         // 3️⃣ Validate office staff
+//         const staff = await Employee.findById(officeStaffId);
+//         if (!staff || staff.technicianType !== 'office-staff') {
+//             return res.status(400).json({ message: 'Invalid staff or not an office staff type' });
+//         }
+
+//         // 4️⃣ Find workTypeDetail
+//         const workDetail = service.workTypeDetails.find(
+//             (w) => w.workType && w.workType.toLowerCase() === workType.toLowerCase()
+//         );
+
+//         if (!workDetail) {
+//             return res.status(404).json({ message: `WorkType '${workType}' not found in this service` });
+//         }
+
+//         // 5️⃣ Create or update QATest subdocument
+//         let qaTestDoc;
+//         const assignedAtDate = new Date();
+
+//         if (!workDetail.QAtest) {
+//             qaTestDoc = await QATest.create({
+//                 officeStaff: officeStaffId,
+//                 assignedAt: assignedAtDate,
+//             });
+//             workDetail.QAtest = qaTestDoc._id;
+//         } else {
+//             qaTestDoc = await QATest.findByIdAndUpdate(
+//                 workDetail.QAtest,
+//                 { officeStaff: officeStaffId, assignedAt: assignedAtDate },
+//                 { new: true }
+//             );
+//         }
+
+//         // 6️⃣ Update workTypeDetail status
+//         if (status) workDetail.status = status;
+
+//         // 7️⃣ Save assigned date for office staff in workTypeDetails
+//         workDetail.assignedAt = assignedAtDate;
+
+//         // 8️⃣ Save service
+//         await service.save();
+
+//         res.status(200).json({
+//             message: `Office staff assigned successfully to workType '${workType}'`,
+//             assignedAt: assignedAtDate,
+//             QATest: qaTestDoc,
+//             service
+//         });
+
+//     } catch (error) {
+//         console.error('Error assigning office staff:', error);
+//         res.status(500).json({ message: 'Internal server error', error: error.message });
+//     }
+// });
 const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
     try {
         const { orderId, serviceId, officeStaffId, workType, status } = req.params;
 
-        console.log("🚀 officeStaffId:", officeStaffId);
-        console.log("🚀 serviceId:", serviceId);
-        console.log("🚀 orderId:", orderId);
-        console.log("🚀 workType:", workType);
-        console.log("🚀 status:", status);
+        console.log("officeStaffId:", officeStaffId);
+        console.log("serviceId:", serviceId);
+        console.log("orderId:", orderId);
+        console.log("workType:", workType);
+        console.log("status:", status);
 
-        // 1️⃣ Validate order
+        // 1. Validate order
         const order = await orderModel.findById(orderId);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
@@ -2732,17 +2904,17 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: 'Service not linked to this order' });
         }
 
-        // 2️⃣ Validate service
+        // 2. Validate service
         const service = await Services.findById(serviceId);
         if (!service) return res.status(404).json({ message: 'Service not found' });
 
-        // 3️⃣ Validate office staff
+        // 3. Validate office staff
         const staff = await Employee.findById(officeStaffId);
         if (!staff || staff.technicianType !== 'office-staff') {
             return res.status(400).json({ message: 'Invalid staff or not an office staff type' });
         }
 
-        // 4️⃣ Find workTypeDetail
+        // 4. Find workTypeDetail
         const workDetail = service.workTypeDetails.find(
             (w) => w.workType && w.workType.toLowerCase() === workType.toLowerCase()
         );
@@ -2751,7 +2923,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: `WorkType '${workType}' not found in this service` });
         }
 
-        // 5️⃣ Create or update QATest subdocument
+        // 5. Create or update QATest subdocument
         let qaTestDoc;
         const assignedAtDate = new Date();
 
@@ -2769,13 +2941,29 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
             );
         }
 
-        // 6️⃣ Update workTypeDetail status
-        if (status) workDetail.status = status;
+        // 6. Update workTypeDetail status + PUSH TO HISTORY
+        if (status && status !== workDetail.status) {
+            // Only push history if status actually changes
+            const historyEntry = {
+                oldStatus: workDetail.status || 'pending',  // fallback if somehow undefined
+                newStatus: status,
+                updatedBy: req.user?._id || officeStaffId,   // prefer logged-in user, fallback to assigned staff
+                updatedAt: new Date()
+            };
 
-        // 7️⃣ Save assigned date for office staff in workTypeDetails
+            // Initialize array if not exists (safety)
+            if (!workDetail.statusHistory) {
+                workDetail.statusHistory = [];
+            }
+
+            workDetail.statusHistory.push(historyEntry);
+            workDetail.status = status; // now update status
+        }
+
+        // 7. Save assigned date for office staff in workTypeDetails
         workDetail.assignedAt = assignedAtDate;
 
-        // 8️⃣ Save service
+        // 8. Save service
         await service.save();
 
         res.status(200).json({
@@ -2790,6 +2978,11 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
+
+
+
+
+
 
 
 // const completedStatusAndReport = asyncHandler(async (req, res) => {
@@ -3128,6 +3321,179 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 //         res.status(500).json({ message: error.message || "Server error" });
 //     }
 // });
+
+
+// const completedStatusAndReport = asyncHandler(async (req, res) => {
+//     try {
+//         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
+
+//         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
+//             return res.status(400).json({ message: "File is required for completed status" });
+//         }
+
+//         // Normalize reportType
+//         let normalizedReportType = reportType?.toLowerCase().trim();
+//         if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
+//             normalizedReportType = "qatest";
+//         } else {
+//             const eloraTypes = ["license for operation", "decommissioning", "decommissioning and recommissioning"];
+//             if (eloraTypes.includes(normalizedReportType)) {
+//                 normalizedReportType = "elora";
+//             }
+//         }
+
+//         const service = await Services.findById(serviceId);
+//         if (!service) return res.status(404).json({ message: "Service not found" });
+
+//         let updated = false;
+//         let newReportDoc = null;
+//         let reportFor = null;
+
+//         // Handle "paid" status
+//         if (status.toLowerCase() === "paid") {
+//             const order = await orderModel.findById(orderId);
+//             if (!order) return res.status(404).json({ message: "Order not found." });
+
+//             const leadOwner = await User.findOne({ _id: order.leadOwner }).lean();
+//             const isDealer = leadOwner?.role === "Dealer";
+
+//             if (!isDealer) {
+//                 const payment = await Payment.findOne({ orderId });
+//                 if (!payment || payment.paymentType !== "complete") {
+//                     return res.status(400).json({
+//                         message: "Cannot mark as paid. Payment is not complete.",
+//                     });
+//                 }
+//             }
+//         }
+
+//         // Loop through workTypeDetails
+//         service.workTypeDetails = await Promise.all(
+//             service.workTypeDetails.map(async (work) => {
+//                 if (work.workType?.toLowerCase() !== workType.toLowerCase()) return work;
+
+//                 let existingReport = null;
+//                 if (normalizedReportType === "qatest" && work.QAtest) {
+//                     existingReport = await QATest.findById(work.QAtest);
+//                 } else if (normalizedReportType === "elora" && work.elora) {
+//                     existingReport = await Elora.findById(work.elora);
+//                 }
+
+//                 // Upload file
+//                 let fileUrl = null;
+//                 if (req.file) {
+//                     try {
+//                         const uploaded = await uploadToS3(req.file);
+//                         fileUrl = uploaded.url;
+//                     } catch {
+//                         return res.status(500).json({ message: "Failed to upload file" });
+//                     }
+//                 }
+
+//                 if (normalizedReportType !== "elora") {
+//                     work.status = status;
+//                 }
+
+//                 // ⭐⭐⭐ NEW: SAVE WORKTYPE COMPLETION TIME ⭐⭐⭐
+//                 if (status.toLowerCase() === "completed" || "generated") {
+//                     work.completedAt = new Date();
+//                 }
+
+//                 // Handle QA Test
+//                 if (normalizedReportType === "qatest") {
+//                     if (existingReport) {
+//                         const updateData = { reportStatus: existingReport.reportStatus };
+//                         if (fileUrl) updateData.report = fileUrl;
+
+//                         if (existingReport.reportStatus === "rejected") {
+//                             updateData.reportStatus = "reuploaded";
+//                         } else if (status.toLowerCase() === "completed") {
+//                             updateData.reportStatus = "pending";
+//                         }
+
+//                         newReportDoc = await QATest.findByIdAndUpdate(
+//                             existingReport._id,
+//                             updateData,
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await QATest.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.QAtest = newReportDoc._id;
+//                     }
+
+//                     reportFor = "qatest";
+//                 }
+
+//                 // Handle Elora
+//                 else if (normalizedReportType === "elora") {
+//                     const updateData = fileUrl ? { report: fileUrl } : {};
+
+//                     if (existingReport) {
+//                         newReportDoc = await Elora.findByIdAndUpdate(
+//                             existingReport._id,
+//                             updateData,
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await Elora.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.elora = newReportDoc._id;
+//                     }
+
+//                     reportFor = "elora";
+//                 }
+
+//                 updated = true;
+//                 return work;
+//             })
+//         );
+
+//         if (!updated) {
+//             return res.status(404).json({
+//                 message: `WorkType '${workType}' not assigned in this service`,
+//             });
+//         }
+
+//         await service.save();
+
+//         // ⭐⭐⭐ NEW: SAVE ORDER COMPLETION TIMESTAMP ⭐⭐⭐
+//         if (status.toLowerCase() === "completed") {
+//             const order = await orderModel.findById(orderId);
+//             if (order) {
+//                 order.completedAt = new Date();
+//                 await order.save();
+//             }
+//         }
+
+//         // Update order if paid
+//         if (status.toLowerCase() === "paid") {
+//             const order = await orderModel.findById(orderId);
+//             if (order) {
+//                 order.status = "paid";
+//                 await order.save();
+//             }
+//         }
+
+//         res.status(200).json({
+//             message: `Status for workType '${workType}' updated successfully`,
+//             linkedReport: newReportDoc || null,
+//             reportId: newReportDoc?._id || null,
+//             reportFor,
+//             service,
+//         });
+//     } catch (error) {
+//         console.error("Error in completedStatusAndReport:", error);
+//         res.status(500).json({ message: error.message || "Server error" });
+//     }
+// });
+
 const completedStatusAndReport = asyncHandler(async (req, res) => {
     try {
         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
@@ -3195,14 +3561,32 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                     }
                 }
 
+                // OLD STATUS (before change)
+                const oldStatus = work.status || "pending";
+
+                // APPLY NEW STATUS
                 if (normalizedReportType !== "elora") {
                     work.status = status;
                 }
 
-                // ⭐⭐⭐ NEW: SAVE WORKTYPE COMPLETION TIME ⭐⭐⭐
-                if (status.toLowerCase() === "completed" || "generated") {
+                // SET COMPLETED TIME
+                if (["completed", "generated"].includes(status.toLowerCase())) {
                     work.completedAt = new Date();
                 }
+
+                // ADD STATUS HISTORY ENTRY (This is the only new part)
+                const historyEntry = {
+                    oldStatus,
+                    newStatus: status.toLowerCase(),
+                    updatedBy: staffId, // Current staff who made the change
+                    updatedAt: new Date(),
+                };
+
+                // Initialize statusHistory if not exists
+                if (!work.statusHistory) {
+                    work.statusHistory = [];
+                }
+                work.statusHistory.push(historyEntry);
 
                 // Handle QA Test
                 if (normalizedReportType === "qatest") {
@@ -3268,7 +3652,7 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
 
         await service.save();
 
-        // ⭐⭐⭐ NEW: SAVE ORDER COMPLETION TIMESTAMP ⭐⭐⭐
+        // Order completion timestamp
         if (status.toLowerCase() === "completed") {
             const order = await orderModel.findById(orderId);
             if (order) {
@@ -3298,8 +3682,6 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
         res.status(500).json({ message: error.message || "Server error" });
     }
 });
-
-
 
 
 const getRawDetailsByTechnician = asyncHandler(async (req, res) => {

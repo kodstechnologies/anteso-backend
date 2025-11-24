@@ -13,6 +13,7 @@ import lowContrastResolutionForCTScanController from "../../../../controllers/Ad
 
 
 router.post('/radiation-profile-width/:serviceId', radiationProfileWidthController.create)
+router.get('/radiation-profile-width/service/:serviceId', radiationProfileWidthController.getByServiceId);
 router.get('/radiation-profile-width/:id', radiationProfileWidthController.getById)
 router.put('/radiation-profile-width/:testId', radiationProfileWidthController.update)
 
@@ -55,6 +56,7 @@ router.put('/measure-max-radiation-level/:testId', measureMaxRadiationLevelContr
 router.post('/low-contrast-resolution/:serviceId', lowContrastResolutionForCTScanController.create)
 router.get('/low-contrast-resolution/:testId', lowContrastResolutionForCTScanController.getById)
 router.put('/low-contrast-resolution/:testId', lowContrastResolutionForCTScanController.update)
+
 
 
 export default router

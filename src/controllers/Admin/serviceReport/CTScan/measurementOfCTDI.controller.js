@@ -5,9 +5,6 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 import serviceReportModel from "../../../../models/serviceReports/serviceReport.model.js";
 import MeasurementOfCTDI from "../../../../models/testTables/CTScan/measurementOfCTDI.model.js";
 
-
-
-// ====================== CREATE / UPDATE (POST) ======================
 const create = asyncHandler(async (req, res) => {
     const { table1, table2, tolerance } = req.body;
     const { serviceId } = req.params;
@@ -106,7 +103,6 @@ const create = asyncHandler(async (req, res) => {
     }
 });
 
-// ====================== GET BY TEST ID ======================
 const getById = asyncHandler(async (req, res) => {
     const { testId } = req.params;
 
@@ -134,7 +130,6 @@ const getById = asyncHandler(async (req, res) => {
     }
 });
 
-// ====================== UPDATE BY TEST ID ======================
 const update = asyncHandler(async (req, res) => {
     const { table1, table2, tolerance } = req.body;
     const { testId } = req.params;

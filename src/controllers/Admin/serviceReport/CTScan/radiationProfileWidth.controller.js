@@ -5,7 +5,7 @@ import ServiceReport from "../../../../models/serviceReports/serviceReport.model
 import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
-const create= asyncHandler(async (req, res) => {
+const create = asyncHandler(async (req, res) => {
     const { table1, table2 } = req.body;
     const { serviceId } = req.params; // Get from URL params
 
@@ -192,6 +192,54 @@ const getById = asyncHandler(async (req, res) => {
     }
 });
 
+// controllers/radiationProfileWidthController.js
+
+const getByServiceId = asyncHandler(async (req, res) => {
+    const { serviceId} = req.params;
+    console.log("🚀 ~ :", serviceId)
+
+    if (!serviceId) {
+        return res.status(400).json({
+            success: false,
+            message: "serviceId is required",
+        });
+    }
+
+    try {
+        // Find the ONE document that belongs to this serviceId
+        const testRecord = await RadiationProfileWidthForCTScan.findOne({ serviceId }).lean();
+
+        if (!testRecord) {
+            // No test created yet → perfectly normal for first-time users
+            return res.status(200).json({
+                success: true,
+                data: null,   // ← important: return null, not 404
+            });
+        }
+
+        // Optional safety check (you already have machineType validation)
+        const service = await Service.findById(serviceId).lean();
+        if (service && service.machineType !== "CT Scan") {
+            return res.status(403).json({
+                success: false,
+                message: `This test belongs to ${service.machineType}, not CT Scan`,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,   // contains _id, rows, tolerances, etc.
+        });
+    } catch (error) {
+        console.error("getByServiceId Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch test record",
+            error: error.message,
+        });
+    }
+});
 
 
-export default { create, update, getById };
+
+export default { create, update, getById,getByServiceId};

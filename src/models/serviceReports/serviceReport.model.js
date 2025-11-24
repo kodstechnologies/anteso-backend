@@ -195,6 +195,10 @@ const serviceReportSchema = new mongoose.Schema({
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: 'MainTestTable',
     // },
+    exposureRateTableTop: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExposureRateTableTop",
+    }
 })
 export default mongoose.model(
     "ServiceReport",

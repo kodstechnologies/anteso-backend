@@ -1,0 +1,78 @@
+{
+  "info": {
+    "name": "Exposure Rate Table Top API",
+    "_postman_id": "e9b1a3a4-9c77-4b4e-9f1b-77e9c4791b88",
+    "description": "Postman collection for Exposure Rate Table Top test APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Exposure Rate Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"distance\": \"80\",\n      \"appliedKv\": \"70\",\n      \"appliedMa\": \"20\",\n      \"exposure\": \"5.4\",\n      \"remark\": \"Manual Mode\"\n    },\n    {\n      \"distance\": \"100\",\n      \"appliedKv\": \"75\",\n      \"appliedMa\": \"25\",\n      \"exposure\": \"6.1\",\n      \"remark\": \"AEC Mode\"\n    }\n  ],\n  \"nonAecTolerance\": \"Max 6.5 cGy/Min\",\n  \"aecTolerance\": \"Max 7.0 cGy/Min\",\n  \"minFocusDistance\": \"80cm\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/exposure-rate/{{serviceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["exposure-rate", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Exposure Rate Test",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/exposure-rate/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["exposure-rate", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Exposure Rate Test",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"distance\": \"90\",\n      \"appliedKv\": \"72\",\n      \"appliedMa\": \"22\",\n      \"exposure\": \"5.7\",\n      \"remark\": \"Manual Mode\"\n    },\n    {\n      \"distance\": \"110\",\n      \"appliedKv\": \"78\",\n      \"appliedMa\": \"28\",\n      \"exposure\": \"6.4\",\n      \"remark\": \"AEC Mode\"\n    }\n  ],\n  \"nonAecTolerance\": \"Max 6.0 cGy/Min\",\n  \"aecTolerance\": \"Max 7.2 cGy/Min\",\n  \"minFocusDistance\": \"85cm\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/exposure-rate/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["exposure-rate", "{{testId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "serviceId",
+      "value": "67a393b29e77bc35abd3ddd1"
+    },
+    {
+      "key": "testId",
+      "value": "67a3971c9e77bc35abd3df21"
+    }
+  ]
+}
