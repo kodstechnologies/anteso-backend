@@ -81,4 +81,4 @@ LinearityOfMasLLoadingSchema.pre("save", function (next) {
 LinearityOfMasLLoadingSchema.index({ serviceId: 1 });
 
 export default mongoose.models.LinearityOfMasLLoading ||
-  mongoose.model("LinearityOfMasLLoading", LinearityOfMasLLoadingSchema);
+  mongoose.model("LinearityOfMasLLoadingMammography", LinearityOfMasLLoadingSchema);

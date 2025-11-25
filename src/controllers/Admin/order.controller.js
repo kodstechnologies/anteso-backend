@@ -447,7 +447,6 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid orderId");
         }
 
-        // Populate services → workTypeDetails → QATest + Elora + Employee
         const order = await orderModel.findById(orderId)
             .populate({
                 path: "services",
@@ -457,7 +456,8 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
                         model: "QATest",
                         populate: {
                             path: "officeStaff",
-                            model: "Employee"
+                            model: "Employee",
+                            select: "name email phone"
                         }
                     },
                     {
@@ -473,12 +473,6 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
                         path: "workTypeDetails.engineer",
                         model: "Employee",
                         select: "name email phone"
-                    },
-                    // THIS IS THE MISSING LINE
-                    {
-                        path: "workTypeDetails.statusHistory.updatedBy",
-                        model: "Employee",
-                        select: "name"
                     }
                 ]
             })
@@ -488,48 +482,47 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
             throw new ApiError(404, "Order not found");
         }
 
-        // Enhanced mapping: include assignedAt, completedAt, and full statusHistory with populated updatedBy
-        const servicesWithTimeFields = order.services.map(service => ({
-            ...service,
-            workTypeDetails: service.workTypeDetails.map(w => {
-                // Safely extract and populate updatedBy names in history (optional enhancement)
-                const enrichedHistory = (w.statusHistory || []).map(hist => ({
-                    oldStatus: hist.oldStatus,
-                    newStatus: hist.newStatus,
-                    updatedAt: hist.updatedAt,
-                    updatedBy: hist.updatedBy ? {
-                        _id: hist.updatedBy._id || hist.updatedBy,
-                        name: hist.updatedBy.name || "Unknown User"
-                    } : { _id: null, name: "System" }
+        // ⭐ NO MORE findById(h.updatedBy)
+        const services = order.services.map(service => {
+            const updatedWorkTypes = service.workTypeDetails.map(w => {
+                const populatedHistory = (w.statusHistory || []).map(h => ({
+                    oldStatus: h.oldStatus,
+                    newStatus: h.newStatus,
+                    updatedAt: h.updatedAt,
+                    updatedBy: h.updatedBy || { _id: null, name: "System", role: "system" }
                 }));
 
                 return {
                     ...w,
                     assignedAt: w.assignedAt || null,
                     completedAt: w.completedAt || null,
-                    statusHistory: enrichedHistory // Full audit trail with readable names
+                    statusHistory: populatedHistory
                 };
-            })
-        }));
+            });
 
-        console.log("Final Output with assignedAt, completedAt & statusHistory:",
-            JSON.stringify(servicesWithTimeFields, null, 2)
-        );
+            return {
+                ...service,
+                workTypeDetails: updatedWorkTypes
+            };
+        });
 
         return res.status(200).json(
-            new ApiResponse(200, servicesWithTimeFields, "Machine details fetched successfully")
+            new ApiResponse(200, services, "Machine details fetched successfully")
         );
 
     } catch (error) {
-        console.error("Error fetching machine details:", error);
+        console.error("❌ Error fetching machine details:", error);
+
         if (error instanceof ApiError) {
             return res.status(error.statusCode).json(error);
         }
+
         return res.status(500).json(
             new ApiError(500, "Internal Server Error", [], error.stack)
         );
     }
 });
+
 
 
 const getQARawByOrderId = asyncHandler(async (req, res) => {
@@ -663,6 +656,7 @@ const getMachineDetails = asyncHandler(async (req, res) => {
         return res.status(500).json({ message: "Server error" });
     }
 });
+
 //mobile
 // PATCH /api/orders/:orderId/services/:serviceId/worktypes
 //use this for mobile
@@ -2886,6 +2880,7 @@ const assignTechnicianByQARaw = asyncHandler(async (req, res) => {
 //         res.status(500).json({ message: 'Internal server error', error: error.message });
 //     }
 // });
+
 const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
     try {
         const { orderId, serviceId, officeStaffId, workType, status } = req.params;
@@ -2942,22 +2937,47 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
         }
 
         // 6. Update workTypeDetail status + PUSH TO HISTORY
+        // if (status && status !== workDetail.status) {
+        //     // Only push history if status actually changes
+        //     const historyEntry = {
+        //         oldStatus: workDetail.status || 'pending',  // fallback if somehow undefined
+        //         newStatus: status,
+        //         updatedBy: req.user.id,     
+        //         updatedAt: new Date()
+        //     };
+        //     console.log("🚀 ~ historyEntry:", historyEntry)
+
+        //     // Initialize array if not exists (safety)
+        //     if (!workDetail.statusHistory) {
+        //         workDetail.statusHistory = [];
+        //     }
+
+        //     workDetail.statusHistory.push(historyEntry);
+        //     workDetail.status = status; // now update status
+        // }
+
+
+        
+        // 6. Update workTypeDetail status + PUSH TO HISTORY
         if (status && status !== workDetail.status) {
-            // Only push history if status actually changes
             const historyEntry = {
-                oldStatus: workDetail.status || 'pending',  // fallback if somehow undefined
+                oldStatus: workDetail.status || "pending",
                 newStatus: status,
-                updatedBy: req.user?._id || officeStaffId,   // prefer logged-in user, fallback to assigned staff
+                updatedBy: {
+                    _id: req.user.id,
+                    name: req.user.name || req.user.email || "Unknown",
+                    role: req.user.role || "system"
+                },
                 updatedAt: new Date()
             };
 
-            // Initialize array if not exists (safety)
+
             if (!workDetail.statusHistory) {
                 workDetail.statusHistory = [];
             }
 
             workDetail.statusHistory.push(historyEntry);
-            workDetail.status = status; // now update status
+            workDetail.status = status;
         }
 
         // 7. Save assigned date for office staff in workTypeDetails
@@ -2978,7 +2998,6 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
-
 
 
 

@@ -68,4 +68,4 @@ ImagingPhantomSchema.pre("save", function (next) {
 ImagingPhantomSchema.index({ serviceId: 1 });
 
 export default mongoose.models.ImagingPhantom ||
-    mongoose.model("ImagingPhantom", ImagingPhantomSchema);
+    mongoose.model("ImagingPhantomMammography", ImagingPhantomSchema);

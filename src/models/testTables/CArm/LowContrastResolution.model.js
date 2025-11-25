@@ -43,6 +43,6 @@ const LowContrastResolutionSchema = new mongoose.Schema({
     timestamps: true, // adds createdAt & updatedAt
 });
 
-const LowContrastResolution = mongoose.model("LowContrastResolutionInventionalRadiology", LowContrastResolutionSchema);
+const LowContrastResolution = mongoose.model("LowContrastResolutionCArm", LowContrastResolutionSchema);
 
 export default LowContrastResolution;

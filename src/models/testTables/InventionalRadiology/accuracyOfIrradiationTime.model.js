@@ -42,7 +42,7 @@ AccuracyOfIrradiationTimeSchema.pre('save', function (next) {
 });
 
 const AccuracyOfIrradiationTime = model(
-  'AccuracyOfIrradiationTime',
+  'AccuracyOfIrradiationTimeInventionalRadiology',
   AccuracyOfIrradiationTimeSchema
 );
 

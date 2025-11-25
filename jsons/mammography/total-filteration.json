@@ -1,0 +1,72 @@
+{
+  "info": {
+    "name": "Total Filtration & Aluminium - Mammography",
+    "_postman_id": "d94daf55-ff28-4e10-98fd-tf-mammo",
+    "description": "API collection for Total Filtration & Aluminium test in Mammography",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Total Filtration Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/total-filteration/{{serviceId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "total-filteration", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"targetWindow\": \"W/Rh\",\n  \"addedFilterThickness\": \"0.5mm\",\n  \"table\": [\n    {\n      \"kvp\": \"28\",\n      \"reading1\": \"0.32\",\n      \"reading2\": \"0.30\",\n      \"reading3\": \"0.31\",\n      \"hvl\": \"0.33\"\n    }\n  ],\n  \"resultHVT28kVp\": \"0.34\",\n  \"hvlTolerances\": {\n    \"at30\": { \"operator\": \">=\", \"value\": \"0.3\" },\n    \"at40\": { \"operator\": \">=\", \"value\": \"0.4\" },\n    \"at50\": { \"operator\": \">=\", \"value\": \"0.5\" }\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Total Filtration by Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/total-filteration-by-serviceId/{{serviceId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "total-filteration-by-serviceId", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Total Filtration by Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/total-filteration/{{testId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "total-filteration", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Total Filtration Test",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/total-filteration/{{testId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "total-filteration", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"targetWindow\": \"Mo/Mo\",\n  \"addedFilterThickness\": \"0.7mm\",\n  \"table\": [\n    {\n      \"kvp\": \"32\",\n      \"reading1\": \"0.40\",\n      \"reading2\": \"0.39\",\n      \"reading3\": \"0.41\",\n      \"hvl\": \"0.43\"\n    }\n  ],\n  \"resultHVT28kVp\": \"0.45\",\n  \"hvlTolerances\": {\n    \"at30\": { \"operator\": \">=\", \"value\": \"0.32\" },\n    \"at40\": { \"operator\": \">=\", \"value\": \"0.44\" },\n    \"at50\": { \"operator\": \">=\", \"value\": \"0.55\" }\n  }\n}"
+        }
+      }
+    }
+  ]
+}

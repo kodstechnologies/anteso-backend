@@ -1,0 +1,90 @@
+{
+  "info": {
+    "name": "Accuracy Of Operating Potential API",
+    "_postman_id": "d29ff217-6c82-4f2a-9e2b-b3f8299bf501",
+    "description": "Postman collection for Accuracy Of Operating Potential (Mammography test)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create - Accuracy Of Operating Potential",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mAStations\": [\"50 mA\", \"100 mA\", \"200 mA\"],\n  \"measurements\": [\n    {\n      \"appliedKvp\": \"28\",\n      \"measuredValues\": [\"27.8\", \"28.1\", \"27.9\"],\n      \"averageKvp\": \"27.93\",\n      \"remarks\": \"PASS\"\n    },\n    {\n      \"appliedKvp\": \"30\",\n      \"measuredValues\": [\"29.6\", \"30.2\", \"30.1\"],\n      \"averageKvp\": \"29.97\",\n      \"remarks\": \"PASS\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"±\",\n    \"value\": \"5%\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accuracy-of-operating-potential/{{serviceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accuracy-of-operating-potential", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get By TestId",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/accuracy-of-operating-potential/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accuracy-of-operating-potential", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get By ServiceId",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/accuracy-of-operating-potential/{{serviceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accuracy-of-operating-potential", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update - Accuracy Of Operating Potential",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mAStations\": [\"60 mA\", \"120 mA\", \"240 mA\"],\n  \"measurements\": [\n    {\n      \"appliedKvp\": \"28\",\n      \"measuredValues\": [\"27.7\", \"28.3\", \"28.0\"],\n      \"averageKvp\": \"28.00\",\n      \"remarks\": \"PASS\"\n    },\n    {\n      \"appliedKvp\": \"32\",\n      \"measuredValues\": [\"31.9\", \"32.2\", \"32.1\"],\n      \"averageKvp\": \"32.06\",\n      \"remarks\": \"FAIL\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"±\",\n    \"value\": \"6%\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/accuracy-of-operating-potential/{{testId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["accuracy-of-operating-potential", "{{testId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "serviceId",
+      "value": "67a3a12c9e77bc35abd3abc1"
+    },
+    {
+      "key": "testId",
+      "value": "67a3a9e59e77bc35abd3abd9"
+    }
+  ]
+}

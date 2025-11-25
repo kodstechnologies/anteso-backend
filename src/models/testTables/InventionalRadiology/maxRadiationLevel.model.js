@@ -39,4 +39,4 @@ MaxRadiationLevelSchema.index({ reportId: 1 });
 MaxRadiationLevelSchema.index({ serviceId: 1, reportId: 1 });
 
 export default mongoose.models.MaxRadiationLevel ||
-    mongoose.model('MaxRadiationLevel', MaxRadiationLevelSchema);
+    mongoose.model('MaxRadiationLevelInventionalRadiology', MaxRadiationLevelSchema);

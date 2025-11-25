@@ -1,0 +1,70 @@
+{
+  "info": {
+    "name": "Linearity of mAs Loading - Mammography",
+    "_postman_id": "b49d8f4a-52cd-4bd7-bf12-lmas-test",
+    "description": "API collection for Linearity of mAs Loading (Mammography)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Linearity Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/linearity-of-mas-loading/{{serviceId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "linearity-of-mas-loading", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceId\": \"{{serviceId}}\",\n  \"exposureCondition\": { \"fcd\": \"100\", \"kv\": \"80\" },\n  \"measurementHeaders\": [\"Meas 1\", \"Meas 2\", \"Meas 3\"],\n  \"measurements\": [\n    {\n      \"mAsRange\": \"50\",\n      \"measuredOutputs\": [\"1.2\", \"1.3\", \"1.1\"],\n      \"xMax\": \"1.3\",\n      \"xMin\": \"1.1\",\n      \"col\": \"0.1\",\n      \"remarks\": \"Pass\"\n    }\n  ],\n  \"tolerance\": \"0.1\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Test By Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/linearity-of-mas-loading/{{serviceId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "linearity-of-mas-loading", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Test By Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/linearity-of-mas-loading/{{testId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "linearity-of-mas-loading", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Linearity Test",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "http://localhost:5000/api/linearity-of-mas-loading/{{testId}}",
+          "host": ["http", "localhost"],
+          "port": "5000",
+          "path": ["api", "linearity-of-mas-loading", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"exposureCondition\": { \"fcd\": \"90\", \"kv\": \"75\" },\n  \"measurementHeaders\": [\"M1\", \"M2\", \"M3\", \"M4\"],\n  \"measurements\": [\n    {\n      \"mAsRange\": \"100\",\n      \"measuredOutputs\": [\"1.5\", \"1.4\", \"1.6\", \"1.5\"],\n      \"xMax\": \"1.6\",\n      \"xMin\": \"1.4\",\n      \"col\": \"0.1\",\n      \"remarks\": \"Pass\"\n    }\n  ],\n  \"tolerance\": \"0.12\"\n}"
+        }
+      }
+    }
+  ]
+}

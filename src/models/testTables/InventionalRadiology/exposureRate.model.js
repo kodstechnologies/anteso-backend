@@ -122,4 +122,4 @@ exposureRateTableTopSchema.pre('save', function (next) {
 exposureRateTableTopSchema.index({ serviceId: 1 });
 exposureRateTableTopSchema.index({ reportId: 1 });
 
-export default mongoose.model("ExposureRateTableTop", exposureRateTableTopSchema);
+export default mongoose.model("ExposureRateTableTopInventionalRadiology", exposureRateTableTopSchema);

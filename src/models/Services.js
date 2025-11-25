@@ -32,12 +32,23 @@ const workTypeDetailSchema = new mongoose.Schema({
         ref: "Elora"
     },
     status: { type: String, enum: workTypeStatusEnum, default: 'pending' },
+    // statusHistory: [{
+    //     oldStatus: String,
+    //     newStatus: String,
+    //     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+    //     updatedAt: { type: Date, default: Date.now }
+    // }],
     statusHistory: [{
         oldStatus: String,
         newStatus: String,
-        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+        updatedBy: {
+            _id: { type: String },      // store as string, NOT ObjectId
+            name: { type: String },
+            role: { type: String }
+        },
         updatedAt: { type: Date, default: Date.now }
     }],
+
     uploadFile: { type: String },
     viewFile: { type: [String], default: [] }, // array of strings    remark: { type: String }
     // report: { type: String },

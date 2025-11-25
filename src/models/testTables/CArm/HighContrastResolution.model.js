@@ -60,7 +60,7 @@ HighContrastResolutionSchema.index({ serviceId: 1, reportId: 1 });
 HighContrastResolutionSchema.index({ reportId: 1, isDeleted: 1 });
 
 const HighContrastResolution = mongoose.model(
-  "HighContrastResolutionInventionalRadiology",
+  "HighContrastResolutionCArm",
   HighContrastResolutionSchema
 );
 

@@ -72,4 +72,4 @@ TotalFilterationAndAlluminiumSchema.pre("save", function (next) {
 });
 
 export default mongoose.models.TotalFilterationAndAlluminium ||
-    mongoose.model("TotalFilterationAndAlluminium", TotalFilterationAndAlluminiumSchema);
+    mongoose.model("TotalFilterationAndAlluminiumMammography", TotalFilterationAndAlluminiumSchema);

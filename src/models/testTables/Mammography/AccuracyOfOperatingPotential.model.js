@@ -77,4 +77,4 @@ AccuracyOfOperatingPotentialSchema.pre("save", function (next) {
 AccuracyOfOperatingPotentialSchema.index({ serviceId: 1 });
 
 export default mongoose.models.AccuracyOfOperatingPotential ||
-    mongoose.model("AccuracyOfOperatingPotential", AccuracyOfOperatingPotentialSchema);
+    mongoose.model("AccuracyOfOperatingPotentialMammography", AccuracyOfOperatingPotentialSchema);

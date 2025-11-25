@@ -57,4 +57,4 @@ TubeHousingLeakageSchema.index({ serviceId: 1, reportId: 1 });
 TubeHousingLeakageSchema.index({ isDeleted: 1 });
 
 export default mongoose.models.TubeHousingLeakage ||
-    mongoose.model('TubeHousingLeakage', TubeHousingLeakageSchema);
+    mongoose.model('TubeHousingLeakageInventionalRadiology', TubeHousingLeakageSchema);

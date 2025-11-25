@@ -67,4 +67,4 @@ maximumRadiationLevelSchema.pre("save", function (next) {
     next();
 });
 
-export default mongoose.model("MaximumRadiationLevel", maximumRadiationLevelSchema);
+export default mongoose.model("MaximumRadiationLevelMammography", maximumRadiationLevelSchema);

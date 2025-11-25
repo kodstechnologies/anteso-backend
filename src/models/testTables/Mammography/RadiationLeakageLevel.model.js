@@ -64,4 +64,4 @@ RadiationLeakageLevelSchema.index({ reportId: 1 });
 RadiationLeakageLevelSchema.index({ serviceId: 1, reportId: 1 });
 
 export default mongoose.models.RadiationLeakageLevel ||
-  mongoose.model('RadiationLeakageLevel', RadiationLeakageLevelSchema);
+  mongoose.model('RadiationLeakageLevelMammography', RadiationLeakageLevelSchema);

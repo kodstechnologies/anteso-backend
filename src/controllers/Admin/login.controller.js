@@ -459,7 +459,7 @@ const sendOtpForStaff = asyncHandler(async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    const message = `Dear User, Your OTP is ${otp}. Valid for 10 minutes. - ANTESO BIOMEDICAL`;
+    const message = `Dear User, Your OTP for login is ${otp}. It is valid for 10 minutes. Please do not share this OTP with anyone. - ANTESO BIOMEDICAL`;
 
     try {
         await sendSMS(mobileNumber, message);

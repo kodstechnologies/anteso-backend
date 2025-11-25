@@ -19,7 +19,10 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
         outputRows: [OutputRowSchema],
 
         // Tolerance (e.g. "5.0" %)
-        tolerance: { type: String, trim: true },
+        tolerance: {
+            operator: { type: String, trim: true, default: "<=" },
+            value: { type: String, trim: true }
+        },
 
         // Foreign Keys
         serviceId: {
@@ -45,4 +48,4 @@ ReproducibilityOfOutputSchema.index({ reportId: 1 });
 ReproducibilityOfOutputSchema.index({ serviceId: 1, reportId: 1 });
 
 export default mongoose.models.ReproducibilityOfOutput ||
-    mongoose.model('ReproducibilityOfOutput', ReproducibilityOfOutputSchema);
+    mongoose.model('ReproducibilityOfOutputMmmography', ReproducibilityOfOutputSchema);
