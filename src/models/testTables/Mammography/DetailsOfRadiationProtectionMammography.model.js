@@ -26,8 +26,7 @@ const detailsOfRadiationProtectionMammographySchema = new mongoose.Schema(
 
         hasValidCalibration: {
             type: String,
-            enum: ["Yes", "No", "N/A", ""], // optional: restrict values
-            default: "",
+           
             trim: true,
         },
 

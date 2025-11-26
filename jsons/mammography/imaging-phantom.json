@@ -1,0 +1,87 @@
+{
+  "info": {
+    "_postman_id": "f3e77a91-0b4e-4b1f-92b0-imaging-phantom-001",
+    "name": "Imaging Phantom - Mammography",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Imaging Phantom",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/imaging-phantom/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["imaging-phantom", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"name\": \"Fibers\",\n      \"visibleCount\": 6,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 5\n      }\n    },\n    {\n      \"name\": \"Microcalcifications\",\n      \"visibleCount\": 4,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 3\n      }\n    },\n    {\n      \"name\": \"Masses\",\n      \"visibleCount\": 5,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 4\n      }\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Imaging Phantom by Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/imaging-phantom-by-service/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["imaging-phantom-by-service", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Imaging Phantom by Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/imaging-phantom/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["imaging-phantom", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Imaging Phantom",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/imaging-phantom/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["imaging-phantom", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"name\": \"Fibers\",\n      \"visibleCount\": 7,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 5\n      }\n    },\n    {\n      \"name\": \"Microcalcifications\",\n      \"visibleCount\": 5,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 3\n      }\n    },\n    {\n      \"name\": \"Masses\",\n      \"visibleCount\": 6,\n      \"tolerance\": {\n        \"operator\": \">=\",\n        \"value\": 4\n      }\n    }\n  ]\n}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "serviceId",
+      "value": "67a8bb0eac34d6e3fa002b11"
+    },
+    {
+      "key": "testId",
+      "value": "67a8bb3374e2c3afba997c99"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "Radiation Protection Survey API",
+    "_postman_id": "b91d0c80-9f44-4be8-8c32-cf7d84e5c710",
+    "description": "Collection for Radiation Protection Survey Mammography",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Radiation Protection Survey",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{serviceId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "radiation-protection-survey", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"surveyDate\": \"2025-01-12\",\n  \"hasValidCalibration\": \"Yes\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Radiation Protection Survey by ServiceId",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey-by-service/{{serviceId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "radiation-protection-survey-by-service", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Radiation Protection Survey by TestId",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "radiation-protection-survey", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Radiation Protection Survey",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "radiation-protection-survey", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"surveyDate\": \"2025-01-20\",\n  \"hasValidCalibration\": \"No\"\n}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "serviceId",
+      "value": "6751d3070973bde8dfd22aaa"
+    },
+    {
+      "key": "testId",
+      "value": "6751d3470973bde8dfd22bbb"
+    }
+  ]
+}

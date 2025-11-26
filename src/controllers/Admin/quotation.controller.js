@@ -1800,6 +1800,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
             quotation: quotation._id,
             customer: enquiry.customer,
         });
+        console.log("🚀 ~ order:", order)
 
         res.status(200).json({
             message: "Quotation accepted and order created successfully",

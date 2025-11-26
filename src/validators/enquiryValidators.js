@@ -190,28 +190,7 @@ import Joi from "joi";
 // ✅ Sub-schema for Services
 const serviceSchema = Joi.object({
     machineType: Joi.string()
-        .valid(
-            'Fixed X-Ray',
-            'Mobile X-Ray',
-            'C-Arm',
-            'Cath Lab/Interventional Radiology',
-            'Mammography',
-            'CT Scan',
-            'PET CT',
-            'CT Simulator',
-            'OPG',
-            'CBCT',
-            'BMD/DEXA',
-            'Dental IOPA',
-            'Dental Hand Held',
-            'O Arm',
-            'KV Imaging (OBI)',
-            'Lead Apron Test',
-            'Thyroid Shield Test',
-            'Gonad Shield Test',
-            'Radiation Survey of Radiation Facility',
-            'Others',
-        )
+       
         .required(),
 
     equipmentNo: Joi.string().allow('', null),

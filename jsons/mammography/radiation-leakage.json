@@ -1,0 +1,87 @@
+{
+  "info": {
+    "_postman_id": "b9c2778c-9f23-4dd6-b2db-rl-test-001",
+    "name": "Radiation Leakage Level - Mammography",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Radiation Leakage Level",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"distanceFromFocus\": \"100\",\n  \"kv\": \"28\",\n  \"ma\": \"200\",\n  \"time\": \"1\",\n  \"workload\": \"500\",\n  \"leakageLocations\": [\n    {\n      \"location\": \"Tube\",\n      \"measurements\": [\n        { \"direction\": \"Left\", \"value\": \"0.005\" },\n        { \"direction\": \"Right\", \"value\": \"0.004\" },\n        { \"direction\": \"Front\", \"value\": \"0.006\" },\n        { \"direction\": \"Back\", \"value\": \"0.003\" },\n        { \"direction\": \"Top\", \"value\": \"0.0045\" }\n      ],\n      \"max\": \"0.006\",\n      \"resultMR\": \"0.006\",\n      \"resultMGy\": \"0.00006\"\n    }\n  ],\n  \"highestLeakageMR\": \"0.006\",\n  \"highestLeakageMGy\": \"0.00006\",\n  \"finalRemark\": \"Pass\",\n  \"toleranceArea\": \"10\",\n  \"toleranceDimension\": \"20\",\n  \"toleranceDistance\": \"5\",\n  \"toleranceLimit\": \"0.02\",\n  \"toleranceTime\": \"1\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get By Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level-by-service/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level-by-service", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get By Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Radiation Leakage Level",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"distanceFromFocus\": \"105\",\n  \"kv\": \"30\",\n  \"ma\": \"220\",\n  \"time\": \"1.2\",\n  \"workload\": \"550\",\n  \"highestLeakageMR\": \"0.007\",\n  \"highestLeakageMGy\": \"0.00007\",\n  \"finalRemark\": \"Pass\",\n  \"toleranceLimit\": \"0.02\"\n}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "serviceId",
+      "value": "67a8bb0eac34d6e3fa002b11"
+    },
+    {
+      "key": "testId",
+      "value": "67a8bb3374e2c3afba997c88"
+    }
+  ]
+}

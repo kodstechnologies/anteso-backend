@@ -66,13 +66,13 @@ const serviceSchema = new mongoose.Schema({
     machineType: {
         type: String,
         required: true,
-        enum: [
-            'Fixed X-Ray', 'Mobile X-Ray', 'C-Arm', 'Cath Lab/Interventional Radiology', 'Mammography',
-            'CT Scan', 'PET CT', 'CT Simulator', 'OPG', 'CBCT', 'BMD/DEXA',
-            'Dental IOPA', 'Dental Hand Held', 'O Arm', 'KV Imaging (OBI)',
-            'Lead Apron Test', 'Thyroid Shield Test', 'Gonad Shield Test',
-            'Radiation Survey of Radiation Facility', 'Others'
-        ]
+        // enum: [
+        //     'Fixed X-Ray', 'Mobile X-Ray', 'C-Arm', 'Cath Lab/Interventional Radiology', 'Mammography',
+        //     'CT Scan', 'PET CT', 'CT Simulator', 'OPG', 'CBCT', 'BMD/DEXA',
+        //     'Dental IOPA', 'Dental Hand Held', 'O Arm', 'KV Imaging (OBI)',
+        //     'Lead Apron Test', 'Thyroid Shield Test', 'Gonad Shield Test',
+        //     'Radiation Survey of Radiation Facility', 'Others'
+        // ]
     },
     quantity: {
         type: Number,

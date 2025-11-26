@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "Equipment Setting - Mammography",
+    "_postman_id": "c5c3bd42-b2f9-4f5b-b530-0f2c7c0a31a2",
+    "description": "Postman Collection for Equipment Setting Mammography APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Equipment Setting",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/equipment-setting/{{serviceId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "equipment-setting", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"appliedCurrent\": \"120 mA\",\n  \"appliedVoltage\": \"32 kV\",\n  \"exposureTime\": \"20 ms\",\n  \"focalSpotSize\": \"0.3 mm\",\n  \"filtration\": \"1.5 mm Al\",\n  \"collimation\": \"Automatic\",\n  \"frameRate\": \"15 fps\",\n  \"pulseWidth\": \"10 ms\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Equipment Setting by ServiceId",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/equipment-setting-by-service/{{serviceId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "equipment-setting-by-service", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Equipment Setting by TestId",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/equipment-setting/{{testId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "equipment-setting", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Equipment Setting",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/equipment-setting/{{testId}}",
+          "host": ["http://localhost:5000"],
+          "path": ["api", "equipment-setting", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"appliedCurrent\": \"150 mA\",\n  \"appliedVoltage\": \"35 kV\",\n  \"exposureTime\": \"25 ms\",\n  \"focalSpotSize\": \"0.4 mm\",\n  \"filtration\": \"2.0 mm Al\",\n  \"collimation\": \"Manual\",\n  \"frameRate\": \"30 fps\",\n  \"pulseWidth\": \"12 ms\"\n}"
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "serviceId",
+      "value": "6751d3070973bde8dfd22aaa"
+    },
+    {
+      "key": "testId",
+      "value": "6751d3470973bde8dfd22bbb"
+    }
+  ]
+}
