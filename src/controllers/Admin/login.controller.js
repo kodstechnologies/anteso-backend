@@ -11,12 +11,17 @@ import Leave from "../../models/leave.model.js";
 import Joi from "joi";
 import sendSMS from "../../utils/SendSMS.js";
 import LoginOtp from "../../models/otpLogins.model.js";
-import {LeaveAllocation} from "../../models/allocateLeaves.model.js"
+import { LeaveAllocation } from "../../models/allocateLeaves.model.js"
+import User from "../../models/user.model.js";
+import Client from "../../models/client.model.js";
+import Hospital from "../../models/hospital.model.js";
+import Enquiry from "../../models/enquiry.model.js";
+import Services from "../../models/Services.js";
+import { enquirySchema } from "../../validators/enquiryValidators.js";
+import AdditionalService from "../../models/additionalService.model.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
-console.log("🚀 ~ JWT_SECRET:", JWT_SECRET)
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-console.log("🚀 ~ JWT_REFRESH_SECRET:", JWT_REFRESH_SECRET)
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 
 // const adminLogin = asyncHandler(async (req, res) => {
@@ -26,8 +31,6 @@ const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 //         throw new ApiError(400, error.details[0].message);
 //     }
 //     const { email, password } = value;
-//     console.log("🚀 ~ password:", password)
-//     console.log("🚀 ~ email:", email)
 //     // 2. Find admin by email
 //     const admin = await Admin.findOne({ email });
 //     if (!admin) {
@@ -59,7 +62,6 @@ const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 //  const adminLogin = asyncHandler(async (req, res) => {
 //     // 1. Validate input
 //     const { error, value } = loginSchema.validate(req.body);
-//     console.log("🚀 ~ value:", value)
 //     if (error) {
 //         throw new ApiError(400, error.details[0].message);
 //     }
@@ -91,10 +93,8 @@ const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 
 //     // 3. Check Employee (office-staff only)
 //     const employee = await Employee.findOne({ email, status: 'active', technicianType: 'office-staff' });
-//     console.log("🚀 ~ employee:", employee)
 //     if (employee) {
 //         const isPasswordValid = await bcrypt.compare(password, employee.password);
-//         console.log("🚀 ~ isPasswordValid:", isPasswordValid)
 //         if (!isPasswordValid) {
 //             throw new ApiError(401, "Invalid email or password");
 //         }
@@ -104,13 +104,11 @@ const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 //             process.env.JWT_SECRET,
 //             { expiresIn: '360d' }
 //         );
-//         console.log("🚀 ~ accessToken:", accessToken)
 //         const refreshToken = jwt.sign(
 //             { id: employee._id },
 //             process.env.JWT_REFRESH_SECRET,
 //             { expiresIn: '365d' }
 //         );
-//         console.log("🚀 ~ refreshToken:", refreshToken)
 
 //         return res.status(200).json(
 //             new ApiResponse(200, { accessToken, refreshToken }, "Login successful")
@@ -130,7 +128,6 @@ const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 //     if (error) throw new ApiError(400, error.details[0].message);
 
 //     const { email, password } = value;
-//     console.log("🚀 ~ email, password:", email, password)
 
 //     // 2. Try Admin login first
 //     const admin = await Admin.findOne({ email });
@@ -358,8 +355,6 @@ const adminLogin = asyncHandler(async (req, res) => {
 
 const staffLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    console.log("🚀 ~ password:", password)
-    console.log("🚀 ~ email:", email)
 
     if (!email || !password) {
         throw new ApiError(400, "Email and password are required");
@@ -604,4 +599,215 @@ const resetPassword = asyncHandler(async (req, res) => {
 });
 
 
-export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword }
+const getAllStates = asyncHandler(async (req, res) => {
+    try {
+        const states = [
+            "Andhra Pradesh",
+            "Arunachal Pradesh",
+            "Assam",
+            "Bihar",
+            "Chhattisgarh",
+            "Goa",
+            "Gujarat",
+            "Haryana",
+            "Himachal Pradesh",
+            "Jharkhand",
+            "Karnataka",
+            "Kerala",
+            "Madhya Pradesh",
+            "Maharashtra",
+            "Manipur",
+            "Meghalaya",
+            "Mizoram",
+            "Nagaland",
+            "Odisha",
+            "Punjab",
+            "Rajasthan",
+            "Sikkim",
+            "Tamil Nadu",
+            "Telangana",
+            "Tripura",
+            "Uttar Pradesh",
+            "Uttarakhand",
+            "West Bengal",
+            "Delhi",
+            "Jammu and Kashmir",
+            "Ladakh",
+            "Puducherry",
+            "Chandigarh",
+            "Andaman and Nicobar Islands",
+            "Lakshadweep",
+            "Dadra and Nagar Haveli and Daman and Diu"
+        ];
+        return res.status(200).json(new ApiResponse(200, states, "success"))
+    } catch (error) {
+        console.log("error", error);
+    }
+})
+
+const add = asyncHandler(async (req, res) => {
+    try {
+        console.log("🚀 ~ req.file:", req.file);
+        console.log("🚀 ~ req.body:", req.body);
+
+        // ✅ Step 1: Parse services & additionalServices
+        let body = { ...req.body };
+
+        if (typeof body.services === "string") {
+            try {
+                body.services = JSON.parse(body.services);
+            } catch {
+                throw new ApiError(400, "Invalid JSON format in services");
+            }
+        }
+
+        if (typeof body.additionalServices === "string") {
+            try {
+                body.additionalServices = JSON.parse(body.additionalServices);
+            } catch {
+                throw new ApiError(400, "Invalid JSON format in additionalServices");
+            }
+        }
+
+        // ✅ Step 2: Validate with Joi
+        const { error, value } = enquirySchema.validate(body, { abortEarly: false });
+        if (error) {
+            const errorMessages = error.details.map((err) => err.message);
+            throw new ApiError(400, "Validation failed", errorMessages);
+        }
+
+        let customerId = value.customer;
+
+        // ✅ Step 3: Customer Handling
+        if (!customerId) {
+            const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
+
+            // Check existing by email
+            if (emailAddress) {
+                const existingByEmail = await User.findOne({ email: emailAddress });
+                if (existingByEmail) {
+                    return res.status(400).json(
+                        new ApiResponse(
+                            400,
+                            { existingByEmail },
+                            "Email already exists. Please enter another email."
+                        )
+                    );
+                }
+            }
+
+            // Check existing by phone
+            let existingCustomer = null;
+            if (contactNumber) {
+                existingCustomer = await User.findOne({ phone: contactNumber });
+            }
+
+            if (existingCustomer) {
+                return res.status(200).json(
+                    new ApiResponse(
+                        200,
+                        { existingCustomer },
+                        "Customer already exists. Please enquire via mobile app."
+                    )
+                );
+            }
+
+            // ✅ Create Customer using the correct discriminator (Client)
+            const newCustomer = await Client.create({
+                name: contactPerson,
+                email: emailAddress,
+                phone: contactNumber,
+            });
+
+            customerId = newCustomer._id;
+            value.customer = customerId;
+
+            // ✅ Create Hospital linked to this Customer
+            const newHospital = await Hospital.create({
+                name: hospitalName,
+                email: emailAddress,
+                address: fullAddress,
+                branch,
+                phone: contactNumber,
+                customer: newCustomer._id, // Link back
+            });
+
+            // ✅ Push hospital to Customer (MUST use Client, not User)
+            await Client.findByIdAndUpdate(customerId, {
+                $push: { hospitals: newHospital._id },
+            });
+
+            value.hospital = newHospital._id;
+        }
+
+        // ✅ Step 4: Handle file upload
+        if (req.file) {
+            const { url } = await uploadToS3(req.file);
+            value.attachment = url;
+        }
+
+        // ✅ Step 5: Create Services
+        // Step 5: Create Services
+        let serviceIds = [];
+        if (value.services && value.services.length > 0) {
+            const transformedServices = value.services.map((s) => ({
+                machineType: s.machineType,
+                quantity: s.quantity,                    // NEW: include quantity
+                equipmentNo: s.equipmentNo,
+                machineModel: s.machineModel,
+                serialNumber: s.equipmentNo || "",
+                remark: s.remark || "",
+                workTypeDetails: (s.workType || []).map((wt) => ({
+                    workType: wt,
+                    status: "pending",
+                })),
+            }));
+            const createdServices = await Services.insertMany(transformedServices);
+            serviceIds = createdServices.map((s) => s._id);
+        }
+
+        // ✅ Step 6: Create Additional Services
+        let additionalServiceIds = [];
+        if (value.additionalServices && Object.keys(value.additionalServices).length > 0) {
+            const createdAdditionalServices = await AdditionalService.insertMany(
+                Object.entries(value.additionalServices).map(([name, data]) => ({
+                    name,
+                    description: data.description || "",
+                    totalAmount: data.totalAmount || 0,
+                }))
+            );
+            additionalServiceIds = createdAdditionalServices.map((a) => a._id);
+        }
+
+        const { additionalServices, services, ...rest } = value;
+
+        // ✅ Step 7: Create Enquiry
+        const newEnquiry = await Enquiry.create({
+            ...rest,
+            services: serviceIds,
+            additionalServices: additionalServiceIds,
+            enquiryStatusDates: { enquiredOn: new Date() },
+            attachment: value.attachment,
+        });
+
+        // ✅ Step 8: Link enquiry to customer (use Client model)
+        await Client.findByIdAndUpdate(customerId, {
+            $push: { enquiries: newEnquiry._id },
+        });
+
+        // ✅ Step 9: Link enquiry to hospital
+        if (value.hospital) {
+            await Hospital.findByIdAndUpdate(value.hospital, {
+                $push: { enquiries: newEnquiry._id },
+            });
+        }
+
+        console.log("🚀 ~ newEnquiry:", newEnquiry);
+        return res.status(201).json(new ApiResponse(201, newEnquiry, "Enquiry created successfully"));
+    } catch (error) {
+        console.error("Create Enquiry Error:", error);
+        throw new ApiError(500, "Failed to create enquiry", [error.message]);
+    }
+});
+
+export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword, getAllStates,add }

@@ -4,9 +4,9 @@ import upload from '../../../middlewares/upload.js'
 const router = Router();
 
 //enquiry creation by open form
-router.post("/add", upload.single("attachment"), EnquiryController.add);
+// router.post("/add", upload.single("attachment"), EnquiryController.add);
 router.get('/get-all', EnquiryController.getAll)
-router.get("/all-states", EnquiryController.getAllStates)
+// router.get("/all-states", EnquiryController.getAllStates)
 
 //enquiry creation after choosing leadowner
 router.post("/create-direct-order-from-enquiry", upload.single("attachment"), EnquiryController.createDirectOrder);
