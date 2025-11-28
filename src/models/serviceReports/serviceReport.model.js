@@ -198,7 +198,52 @@ const serviceReportSchema = new mongoose.Schema({
     exposureRateTableTop: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ExposureRateTableTop",
+    },
+    CongruenceOfRadiationForRadioFluro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationForRadioFluro",
+    },
+    CentralBeamAlignmentForRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentForRadioFluoro"
+    },
+    accuracyOfOperatingPotentialFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialFixedRadioFluoro"
+    },
+    OutputConsistencyForFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "OutputConsistencyForFixedRadioFluoro"
+    },
+    LowContrastResolutionFixedRadioFlouro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LowContrastResolutionFixedRadioFlouro"
+    },
+    HighContrastResolutionFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HighContrastResolutionFixedRadioFluoro"
+    },
+    ExposureRateTableTopFixedRadioFlouro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExposureRateTableTopFixedRadioFlouro"
+    },
+    CongruenceOfRadiationRadiographyFixedMobie: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationRadiographyFixedMobie"
+    },
+    CentralBeamAlignmentRadiographyFixedMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentRadiographyFixedMobile"
+    },
+    EffectiveFocalSpotForRadiographyFixedAndMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotForRadiographyFixedAndMobile"
+    },
+    accuracyOfOperatingPotentialRadigraphyFixedMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialRadigraphyFixedMobile"
     }
+
 })
 export default mongoose.model(
     "ServiceReport",

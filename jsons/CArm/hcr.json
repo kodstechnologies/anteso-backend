@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "High Contrast Resolution - CArm",
+    "_postman_id": "high-contrast-resolution-carm",
+    "description": "Postman collection for High Contrast Resolution test for C-Arm machines",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create High Contrast Resolution Test",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/high-contrast-resolution/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["high-contrast-resolution", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reportId\": \"65b12f90a12e009900770123\",\n  \"measuredLpPerMm\": \"1.60\",\n  \"recommendedStandard\": \"1.50\",\n  \"tolerance\": \"±10%\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get High Contrast Resolution by Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/high-contrast-resolution-by-service/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["high-contrast-resolution-by-service", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get High Contrast Resolution by Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/high-contrast-resolution/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["high-contrast-resolution", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update High Contrast Resolution Test",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/high-contrast-resolution/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["high-contrast-resolution", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"measuredLpPerMm\": \"1.70\",\n  \"recommendedStandard\": \"1.50\",\n  \"tolerance\": \"+5%\"\n}"
+        }
+      }
+    }
+  ]
+}

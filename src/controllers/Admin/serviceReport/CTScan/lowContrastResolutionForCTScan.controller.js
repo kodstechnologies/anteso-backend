@@ -178,4 +178,3 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 export default { create, update, getById };
-

@@ -3,6 +3,7 @@ import reportDetailController from "../../../../controllers/Admin/serviceReport/
 import CTScanRouter from "../serviceReport/CTScan.router.js"
 import InventionalRadiology from "../serviceReport/InventionalRadiology.router.js"
 import Mammography from "../serviceReport/Mammography.router.js"
+import CArm from "../serviceReport/CArm.router.js"
 const router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -13,5 +14,6 @@ router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
 router.use('/ct-scan', CTScanRouter)
 router.use('/inventional-radiology', InventionalRadiology)
 router.use('/mammography',Mammography)
+router.use('/c-arm',CArm)
 
 export default router;

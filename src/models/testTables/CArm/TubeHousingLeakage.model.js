@@ -70,4 +70,4 @@ const radiationLeakageSchema = new mongoose.Schema(
 // Only one record per service
 radiationLeakageSchema.index({ serviceId: 1 }, { unique: true });
 
-export default mongoose.model("RadiationLeakageLevelForCTScan", radiationLeakageSchema);
+export default mongoose.model("RadiationLeakageLevelForCArm", radiationLeakageSchema);

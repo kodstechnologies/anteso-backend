@@ -1,0 +1,75 @@
+{
+  "info": {
+    "name": "C-Arm Exposure Rate APIs",
+    "_postman_id": "carm-exposure-rate-collection",
+    "description": "Postman collection for Exposure Rate Table Top (C-Arm) APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Exposure Rate (C-Arm)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"distance\": \"20\",\n      \"appliedKv\": \"70\",\n      \"appliedMa\": \"10\",\n      \"exposure\": \"2.5\",\n      \"remark\": \"Manual Mode\"\n    },\n    {\n      \"distance\": \"40\",\n      \"appliedKv\": \"80\",\n      \"appliedMa\": \"15\",\n      \"exposure\": \"3.1\",\n      \"remark\": \"AEC Mode\"\n    }\n  ],\n  \"nonAecTolerance\": \"±5%\",\n  \"aecTolerance\": \"±4%\",\n  \"minFocusDistance\": \"15\",\n  \"reportId\": \"\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/exposure-rate/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "exposure-rate", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Exposure Rate by Service ID (C-Arm)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/exposure-rate/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "exposure-rate", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get Exposure Rate by Test ID (C-Arm)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/exposure-rate/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "exposure-rate", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Exposure Rate (C-Arm)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"distance\": \"25\",\n      \"appliedKv\": \"75\",\n      \"appliedMa\": \"12\",\n      \"exposure\": \"2.9\",\n      \"remark\": \"Updated Manual\"\n    }\n  ],\n  \"nonAecTolerance\": \"±3%\",\n  \"aecTolerance\": \"±2%\",\n  \"minFocusDistance\": \"20\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/exposure-rate/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "exposure-rate", "{{testId}}"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "serviceId", "value": "" },
+    { "key": "testId", "value": "" }
+  ]
+}

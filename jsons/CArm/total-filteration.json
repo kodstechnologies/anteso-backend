@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "C-Arm Total Filteration APIs",
+    "_postman_id": "carm-total-filteration-collection",
+    "description": "Postman collection for Total Filteration for C-Arm Create, Update, Get APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Total Filteration (C-Arm)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mAStations\": [\"100\", \"200\", \"300\"],\n  \"measurements\": [\n    {\n      \"appliedKvp\": \"70\",\n      \"measuredValues\": [\"69\", \"70\", \"71\"],\n      \"averageKvp\": \"70\",\n      \"remarks\": \"OK\"\n    },\n    {\n      \"appliedKvp\": \"80\",\n      \"measuredValues\": [\"79\", \"80\", \"81\"],\n      \"averageKvp\": \"80\",\n      \"remarks\": \"OK\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"±\",\n    \"value\": \"5\"\n  },\n  \"totalFiltration\": {\n    \"measured\": \"2.5\",\n    \"required\": \"2.0\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/total-filteration/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "total-filteration", "{{serviceId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Total Filteration (C-Arm)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"mAStations\": [\"100\", \"150\"],\n  \"measurements\": [\n    {\n      \"appliedKvp\": \"75\",\n      \"measuredValues\": [\"74\", \"75\", \"76\"],\n      \"averageKvp\": \"75\",\n      \"remarks\": \"Updated\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"+\",\n    \"value\": \"4\"\n  },\n  \"totalFiltration\": {\n    \"measured\": \"2.8\",\n    \"required\": \"2.0\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/total-filteration/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "total-filteration", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get By Test ID (C-Arm)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/total-filteration/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "admin", "carm", "total-filteration", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Get By Service ID (C-Arm)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/admin/carm/total-filteration-by-service/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": [
+            "api",
+            "admin",
+            "carm",
+            "total-filteration-by-service",
+            "{{serviceId}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "serviceId", "value": "" },
+    { "key": "testId", "value": "" }
+  ]
+}
