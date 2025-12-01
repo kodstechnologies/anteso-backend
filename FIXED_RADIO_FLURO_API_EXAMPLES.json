@@ -1,0 +1,460 @@
+{
+  "baseUrl": "/anteso/admin/service-report/fixed-radio-fluro",
+  "authentication": {
+    "header": "Authorization: Bearer <your_jwt_token>"
+  },
+  "endpoints": {
+    "1_accuracy_of_operating_potential": {
+      "create": {
+        "method": "POST",
+        "url": "/accuracy-of-operating-potential/:serviceId",
+        "exampleRequest": {
+          "table1": [
+            {
+              "time": "1.0",
+              "sliceThickness": "10mm"
+            },
+            {
+              "time": "2.0",
+              "sliceThickness": "5mm"
+            }
+          ],
+          "table2": [
+            {
+              "setKV": "80",
+              "ma10": "78",
+              "ma100": "79",
+              "ma200": "80",
+              "avgKvp": "79.0",
+              "remarks": "Within tolerance"
+            },
+            {
+              "setKV": "100",
+              "ma10": "98",
+              "ma100": "99",
+              "ma200": "100",
+              "avgKvp": "99.0",
+              "remarks": "Within tolerance"
+            }
+          ],
+          "tolerance": {
+            "value": "2.0",
+            "type": "kvp",
+            "sign": "both"
+          }
+        },
+        "exampleResponse": {
+          "success": true,
+          "message": "Test created successfully",
+          "data": {
+            "testId": "507f1f77bcf86cd799439011",
+            "serviceId": "507f191e810c19729de860ea"
+          }
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/accuracy-of-operating-potential-by-serviceId/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/accuracy-of-operating-potential/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/accuracy-of-operating-potential/:testId"
+      }
+    },
+    "2_total_filtration": {
+      "create": {
+        "method": "POST",
+        "url": "/total-filteration/:serviceId",
+        "exampleRequest": {
+          "mAStations": ["10", "50", "100", "200"],
+          "measurements": [
+            {
+              "appliedKvp": "80",
+              "measuredValues": ["78", "79", "80"],
+              "averageKvp": "79.0",
+              "remarks": "Pass"
+            },
+            {
+              "appliedKvp": "100",
+              "measuredValues": ["98", "99", "100"],
+              "averageKvp": "99.0",
+              "remarks": "Pass"
+            }
+          ],
+          "tolerance": {
+            "sign": "both",
+            "value": "2.0"
+          },
+          "totalFiltration": {
+            "measured": "2.5",
+            "required": "2.0"
+          }
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/total-filteration-by-serviceId/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/total-filteration/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/total-filteration/:testId"
+      }
+    },
+    "3_output_consistency": {
+      "create": {
+        "method": "POST",
+        "url": "/output-consistency/:serviceId",
+        "exampleRequest": {
+          "parameters": {
+            "mas": "100",
+            "sliceThickness": "10mm",
+            "time": "1.0"
+          },
+          "outputRows": [
+            {
+              "kvp": "80",
+              "outputs": ["100", "101", "102", "103", "104"],
+              "mean": "102.0",
+              "cov": "0.0123"
+            },
+            {
+              "kvp": "100",
+              "outputs": ["200", "201", "202", "203", "204"],
+              "mean": "202.0",
+              "cov": "0.0098"
+            }
+          ],
+          "measurementHeaders": ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
+          "tolerance": "2.0",
+          "finalRemark": "Pass"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/output-consistency-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/output-consistency/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/output-consistency/:testId"
+      }
+    },
+    "4_high_contrast_resolution": {
+      "create": {
+        "method": "POST",
+        "url": "/high-contrast-resolution/:serviceId",
+        "exampleRequest": {
+          "measuredLpPerMm": "1.60",
+          "recommendedStandard": "1.50",
+          "tolerance": "±10%",
+          "remark": "PASS"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/high-contrast-resolution-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/high-contrast-resolution/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/high-contrast-resolution/:testId"
+      }
+    },
+    "5_low_contrast_resolution": {
+      "create": {
+        "method": "POST",
+        "url": "/low-contrast-resolution/:serviceId",
+        "exampleRequest": {
+          "smallestHoleSize": "2.8",
+          "recommendedStandard": "3.0",
+          "tolerance": "±5%",
+          "remark": "PASS"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/low-contrast-resolution-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/low-contrast-resolution/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/low-contrast-resolution/:testId"
+      }
+    },
+    "6_exposure_rate": {
+      "create": {
+        "method": "POST",
+        "url": "/exposure-rate/:serviceId",
+        "exampleRequest": {
+          "rows": [
+            {
+              "distance": "100",
+              "appliedKv": "80",
+              "appliedMa": "100",
+              "exposure": "2.5",
+              "remark": "AEC Mode"
+            },
+            {
+              "distance": "100",
+              "appliedKv": "100",
+              "appliedMa": "200",
+              "exposure": "5.0",
+              "remark": "Manual Mode"
+            }
+          ],
+          "nonAecTolerance": "10.0",
+          "aecTolerance": "15.0",
+          "minFocusDistance": "100"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/exposure-rate-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/exposure-rate/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/exposure-rate/:testId"
+      }
+    },
+    "7_congruence": {
+      "create": {
+        "method": "POST",
+        "url": "/congruence/:serviceId",
+        "exampleRequest": {
+          "techniqueFactors": [
+            {
+              "fcd": 100,
+              "kv": 80,
+              "mas": 10
+            },
+            {
+              "fcd": 120,
+              "kv": 100,
+              "mas": 20
+            }
+          ],
+          "congruenceMeasurements": [
+            {
+              "dimension": "X",
+              "observedShift": 0.5,
+              "edgeShift": 0.3,
+              "percentFED": 0.5,
+              "tolerance": 2.0,
+              "remark": "Pass"
+            },
+            {
+              "dimension": "Y",
+              "observedShift": 0.4,
+              "edgeShift": 0.2,
+              "percentFED": 0.4,
+              "tolerance": 2.0,
+              "remark": "Pass"
+            }
+          ],
+          "finalResult": "PASS"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/congruence-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/congruence/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/congruence/:testId"
+      }
+    },
+    "8_central_beam_alignment": {
+      "create": {
+        "method": "POST",
+        "url": "/central-beam-alignment/:serviceId",
+        "exampleRequest": {
+          "techniqueFactors": {
+            "fcd": 100,
+            "kv": 80,
+            "mas": 10
+          },
+          "observedTilt": {
+            "operator": "<",
+            "value": 1.5,
+            "remark": "Pass"
+          },
+          "tolerance": {
+            "operator": "<=",
+            "value": 2.0
+          },
+          "finalResult": "PASS"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/central-beam-alignment-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/central-beam-alignment/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/central-beam-alignment/:testId"
+      }
+    },
+    "9_effective_focal_spot": {
+      "create": {
+        "method": "POST",
+        "url": "/effective-focal-spot/:serviceId",
+        "exampleRequest": {
+          "fcd": 100,
+          "toleranceCriteria": {
+            "small": {
+              "multiplier": 0.5,
+              "upperLimit": 0.8
+            },
+            "medium": {
+              "multiplier": 0.4,
+              "lowerLimit": 0.8,
+              "upperLimit": 1.5
+            },
+            "large": {
+              "multiplier": 0.3,
+              "lowerLimit": 1.5
+            }
+          },
+          "focalSpots": [
+            {
+              "focusType": "Small",
+              "statedWidth": 0.6,
+              "statedHeight": 0.6,
+              "measuredWidth": 0.55,
+              "measuredHeight": 0.58,
+              "remark": "Pass"
+            },
+            {
+              "focusType": "Large",
+              "statedWidth": 1.2,
+              "statedHeight": 1.2,
+              "measuredWidth": 1.15,
+              "measuredHeight": 1.18,
+              "remark": "Pass"
+            }
+          ],
+          "finalResult": "PASS"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/effective-focal-spot-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/effective-focal-spot/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/effective-focal-spot/:testId"
+      }
+    },
+    "10_tube_housing": {
+      "create": {
+        "method": "POST",
+        "url": "/tube-housing/:serviceId",
+        "exampleRequest": {
+          "fcd": "100",
+          "kv": "80",
+          "ma": "100",
+          "time": "1.0",
+          "workload": "1000 mAs",
+          "leakageMeasurements": [
+            {
+              "location": "Tube",
+              "left": "0.5",
+              "right": "0.4",
+              "front": "0.3",
+              "back": "0.4",
+              "top": "0.2"
+            },
+            {
+              "location": "Collimator",
+              "left": "0.3",
+              "right": "0.2",
+              "front": "0.1",
+              "back": "0.2",
+              "top": "0.1"
+            }
+          ],
+          "toleranceValue": "1.0",
+          "toleranceOperator": "less than or equal to",
+          "toleranceTime": "1 hour",
+          "remark": "Pass"
+        }
+      },
+      "getByServiceId": {
+        "method": "GET",
+        "url": "/tube-housing-by-service/:serviceId"
+      },
+      "getById": {
+        "method": "GET",
+        "url": "/tube-housing/:testId"
+      },
+      "update": {
+        "method": "PUT",
+        "url": "/tube-housing/:testId"
+      }
+    }
+  },
+  "errorResponses": {
+    "400": {
+      "success": false,
+      "message": "Valid serviceId is required in URL"
+    },
+    "403": {
+      "success": false,
+      "message": "This test is only allowed for Fixed Radio Fluro. Current machine: CT Scan"
+    },
+    "404": {
+      "success": false,
+      "message": "Service not found"
+    },
+    "409": {
+      "success": false,
+      "message": "Test data already exists for this service"
+    },
+    "500": {
+      "success": false,
+      "message": "Failed to save test",
+      "error": "Error details here"
+    }
+  },
+  "notes": {
+    "serviceId": "Get from: GET /anteso/admin/orders/service-details-of-orders/:orderId",
+    "authentication": "Required JWT token in Authorization header",
+    "machineType": "Service must have machineType === 'Fixed Radio Fluro'",
+    "upsert": "Create endpoint updates if test already exists"
+  }
+}
+
+

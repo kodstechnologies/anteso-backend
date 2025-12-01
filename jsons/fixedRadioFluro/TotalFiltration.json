@@ -1,0 +1,127 @@
+{
+    "info": {
+      "name": "FRF - Total Filtration",
+      "_postman_id": "c514b1bd-a324-4e49-a89a-d79e903f32a1",
+      "description": "Postman collection for Total Filtration Test (Fixed Radio Fluoro)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Total Filtration Test",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"mAStations\": [\"100\", \"200\", \"300\"],\n  \"measurements\": [\n    {\n      \"appliedKvp\": \"60\",\n      \"measuredValues\": [\"59\", \"60\", \"61\"],\n      \"averageKvp\": \"60\",\n      \"remarks\": \"Within range\"\n    },\n    {\n      \"appliedKvp\": \"80\",\n      \"measuredValues\": [\"79\", \"80\", \"81\"],\n      \"averageKvp\": \"80\",\n      \"remarks\": \"OK\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"±\",\n    \"value\": \"5\"\n  },\n  \"totalFiltration\": {\n    \"measured\": \"3.2\",\n    \"required\": \"2.5\"\n  }\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/total-filteration/{{serviceId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "total-filteration",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get Total Filtration by ServiceId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/total-filteration-by-serviceId/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "total-filteration-by-serviceId",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Total Filtration Test",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"tolerance\": {\n    \"sign\": \"±\",\n    \"value\": \"3\"\n  },\n  \"totalFiltration\": {\n    \"measured\": \"3.0\",\n    \"required\": \"2.5\"\n  }\n}"
+          },
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/total-filteration/{{testId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "total-filteration",
+              "{{testId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get Total Filtration by TestId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/total-filteration/{{testId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "total-filteration",
+              "{{testId}}"
+            ]
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": "6745f0e6cdb96d5f23cabc11"
+      },
+      {
+        "key": "testId",
+        "value": "6745f123cdb96d5f23cabd44"
+      }
+    ]
+  }
+  

@@ -1,0 +1,87 @@
+{
+    "info": {
+      "name": "Exposure Rate - Fixed Radio Fluro",
+      "_postman_id": "b12f305e-4f30-4e7c-b89d-d45f0c9fe777",
+      "description": "API collection for Exposure Rate - Fixed Radio Fluro tests",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Exposure Rate",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/exposure-rate/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["anteso", "admin", "service-report", "fixed-radio-fluro", "exposure-rate", "{{serviceId}}"]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"rows\":[{\"distance\":\"100\",\"appliedKv\":\"70\",\"appliedMa\":\"10\",\"exposure\":\"2.5\",\"remark\":\"Manual Mode\"}],\"nonAecTolerance\":\"3.5\",\"aecTolerance\":\"4.0\",\"minFocusDistance\":\"80\"}"
+          }
+        }
+      },
+      {
+        "name": "Get Exposure Rate by ServiceId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/exposure-rate-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["anteso", "admin", "service-report", "fixed-radio-fluro", "exposure-rate-by-service", "{{serviceId}}"]
+          }
+        }
+      },
+      {
+        "name": "Get Exposure Rate by TestId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/exposure-rate/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["anteso", "admin", "service-report", "fixed-radio-fluro", "exposure-rate", "{{testId}}"]
+          }
+        }
+      },
+      {
+        "name": "Update Exposure Rate",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/exposure-rate/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": ["anteso", "admin", "service-report", "fixed-radio-fluro", "exposure-rate", "{{testId}}"]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\"rows\":[{\"distance\":\"110\",\"appliedKv\":\"75\",\"appliedMa\":\"12\",\"exposure\":\"3.0\",\"remark\":\"AEC Mode\"}],\"nonAecTolerance\":\"3.8\",\"aecTolerance\":\"4.2\",\"minFocusDistance\":\"85\"}"
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": ""
+      },
+      {
+        "key": "testId",
+        "value": ""
+      }
+    ]
+  }
+  

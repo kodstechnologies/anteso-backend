@@ -1,0 +1,121 @@
+{
+    "info": {
+      "name": "Accuracy Of Operating Potential - Fixed Radio Fluro",
+      "_postman_id": "aop-fixed-radio-fluro-001",
+      "description": "Postman collection for Accuracy of Operating Potential (Radiography & Fluoroscopy)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Accuracy Of Operating Potential",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-operating-potential/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-operating-potential",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"table1\": [\n    { \"time\": \"50ms\", \"sliceThickness\": \"5mm\" }\n  ],\n  \"table2\": [\n    {\n      \"setKV\": \"80\",\n      \"ma10\": \"8\",\n      \"ma100\": \"9\",\n      \"ma200\": \"10\",\n      \"avgKvp\": \"79\",\n      \"remarks\": \"PASS\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"plus\",\n    \"value\": \"10\",\n    \"type\": \"kvp\"\n  }\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Test By Test ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-operating-potential/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-operating-potential",
+              "{{testId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Accuracy Of Operating Potential",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-operating-potential/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-operating-potential",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"table1\": [\n    { \"time\": \"100ms\", \"sliceThickness\": \"6mm\" }\n  ],\n  \"table2\": [\n    {\n      \"setKV\": \"85\",\n      \"ma10\": \"9\",\n      \"ma100\": \"11\",\n      \"ma200\": \"13\",\n      \"avgKvp\": \"84\",\n      \"remarks\": \"UPDATED\"\n    }\n  ],\n  \"tolerance\": {\n    \"sign\": \"minus\",\n    \"value\": \"8\",\n    \"type\": \"percent\"\n  }\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Test By Service ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-operating-potential-by-serviceId/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-operating-potential-by-serviceId",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": "674f1f4d1a2b3c4d5e6f7890"
+      },
+      {
+        "key": "testId",
+        "value": "67501234123abc456def7890"
+      }
+    ]
+  }
+  

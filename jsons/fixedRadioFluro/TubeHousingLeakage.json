@@ -1,0 +1,109 @@
+{
+    "info": {
+      "name": "FRF - Tube Housing Leakage",
+      "_postman_id": "b23bfa10-9a12-4f9d-b91a-93aaf982bb01",
+      "description": "Tube Housing Leakage API collection for Fixed Radio Fluoroscopy Machine",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Tube Housing Leakage Test",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/tube-housing/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "tube-housing",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"fcd\": \"100 cm\",\n  \"kv\": \"80\",\n  \"ma\": \"200\",\n  \"time\": \"0.5\",\n  \"workload\": \"500 mA-min/week\",\n  \"leakageMeasurements\": [\n    {\n      \"location\": \"Tube\",\n      \"left\": \"0.10\",\n      \"right\": \"0.12\",\n      \"front\": \"0.11\",\n      \"back\": \"0.13\",\n      \"top\": \"0.10\"\n    },\n    {\n      \"location\": \"Collimator\",\n      \"left\": \"0.08\",\n      \"right\": \"0.09\",\n      \"front\": \"0.07\",\n      \"back\": \"0.10\",\n      \"top\": \"0.09\"\n    }\n  ],\n  \"toleranceValue\": \"1.0\",\n  \"toleranceOperator\": \"<=\",\n  \"toleranceTime\": \"1 hour\",\n  \"remark\": \"PASS\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Tube Housing Leakage By Service ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/tube-housing-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "tube-housing-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Tube Housing Leakage Test",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/tube-housing/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "tube-housing",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"kv\": \"90\",\n  \"ma\": \"250\",\n  \"time\": \"0.6\",\n  \"remark\": \"FAIL\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Tube Housing Leakage By Test ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/tube-housing/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "tube-housing",
+              "{{testId}}"
+            ]
+          }
+        }
+      }
+    ],
+    "variable": [
+      { "key": "serviceId", "value": "6746abcd12efcd9088123456" },
+      { "key": "testId", "value": "6746bcde78ffcd1122334455" }
+    ]
+  }
+  

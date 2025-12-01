@@ -1,6 +1,6 @@
-// controllers/Congruence.js
+// controllers/EffectiveFocalSpot.js
 import mongoose from "mongoose";
-import CongruenceOfRadiation from "../../../../models/testTables/FixedRadioFluro/congruence.model.js";
+import EffectiveFocalSpot from "../../../../models/testTables/FixedRadioFluro/EffectiveFocalSpot.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
@@ -10,13 +10,18 @@ const MACHINE_TYPE = "Radiography and Fluoroscopy";
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
-        techniqueFactors,
-        congruenceMeasurements,
+        fcd,
+        toleranceCriteria,
+        focalSpots,
         finalResult,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ message: "Valid serviceId is required" });
+    }
+
+    if (!fcd) {
+        return res.status(400).json({ message: "FCD (Focal Spot Distance) is required" });
     }
 
     const session = await mongoose.startSession();
@@ -37,10 +42,10 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // Check existing
-        const existing = await CongruenceOfRadiation.findOne({ serviceId }).session(session);
+        const existing = await EffectiveFocalSpot.findOne({ serviceId }).session(session);
         if (existing) {
             await session.abortTransaction();
-            return res.status(400).json({ message: "Congruence data already exists for this service" });
+            return res.status(400).json({ message: "Effective Focal Spot data already exists for this service" });
         }
 
         // Get or Create ServiceReport
@@ -50,19 +55,24 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await CongruenceOfRadiation.create(
+        const newTest = await EffectiveFocalSpot.create(
             [{
                 serviceId,
                 reportId: serviceReport._id,
-                techniqueFactors: techniqueFactors || [],
-                congruenceMeasurements: congruenceMeasurements || [],
+                fcd,
+                toleranceCriteria: toleranceCriteria || {
+                    small: { multiplier: 0.5, upperLimit: 0.8 },
+                    medium: { multiplier: 0.4, lowerLimit: 0.8, upperLimit: 1.5 },
+                    large: { multiplier: 0.3, lowerLimit: 1.5 },
+                },
+                focalSpots: focalSpots || [],
                 finalResult: finalResult || "",
             }],
             { session }
         );
 
         // Link back to ServiceReport
-        serviceReport.CongruenceOfRadiationForRadioFluro = newTest[0]._id;
+        serviceReport.EffectiveFocalSpotForRadiographyFixedAndMobile = newTest[0]._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -70,7 +80,7 @@ const create = asyncHandler(async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: "Congruence test created successfully",
+            message: "Effective Focal Spot test created successfully",
             data: newTest[0],
         });
     } catch (error) {
@@ -87,10 +97,10 @@ const getByServiceId = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Valid serviceId is required" });
     }
 
-    const testData = await CongruenceOfRadiation.findOne({ serviceId }).lean();
+    const testData = await EffectiveFocalSpot.findOne({ serviceId }).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "No Congruence data found for this service" });
+        return res.status(404).json({ message: "No Effective Focal Spot data found for this service" });
     }
 
     return res.status(200).json({
@@ -106,10 +116,10 @@ const getById = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid testId" });
     }
 
-    const testData = await CongruenceOfRadiation.findById(testId).lean();
+    const testData = await EffectiveFocalSpot.findById(testId).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "Congruence test not found" });
+        return res.status(404).json({ message: "Effective Focal Spot test not found" });
     }
 
     return res.status(200).json({
@@ -133,7 +143,7 @@ const update = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        const updatedTest = await CongruenceOfRadiation.findByIdAndUpdate(
+        const updatedTest = await EffectiveFocalSpot.findByIdAndUpdate(
             testId,
             {
                 $set: {
@@ -146,7 +156,7 @@ const update = asyncHandler(async (req, res) => {
 
         if (!updatedTest) {
             await session.abortTransaction();
-            return res.status(404).json({ message: "Congruence test not found" });
+            return res.status(404).json({ message: "Effective Focal Spot test not found" });
         }
 
         await session.commitTransaction();
@@ -154,7 +164,7 @@ const update = asyncHandler(async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Congruence test updated successfully",
+            message: "Effective Focal Spot test updated successfully",
             data: updatedTest,
         });
     } catch (error) {
@@ -170,4 +180,5 @@ export default {
     update,
     getByServiceId,
 };
+
 

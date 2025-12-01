@@ -1,0 +1,129 @@
+{
+    "info": {
+      "name": "High Contrast Resolution - Fixed Radio Fluoro",
+      "_postman_id": "af1cd204-ef11-4e8c-9b50-d5c8e93aaa11",
+      "description": "API collection for High Contrast Resolution Test (Radiography & Fluoroscopy)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create High Contrast Resolution",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/high-contrast-resolution/{{serviceId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "high-contrast-resolution",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"measuredLpPerMm\": \"1.60\",\n  \"recommendedStandard\": \"1.50\",\n  \"tolerance\": \"10%\",\n  \"remark\": \"PASS\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get High Contrast Resolution by ServiceId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/high-contrast-resolution-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "high-contrast-resolution-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get High Contrast Resolution by TestId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/high-contrast-resolution/{{testId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "high-contrast-resolution",
+              "{{testId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update High Contrast Resolution",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/high-contrast-resolution/{{testId}}",
+            "protocol": "http",
+            "host": [
+              "localhost"
+            ],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "high-contrast-resolution",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"measuredLpPerMm\": \"1.55\",\n  \"recommendedStandard\": \"1.50\",\n  \"tolerance\": \"±5%\",\n  \"remark\": \"PASS\"\n}"
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": ""
+      },
+      {
+        "key": "testId",
+        "value": ""
+      }
+    ]
+  }
+  

@@ -1,0 +1,123 @@
+// controllers/Admin/serviceReport/FixedRadioFluro/LinearityOfmAsLoadingStations.controller.js
+import mongoose from "mongoose";
+import LinearityOfmAsLoadingFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/LinearityOfmAsLoadingStations.model.js";
+import Service from "../../../../models/Services.js";
+import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "Radiography and Fluoroscopy";
+
+// CREATE or UPDATE (Upsert) by serviceId
+const create = asyncHandler(async (req, res) => {
+  const { serviceId } = req.params;
+  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+
+  if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+    return res.status(400).json({ message: "Valid serviceId is required" });
+  }
+
+  const service = await Service.findById(serviceId).lean();
+  if (!service) {
+    return res.status(404).json({ message: "Service not found" });
+  }
+  if (service.machineType !== MACHINE_TYPE) {
+    return res.status(403).json({
+      message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+    });
+  }
+
+  const doc = await LinearityOfmAsLoadingFixedRadioFluoro.findOneAndUpdate(
+    { serviceId },
+    {
+      serviceId,
+      testName: testName || "Linearity of mAs Loading",
+      table1: table1 || [],
+      table2: table2 || [],
+      measHeaders: measHeaders || [],
+      tolerance: tolerance ?? "0.1",
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
+  return res.status(201).json({
+    success: true,
+    data: doc,
+    message: "Linearity of mAs Loading (Fixed Radio Fluoro) saved successfully",
+  });
+});
+
+// GET by testId
+const getById = asyncHandler(async (req, res) => {
+  const { testId } = req.params;
+
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ message: "Valid testId is required" });
+  }
+
+  const test = await LinearityOfmAsLoadingFixedRadioFluoro.findById(testId).lean();
+
+  if (!test) {
+    return res.status(404).json({ message: "Test data not found" });
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: test,
+  });
+});
+
+// UPDATE by testId
+const update = asyncHandler(async (req, res) => {
+  const { testId } = req.params;
+  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ message: "Valid testId is required" });
+  }
+
+  const updated = await LinearityOfmAsLoadingFixedRadioFluoro.findByIdAndUpdate(
+    testId,
+    {
+      ...(testName !== undefined && { testName }),
+      ...(table1 !== undefined && { table1 }),
+      ...(table2 !== undefined && { table2 }),
+      ...(measHeaders !== undefined && { measHeaders }),
+      ...(tolerance !== undefined && { tolerance }),
+      updatedAt: Date.now(),
+    },
+    { new: true, runValidators: true }
+  ).lean();
+
+  if (!updated) {
+    return res.status(404).json({ message: "Test data not found" });
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: updated,
+    message: "Updated successfully",
+  });
+});
+
+// GET by serviceId
+const getByServiceId = asyncHandler(async (req, res) => {
+  const { serviceId } = req.params;
+
+  if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+    return res.status(400).json({ message: "Valid serviceId is required" });
+  }
+
+  const test = await LinearityOfmAsLoadingFixedRadioFluoro.findOne({ serviceId }).lean();
+
+  if (!test) {
+    return res.status(200).json({ success: true, data: null });
+  }
+
+  return res.status(200).json({
+    success: true,
+    data: test,
+  });
+});
+
+export default { create, getById, update, getByServiceId };
+
+

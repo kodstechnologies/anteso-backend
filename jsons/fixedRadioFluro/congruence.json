@@ -1,0 +1,121 @@
+{
+    "info": {
+      "name": "Congruence of Radiation - Fixed Radio Fluro",
+      "_postman_id": "congruence-fixed-radio-fluro-001",
+      "description": "Postman collection for Congruence of Radiation (Radiography & Fluoroscopy) module",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Congruence Test",
+        "request": {
+          "method": "POST",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/congruence/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "congruence",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"techniqueFactors\": [\n    { \"fcd\": 100, \"kv\": 70, \"mas\": 20 }\n  ],\n  \"congruenceMeasurements\": [\n    {\n      \"dimension\": \"X\",\n      \"observedShift\": 0.3,\n      \"edgeShift\": 0.2,\n      \"percentFED\": 1.2,\n      \"tolerance\": 2,\n      \"remark\": \"Within limits\"\n    },\n    {\n      \"dimension\": \"Y\",\n      \"observedShift\": 0.4,\n      \"edgeShift\": 0.25,\n      \"percentFED\": 1.5,\n      \"tolerance\": 2,\n      \"remark\": \"OK\"\n    }\n  ],\n  \"finalResult\": \"PASS\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Congruence By Service ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/congruence-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "congruence-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get Congruence By Test ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/congruence/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "congruence",
+              "{{testId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Congruence Test",
+        "request": {
+          "method": "PUT",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/congruence/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "congruence",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"techniqueFactors\": [\n    { \"fcd\": 110, \"kv\": 75, \"mas\": 25 }\n  ],\n  \"congruenceMeasurements\": [\n    {\n      \"dimension\": \"X\",\n      \"observedShift\": 0.25,\n      \"edgeShift\": 0.18,\n      \"percentFED\": 1.0,\n      \"tolerance\": 2,\n      \"remark\": \"Updated\"\n    },\n    {\n      \"dimension\": \"Y\",\n      \"observedShift\": 0.35,\n      \"edgeShift\": 0.22,\n      \"percentFED\": 1.3,\n      \"tolerance\": 2,\n      \"remark\": \"Updated\"\n    }\n  ],\n  \"finalResult\": \"UPDATED\"\n}"
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": "6750aaaabbbbccccddd11122"
+      },
+      {
+        "key": "testId",
+        "value": "6750ffffeeeeccccbbb11122"
+      }
+    ]
+  }
+  

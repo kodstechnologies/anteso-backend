@@ -1,18 +1,20 @@
-// controllers/Congruence.js
+// controllers/TotalFilteration.js
 import mongoose from "mongoose";
-import CongruenceOfRadiation from "../../../../models/testTables/FixedRadioFluro/congruence.model.js";
+import TotalFilterationForFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/TotalFilteration.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "Radiography and Fluoroscopy";
 
+// CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
-        techniqueFactors,
-        congruenceMeasurements,
-        finalResult,
+        mAStations,
+        measurements,
+        tolerance,
+        totalFiltration,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -36,11 +38,11 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
-        // Check existing
-        const existing = await CongruenceOfRadiation.findOne({ serviceId }).session(session);
+        // Check existing within transaction
+        const existing = await TotalFilterationForFixedRadioFluoro.findOne({ serviceId }).session(session);
         if (existing) {
             await session.abortTransaction();
-            return res.status(400).json({ message: "Congruence data already exists for this service" });
+            return res.status(400).json({ message: "Total Filtration data already exists for this service" });
         }
 
         // Get or Create ServiceReport
@@ -50,19 +52,20 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await CongruenceOfRadiation.create(
+        const newTest = await TotalFilterationForFixedRadioFluoro.create(
             [{
                 serviceId,
                 reportId: serviceReport._id,
-                techniqueFactors: techniqueFactors || [],
-                congruenceMeasurements: congruenceMeasurements || [],
-                finalResult: finalResult || "",
+                mAStations: mAStations || [],
+                measurements: measurements || [],
+                tolerance: tolerance || { sign: "", value: "" },
+                totalFiltration: totalFiltration || { measured: "", required: "" },
             }],
             { session }
         );
 
-        // Link back to ServiceReport
-        serviceReport.CongruenceOfRadiationForRadioFluro = newTest[0]._id;
+        // Note: TotalFilterationForFixedRadioFluoro field may need to be added to ServiceReport model
+        // For now, we'll save the test without linking to ServiceReport
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -70,7 +73,7 @@ const create = asyncHandler(async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: "Congruence test created successfully",
+            message: "Total Filtration test created successfully",
             data: newTest[0],
         });
     } catch (error) {
@@ -80,6 +83,7 @@ const create = asyncHandler(async (req, res) => {
     }
 });
 
+// GET BY SERVICE ID
 const getByServiceId = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
 
@@ -87,10 +91,10 @@ const getByServiceId = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Valid serviceId is required" });
     }
 
-    const testData = await CongruenceOfRadiation.findOne({ serviceId }).lean();
+    const testData = await TotalFilterationForFixedRadioFluoro.findOne({ serviceId }).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "No Congruence data found for this service" });
+        return res.status(404).json({ message: "No Total Filtration data found for this service" });
     }
 
     return res.status(200).json({
@@ -99,6 +103,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
     });
 });
 
+// GET BY TEST ID
 const getById = asyncHandler(async (req, res) => {
     const { testId } = req.params;
 
@@ -106,10 +111,10 @@ const getById = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid testId" });
     }
 
-    const testData = await CongruenceOfRadiation.findById(testId).lean();
+    const testData = await TotalFilterationForFixedRadioFluoro.findById(testId).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "Congruence test not found" });
+        return res.status(404).json({ message: "Total Filtration test not found" });
     }
 
     return res.status(200).json({
@@ -118,6 +123,7 @@ const getById = asyncHandler(async (req, res) => {
     });
 });
 
+// UPDATE - With Transaction
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
     const updateData = req.body;
@@ -126,6 +132,7 @@ const update = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Valid testId is required" });
     }
 
+    // Prevent changing serviceId
     delete updateData.serviceId;
     delete updateData.createdAt;
 
@@ -133,7 +140,7 @@ const update = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        const updatedTest = await CongruenceOfRadiation.findByIdAndUpdate(
+        const updatedTest = await TotalFilterationForFixedRadioFluoro.findByIdAndUpdate(
             testId,
             {
                 $set: {
@@ -146,7 +153,7 @@ const update = asyncHandler(async (req, res) => {
 
         if (!updatedTest) {
             await session.abortTransaction();
-            return res.status(404).json({ message: "Congruence test not found" });
+            return res.status(404).json({ message: "Total Filtration test not found" });
         }
 
         await session.commitTransaction();
@@ -154,7 +161,7 @@ const update = asyncHandler(async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Congruence test updated successfully",
+            message: "Total Filtration test updated successfully",
             data: updatedTest,
         });
     } catch (error) {

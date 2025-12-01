@@ -1,0 +1,109 @@
+{
+    "info": {
+      "name": "Central Beam Alignment API",
+      "_postman_id": "cba-api-collection-002",
+      "description": "Postman Collection for Central Beam Alignment Test Endpoints",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Central Beam Alignment",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/central-beam-alignment/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "central-beam-alignment",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"techniqueFactors\": {\n    \"fcd\": 100,\n    \"kv\": 80,\n    \"mas\": 10\n  },\n  \"observedTilt\": {\n    \"operator\": \"<\",\n    \"value\": 1.2,\n    \"remark\": \"Pass\"\n  },\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": 2\n  },\n  \"finalResult\": \"PASS\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get By Service ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/central-beam-alignment-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "central-beam-alignment-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Get Test By ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/central-beam-alignment/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "central-beam-alignment",
+              "{{testId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Central Beam Alignment",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/central-beam-alignment/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "central-beam-alignment",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"techniqueFactors\": {\n    \"fcd\": 110,\n    \"kv\": 85,\n    \"mas\": 12\n  },\n  \"observedTilt\": {\n    \"operator\": \"<\",\n    \"value\": 1.0,\n    \"remark\": \"Pass\"\n  },\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": 2\n  },\n  \"finalResult\": \"PASS\"\n}"
+          }
+        }
+      }
+    ],
+    "variable": [
+      { "key": "serviceId", "value": "674f1f4d1a2b3c4d5e6f7890" },
+      { "key": "testId", "value": "67501234123abc456def7890" }
+    ]
+  }
+  

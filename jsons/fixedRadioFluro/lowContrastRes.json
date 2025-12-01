@@ -1,0 +1,115 @@
+{
+    "info": {
+      "name": "FRF - Low Contrast Resolution",
+      "_postman_id": "a1b2c3d4-ef56-7890-ab12-34567890abcd",
+      "description": "Collection for Low Contrast Resolution API for Fixed Radio Fluro Machine",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create Low Contrast Resolution Test",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/low-contrast-resolution/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "low-contrast-resolution",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"smallestHoleSize\": \"2.5\",\n  \"recommendedStandard\": \"3.0\",\n  \"tolerance\": \"±5%\",\n  \"remark\": \"PASS\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Low Contrast Resolution By ServiceId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:800:8000/anteso/admin/service-report/fixed-radio-fluro/low-contrast-resolution-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "low-contrast-resolution-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Low Contrast Resolution Test",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/low-contrast-resolution/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "low-contrast-resolution",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"smallestHoleSize\": \"2.7\",\n  \"tolerance\": \"±10%\",\n  \"remark\": \"FAIL\"\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Low Contrast Resolution By TestId",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/low-contrast-resolution/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "low-contrast-resolution",
+              "{{testId}}"
+            ]
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": "6745f0e6cdb96d5f23cabc11"
+      },
+      {
+        "key": "testId",
+        "value": "6745f123cdb96d5f23cabd44"
+      }
+    ]
+  }
+  

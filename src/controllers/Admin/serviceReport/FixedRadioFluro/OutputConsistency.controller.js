@@ -1,6 +1,6 @@
-// controllers/Congruence.js
+// controllers/OutputConsistency.js
 import mongoose from "mongoose";
-import CongruenceOfRadiation from "../../../../models/testTables/FixedRadioFluro/congruence.model.js";
+import OutputConsistencyForFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/OutputConsistency.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
@@ -10,9 +10,11 @@ const MACHINE_TYPE = "Radiography and Fluoroscopy";
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
-        techniqueFactors,
-        congruenceMeasurements,
-        finalResult,
+        parameters,
+        outputRows,
+        measurementHeaders,
+        tolerance,
+        finalRemark,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -37,10 +39,10 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // Check existing
-        const existing = await CongruenceOfRadiation.findOne({ serviceId }).session(session);
+        const existing = await OutputConsistencyForFixedRadioFluoro.findOne({ serviceId }).session(session);
         if (existing) {
             await session.abortTransaction();
-            return res.status(400).json({ message: "Congruence data already exists for this service" });
+            return res.status(400).json({ message: "Output Consistency data already exists for this service" });
         }
 
         // Get or Create ServiceReport
@@ -50,19 +52,21 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await CongruenceOfRadiation.create(
+        const newTest = await OutputConsistencyForFixedRadioFluoro.create(
             [{
                 serviceId,
                 reportId: serviceReport._id,
-                techniqueFactors: techniqueFactors || [],
-                congruenceMeasurements: congruenceMeasurements || [],
-                finalResult: finalResult || "",
+                parameters: parameters || { mas: "", sliceThickness: "", time: "" },
+                outputRows: outputRows || [],
+                measurementHeaders: measurementHeaders || ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
+                tolerance: tolerance || "",
+                finalRemark: finalRemark || "",
             }],
             { session }
         );
 
         // Link back to ServiceReport
-        serviceReport.CongruenceOfRadiationForRadioFluro = newTest[0]._id;
+        serviceReport.OutputConsistencyForFixedRadioFluoro = newTest[0]._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -70,7 +74,7 @@ const create = asyncHandler(async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: "Congruence test created successfully",
+            message: "Output Consistency test created successfully",
             data: newTest[0],
         });
     } catch (error) {
@@ -87,10 +91,10 @@ const getByServiceId = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Valid serviceId is required" });
     }
 
-    const testData = await CongruenceOfRadiation.findOne({ serviceId }).lean();
+    const testData = await OutputConsistencyForFixedRadioFluoro.findOne({ serviceId }).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "No Congruence data found for this service" });
+        return res.status(404).json({ message: "No Output Consistency data found for this service" });
     }
 
     return res.status(200).json({
@@ -106,10 +110,10 @@ const getById = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid testId" });
     }
 
-    const testData = await CongruenceOfRadiation.findById(testId).lean();
+    const testData = await OutputConsistencyForFixedRadioFluoro.findById(testId).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "Congruence test not found" });
+        return res.status(404).json({ message: "Output Consistency test not found" });
     }
 
     return res.status(200).json({
@@ -133,7 +137,7 @@ const update = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        const updatedTest = await CongruenceOfRadiation.findByIdAndUpdate(
+        const updatedTest = await OutputConsistencyForFixedRadioFluoro.findByIdAndUpdate(
             testId,
             {
                 $set: {
@@ -146,7 +150,7 @@ const update = asyncHandler(async (req, res) => {
 
         if (!updatedTest) {
             await session.abortTransaction();
-            return res.status(404).json({ message: "Congruence test not found" });
+            return res.status(404).json({ message: "Output Consistency test not found" });
         }
 
         await session.commitTransaction();
@@ -154,7 +158,7 @@ const update = asyncHandler(async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Congruence test updated successfully",
+            message: "Output Consistency test updated successfully",
             data: updatedTest,
         });
     } catch (error) {
