@@ -16,6 +16,9 @@ const create = asyncHandler(async (req, res) => {
   }
 
   const session = await mongoose.startSession();
+  console.log("🚀 ~ session:", session)
+  console.log("started session");
+  
   session.startTransaction();
 
   try {
@@ -49,6 +52,8 @@ const create = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
+      console.log("ended session");
+
     session.endSession();
     throw error;
   }
@@ -57,6 +62,7 @@ const create = asyncHandler(async (req, res) => {
 // GET BY SERVICE ID
 const getByServiceId = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
+  console.log("🚀 ~ serviceId:", serviceId)
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({

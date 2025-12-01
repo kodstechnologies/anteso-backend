@@ -10,7 +10,7 @@ const LocationSchema = new mongoose.Schema({
   mRPerHr: {
     type: String,        // e.g., "0.850", "1.200" — kept as string for exact display
     trim: true,
-  // no default, no enum → full flexibility
+    // no default, no enum → full flexibility
   },
   mRPerWeek: {
     type: String,        // calculated on frontend/backend, stored as string for precision
@@ -19,14 +19,12 @@ const LocationSchema = new mongoose.Schema({
   result: {
     type: String,        // "PASS", "FAIL", or empty
     trim: true,
-    uppercase: true
   },
   category: {
     type: String,
-    required: true,
-    enum: ["worker", "public"],  // keep this — critical for logic
     trim: true
-  }
+  },
+
 });
 
 const RadiationProtectionSurveySchema = new mongoose.Schema({
@@ -46,22 +44,32 @@ const RadiationProtectionSurveySchema = new mongoose.Schema({
   // 2. Equipment Settings (all optional & flexible)
   appliedCurrent: { type: String, trim: true },
   appliedVoltage: { type: String, trim: true },
-  exposureTime:   { type: String, trim: true },
-  workload:       { type: String, trim: true },
+  exposureTime: { type: String, trim: true },
+  workload: { type: String, trim: true },
 
   // 3. Dynamic table rows
   locations: [LocationSchema],
 
   // Optional metadata (very useful for reports)
-  hospitalName:        { type: String, trim: true },
-  equipmentId:         { type: String, trim: true },
-  roomNo:              { type: String, trim: true },
-  manufacturer:        { type: String, trim: true },
-  model:               { type: String, trim: true },
-  surveyorName:        { type: String, trim: true },
+  hospitalName: { type: String, trim: true },
+  equipmentId: { type: String, trim: true },
+  roomNo: { type: String, trim: true },
+  manufacturer: { type: String, trim: true },
+  model: { type: String, trim: true },
+  surveyorName: { type: String, trim: true },
   surveyorDesignation: { type: String, trim: true },
-  remarks:             { type: String, trim: true },
+  remarks: { type: String, trim: true },
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
 
+  },
+
+  reportId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ServiceReport",
+    index: true,
+  },
   // Timestamps
   createdAt: {
     type: Date,
@@ -74,25 +82,25 @@ const RadiationProtectionSurveySchema = new mongoose.Schema({
 });
 
 // Update `updatedAt` on every save
-RadiationProtectionSurveySchema.pre('findOneAndUpdate', function(next) {
+RadiationProtectionSurveySchema.pre('findOneAndUpdate', function (next) {
   this.set({ updatedAt: Date.now() });
   next();
 });
 
-RadiationProtectionSurveySchema.pre('updateOne', function(next) {
+RadiationProtectionSurveySchema.pre('updateOne', function (next) {
   this.set({ updatedAt: Date.now() });
   next();
 });
 
-RadiationProtectionSurveySchema.pre('save', function(next) {
+RadiationProtectionSurveySchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
 // Indexes for performance
-RadiationProtectionSurveySchema.index({ surveyDate: -1 });
-RadiationProtectionSurveySchema.index({ hospitalName: 1 });
-RadiationProtectionSurveySchema.index({ equipmentId: 1 });
+// RadiationProtectionSurveySchema.index({ surveyDate: -1 });
+// RadiationProtectionSurveySchema.index({ hospitalName: 1 });
+// RadiationProtectionSurveySchema.index({ equipmentId: 1 });
 
 export default mongoose.models.RadiationProtectionSurvey ||
   mongoose.model("RadiationProtectionSurvey", RadiationProtectionSurveySchema);

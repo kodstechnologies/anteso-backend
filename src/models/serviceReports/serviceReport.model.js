@@ -20,6 +20,9 @@ const toolDetailsSchema = new mongoose.Schema({
     model: {
         type: String,
     },
+    category: {
+        type: String,
+    },
     range: {
         type: String,
     },

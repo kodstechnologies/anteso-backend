@@ -1,0 +1,106 @@
+{
+    "info": {
+        "name": "Radiation Protection Survey",
+        "_postman_id": "c3e5c7c1-12de-4a7f-9baf-8a9c20e21a88",
+        "description": "Postman collection for Radiation Protection Survey APIs",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Create Survey (POST /radiation-protection-survey/:serviceId)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:5000/api/radiation-protection-survey/{{serviceId}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "radiation-protection-survey",
+                        "{{serviceId}}"
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"surveyDate\": \"2025-02-01\",\n  \"hasValidCalibration\": \"YES\",\n  \"appliedCurrent\": \"100 mA\",\n  \"appliedVoltage\": \"70 kV\",\n  \"exposureTime\": \"0.5 sec\",\n  \"workload\": \"200 mA-min/week\",\n  \"hospitalName\": \"City Hospital\",\n  \"equipmentId\": \"EQ-1001\",\n  \"roomNo\": \"X-Ray Room 2\",\n  \"manufacturer\": \"GE\",\n  \"model\": \"XR-500\",\n  \"surveyorName\": \"John Doe\",\n  \"surveyorDesignation\": \"Medical Physicist\",\n  \"remarks\": \"All good\",\n  \"locations\": [\n    {\n      \"location\": \"Control Console\",\n      \"mRPerHr\": \"0.850\",\n      \"mRPerWeek\": \"5.10\",\n      \"result\": \"PASS\",\n      \"category\": \"worker\"\n    },\n    {\n      \"location\": \"Waiting Area\",\n      \"mRPerHr\": \"0.120\",\n      \"mRPerWeek\": \"0.80\",\n      \"result\": \"PASS\",\n      \"category\": \"public\"\n    }\n  ]\n}"
+                }
+            }
+        },
+        {
+            "name": "Get Survey by Service ID (GET /radiation-protection-survey-by-service/:serviceId)",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://localhost:5000/api/radiation-protection-survey-by-service/{{serviceId}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "radiation-protection-survey-by-service",
+                        "{{serviceId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Survey by Test ID (GET /radiation-protection-survey/:testId)",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "radiation-protection-survey",
+                        "{{testId}}"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Update Survey (PUT /radiation-protection-survey/:testId)",
+            "request": {
+                "method": "PUT",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+                    "protocol": "http",
+                    "host": [
+                        "localhost"
+                    ],
+                    "port": "5000",
+                    "path": [
+                        "api",
+                        "radiation-protection-survey",
+                        "{{testId}}"
+                    ]
+                },
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"hasValidCalibration\": \"NO\",\n  \"remarks\": \"Updated after second inspection\",\n  \"locations\": [\n    {\n      \"location\": \"Control Console\",\n      \"mRPerHr\": \"0.900\",\n      \"mRPerWeek\": \"5.40\",\n      \"result\": \"PASS\",\n      \"category\": \"worker\"\n    },\n    {\n      \"location\": \"Waiting Area\",\n      \"mRPerHr\": \"0.150\",\n      \"mRPerWeek\": \"1.10\",\n      \"result\": \"FAIL\",\n      \"category\": \"public\"\n    }\n  ]\n}"
+                }
+            }
+        }
+    ]
+}

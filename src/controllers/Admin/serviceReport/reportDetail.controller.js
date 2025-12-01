@@ -348,6 +348,131 @@ const getTools = asyncHandler(async (req, res) => {
 
 
 
+// const saveReportHeader = async (req, res) => {
+//     const { serviceId } = req.params;
+//     const {
+//         customerName,
+//         address,
+//         srfNumber,
+//         srfDate,
+//         testReportNumber,
+//         issueDate,
+//         nomenclature,
+//         make,
+//         model,
+//         slNumber,
+//         condition,
+//         testingProcedureNumber,
+//         engineerNameRPId,
+//         pages,
+//         testDate,
+//         testDueDate,
+//         location,
+//         temperature,
+//         humidity,
+//         toolsUsed,
+//         notes,
+//     } = req.body;
+
+//     try {
+//         let report = await serviceReportModel.findOne({ serviceId });
+//         if (!report) {
+//             return res.status(404).json({
+//                 message: 'ServiceReport not found. Please generate the test report first.'
+//             });
+//         }
+
+//         // FORMAT TOOLS & NOTES
+//         const formattedTools = toolsUsed.map((tool) => ({
+//             tool: tool.toolId || null,
+//             SrNo: tool.SrNo,
+//             nomenclature: tool.nomenclature,
+//             make: tool.make,
+//             model: tool.model,
+//             range: tool.range,
+//             calibrationCertificateNo: tool.calibrationCertificateNo,
+//             calibrationValidTill: tool.calibrationValidTill,
+//             certificate: tool.certificate,
+//             uncertainity: tool.uncertainity,
+//         }));
+
+//         const formattedNotes = notes.map((n) => ({
+//             slNo: n.slNo,
+//             text: n.text,
+//         }));
+
+//         // FIND LATEST TEST RECORDS FOR THIS serviceId
+//         // FIND LATEST TEST RECORDS FOR THIS serviceId
+//         const [
+//             radiationProfile,
+//             operatingPotential,
+//             maLinearity,
+//             timerAccuracy,
+//             ctdi,
+//             totalFiltration,
+//             leakage,
+//             outputConsistency,
+//         ] = await Promise.all([
+//             RadiationProfileWidth.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             MeasurementOfOperatingPotential.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             MeasurementOfMaLinearity.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             TimerAccuracy.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             MeasurementOfCTDI.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             TotalFilterationForCTScan.findOne({ serviceId }).sort({ createdAt: -1 }),
+//             RadiationLeakageLeveFromXRayTube.findOne({ serviceId }).sort({ createdAt: -1 }), // ← FIXED
+//             outputConsistencyForCtScanModel.findOne({ serviceId }).sort({ createdAt: -1 }), // ← ADDED
+//         ]);
+
+//         // UPDATE REPORT WITH HEADER + TEST IDs
+//         Object.assign(report, {
+//             customerName,
+//             address,
+//             srfNumber,
+//             srfDate: srfDate ? new Date(srfDate) : null,
+//             testReportNumber,
+//             issueDate: issueDate ? new Date(issueDate) : null,
+//             nomenclature,
+//             make,
+//             model,
+//             slNumber,
+//             condition,
+//             testingProcedureNumber,
+//             engineerNameRPId,
+//             pages,
+//             testDate: testDate ? new Date(testDate) : null,
+//             testDueDate: testDueDate ? new Date(testDueDate) : null,
+//             location,
+//             temperature,
+//             humidity,
+//             toolsUsed: formattedTools,
+//             notes: formattedNotes,
+
+
+//             operatingPotentialId: operatingPotential?._id?.toString() || null,
+//             radiationProfileWidthId: radiationProfile?._id?.toString() || null,
+//             maLinearityId: maLinearity?._id?.toString() || null,
+//             timerAccuracyId: timerAccuracy?._id?.toString() || null,
+//             ctdiId: ctdi?._id?.toString() || null,
+//             totalFiltrationId: totalFiltration?._id?.toString() || null,
+//             radiationLeakageId: leakage?._id?.toString() || null,
+//             outputConsistencyId: outputConsistency?._id?.toString() || null,
+//         });
+
+//         await report.save();
+
+//         return res.status(200).json({
+//             message: 'Report header saved successfully!',
+//             report
+//         });
+
+//     } catch (error) {
+//         console.error('Save report header error:', error);
+//         res.status(500).json({ message: 'Server error', error: error.message });
+//     }
+// };
+
+
+
 const saveReportHeader = async (req, res) => {
     const { serviceId } = req.params;
     const {
@@ -359,6 +484,7 @@ const saveReportHeader = async (req, res) => {
         issueDate,
         nomenclature,
         make,
+        category,
         model,
         slNumber,
         condition,
@@ -378,12 +504,12 @@ const saveReportHeader = async (req, res) => {
         let report = await serviceReportModel.findOne({ serviceId });
         if (!report) {
             return res.status(404).json({
-                message: 'ServiceReport not found. Please generate the test report first.'
+                message: "ServiceReport not found. Please generate the test report first.",
             });
         }
 
-        // FORMAT TOOLS & NOTES
-        const formattedTools = toolsUsed.map((tool) => ({
+        // FORMAT TOOLS
+        const formattedTools = toolsUsed?.map((tool) => ({
             tool: tool.toolId || null,
             SrNo: tool.SrNo,
             nomenclature: tool.nomenclature,
@@ -394,36 +520,15 @@ const saveReportHeader = async (req, res) => {
             calibrationValidTill: tool.calibrationValidTill,
             certificate: tool.certificate,
             uncertainity: tool.uncertainity,
-        }));
+        })) || [];
 
-        const formattedNotes = notes.map((n) => ({
+        // FORMAT NOTES
+        const formattedNotes = notes?.map((n) => ({
             slNo: n.slNo,
             text: n.text,
-        }));
+        })) || [];
 
-        // FIND LATEST TEST RECORDS FOR THIS serviceId
-        // FIND LATEST TEST RECORDS FOR THIS serviceId
-        const [
-            radiationProfile,
-            operatingPotential,
-            maLinearity,
-            timerAccuracy,
-            ctdi,
-            totalFiltration,
-            leakage,
-            outputConsistency,
-        ] = await Promise.all([
-            RadiationProfileWidth.findOne({ serviceId }).sort({ createdAt: -1 }),
-            MeasurementOfOperatingPotential.findOne({ serviceId }).sort({ createdAt: -1 }),
-            MeasurementOfMaLinearity.findOne({ serviceId }).sort({ createdAt: -1 }),
-            TimerAccuracy.findOne({ serviceId }).sort({ createdAt: -1 }),
-            MeasurementOfCTDI.findOne({ serviceId }).sort({ createdAt: -1 }),
-            TotalFilterationForCTScan.findOne({ serviceId }).sort({ createdAt: -1 }),
-            RadiationLeakageLeveFromXRayTube.findOne({ serviceId }).sort({ createdAt: -1 }), // ← FIXED
-            outputConsistencyForCtScanModel.findOne({ serviceId }).sort({ createdAt: -1 }), // ← ADDED
-        ]);
-
-        // UPDATE REPORT WITH HEADER + TEST IDs
+        // UPDATE ONLY HEADER FIELDS (NO TEST ID LOOKUP)
         Object.assign(report, {
             customerName,
             address,
@@ -433,6 +538,7 @@ const saveReportHeader = async (req, res) => {
             issueDate: issueDate ? new Date(issueDate) : null,
             nomenclature,
             make,
+            category,
             model,
             slNumber,
             condition,
@@ -446,28 +552,18 @@ const saveReportHeader = async (req, res) => {
             humidity,
             toolsUsed: formattedTools,
             notes: formattedNotes,
-
-         
-            operatingPotentialId: operatingPotential?._id?.toString() || null,
-            radiationProfileWidthId: radiationProfile?._id?.toString() || null,
-            maLinearityId: maLinearity?._id?.toString() || null,
-            timerAccuracyId: timerAccuracy?._id?.toString() || null,
-            ctdiId: ctdi?._id?.toString() || null,
-            totalFiltrationId: totalFiltration?._id?.toString() || null,
-            radiationLeakageId: leakage?._id?.toString() || null,
-            outputConsistencyId: outputConsistency?._id?.toString() || null,
         });
 
         await report.save();
 
         return res.status(200).json({
-            message: 'Report header saved successfully!',
-            report
+            message: "Report header saved successfully!",
+            report,
         });
 
     } catch (error) {
-        console.error('Save report header error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error("Save report header error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -499,8 +595,9 @@ const getReportHeader = async (req, res) => {
                 nomenclature: report.nomenclature || '',
                 make: report.make || '',
                 model: report.model || '',
+                category:report.category||'',
                 slNumber: report.slNumber || '',
-                condition: report.condition || 'OK',
+                condition: report.condition || '',
                 testingProcedureNumber: report.testingProcedureNumber || '',
                 engineerNameRPId: report.engineerNameRPId || '',
                 testDate: format(report.testDate),
@@ -524,18 +621,18 @@ const getReportHeader = async (req, res) => {
                 notes: report.notes || [],
 
                 // THIS IS THE FINAL FIX — SUPPORT BOTH OLD & NEW FIELD NAMES
-                radiationProfileWidthId: report.radiationProfileWidthId || report.RadiationProfileWidthForCTScan || null,
-                operatingPotentialId: report.operatingPotentialId || report.MeasurementOfOperatingPotential || null,
-                maLinearityId: report.maLinearityId || report.MeasurementOfMaLinearity || null,
-                timerAccuracyId: report.timerAccuracyId || report.TimerAccuracy || null,
-                ctdiId: report.ctdiId || report.MeasurementOfCTDI || null,
-                totalFiltrationId: report.totalFiltrationId || report.TotalFilterationForCTScan || null,
-                radiationLeakageId: report.radiationLeakageId || report.RadiationLeakageLevel || null,
-                outputConsistencyId:
-                    report.outputConsistencyId ||
-                    report.ConsistencyOfRadiationOutput ||  
-                    report.OutputConsistency ||
-                    null
+                // radiationProfileWidthId: report.radiationProfileWidthId || report.RadiationProfileWidthForCTScan || null,
+                // operatingPotentialId: report.operatingPotentialId || report.MeasurementOfOperatingPotential || null,
+                // maLinearityId: report.maLinearityId || report.MeasurementOfMaLinearity || null,
+                // timerAccuracyId: report.timerAccuracyId || report.TimerAccuracy || null,
+                // ctdiId: report.ctdiId || report.MeasurementOfCTDI || null,
+                // totalFiltrationId: report.totalFiltrationId || report.TotalFilterationForCTScan || null,
+                // radiationLeakageId: report.radiationLeakageId || report.RadiationLeakageLevel || null,
+                // outputConsistencyId:
+                //     report.outputConsistencyId ||
+                //     report.ConsistencyOfRadiationOutput ||
+                //     report.OutputConsistency ||
+                //     null
             },
         });
     } catch (error) {
