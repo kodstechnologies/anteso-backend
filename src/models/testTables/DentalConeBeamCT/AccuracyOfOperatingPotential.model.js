@@ -61,8 +61,8 @@ TotalFilterationSchema.index({ serviceId: 1 });
 TotalFilterationSchema.index({ reportId: 1 });
 
 const TotalFilterationForInventionalRadiology = model(
-  'TotalFilterationForBMD',
+  'AccuracyOfOperatingPotentialCBCT',
   TotalFilterationSchema
 );
 
- export default TotalFilterationForInventionalRadiology;
+ export default AccuracyOfOperatingPotential;
