@@ -38,13 +38,6 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
-        // Check existing within transaction
-        const existing = await TotalFilterationForFixedRadioFluoro.findOne({ serviceId }).session(session);
-        if (existing) {
-            await session.abortTransaction();
-            return res.status(400).json({ message: "Total Filtration data already exists for this service" });
-        }
-
         // Get or Create ServiceReport
         let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
         if (!serviceReport) {
@@ -52,17 +45,53 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await TotalFilterationForFixedRadioFluoro.create(
-            [{
-                serviceId,
-                reportId: serviceReport._id,
-                mAStations: mAStations || [],
-                measurements: measurements || [],
-                tolerance: tolerance || { sign: "", value: "" },
-                totalFiltration: totalFiltration || { measured: "", required: "" },
-            }],
-            { session }
-        );
+        // Check existing within transaction - if exists, update instead of creating
+        const existing = await TotalFilterationForFixedRadioFluoro.findOne({ serviceId }).session(session);
+        
+        let testData;
+        if (existing) {
+            // Update existing record
+            testData = await TotalFilterationForFixedRadioFluoro.findByIdAndUpdate(
+                existing._id,
+                {
+                    $set: {
+                        mAStations: mAStations || [],
+                        measurements: measurements || [],
+                        tolerance: tolerance || { sign: "", value: "" },
+                        totalFiltration: totalFiltration || { measured: "", required: "" },
+                        updatedAt: Date.now(),
+                    },
+                },
+                { new: true, runValidators: true, session }
+            );
+            
+            // Ensure serviceReport is saved
+            await serviceReport.save({ session });
+            
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json({
+                success: true,
+                message: "Total Filtration test updated successfully",
+                data: testData,
+            });
+        } else {
+            // Create new record
+            const newTest = await TotalFilterationForFixedRadioFluoro.create(
+                [{
+                    serviceId,
+                    reportId: serviceReport._id,
+                    mAStations: mAStations || [],
+                    measurements: measurements || [],
+                    tolerance: tolerance || { sign: "", value: "" },
+                    totalFiltration: totalFiltration || { measured: "", required: "" },
+                }],
+                { session }
+            );
+
+            testData = newTest[0];
+        }
 
         // Note: TotalFilterationForFixedRadioFluoro field may need to be added to ServiceReport model
         // For now, we'll save the test without linking to ServiceReport
@@ -74,7 +103,7 @@ const create = asyncHandler(async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "Total Filtration test created successfully",
-            data: newTest[0],
+            data: testData,
         });
     } catch (error) {
         await session.abortTransaction();

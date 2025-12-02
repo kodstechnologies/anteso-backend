@@ -1,0 +1,115 @@
+{
+    "info": {
+      "name": "FRF - Accuracy of Irradiation Time",
+      "_postman_id": "d45bfc21-7b42-4f44-a51c-b3a2df9812cd",
+      "description": "Postman collection for Accuracy of Irradiation Time (Fixed Radio Fluoro)",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Create / Upsert Accuracy of Irradiation Time",
+        "request": {
+          "method": "POST",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-irradiation-time/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-irradiation-time",
+              "{{serviceId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"testConditions\": {\n    \"fcd\": \"100\",\n    \"kv\": \"80\",\n    \"ma\": \"200\"\n  },\n  \"irradiationTimes\": [\n    {\n      \"setTime\": \"50\",\n      \"measuredTime\": \"52\"\n    },\n    {\n      \"setTime\": \"100\",\n      \"measuredTime\": \"103\"\n    }\n  ],\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": \"10%\"\n  }\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Accuracy of Irradiation Time by Service ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-irradiation-time-by-service/{{serviceId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-irradiation-time-by-service",
+              "{{serviceId}}"
+            ]
+          }
+        }
+      },
+      {
+        "name": "Update Accuracy of Irradiation Time by Test ID",
+        "request": {
+          "method": "PUT",
+          "header": [
+            { "key": "Content-Type", "value": "application/json" }
+          ],
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-irradiation-time/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-irradiation-time",
+              "{{testId}}"
+            ]
+          },
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"testConditions\": {\n    \"fcd\": \"105\",\n    \"kv\": \"85\",\n    \"ma\": \"250\"\n  },\n  \"irradiationTimes\": [\n    {\n      \"setTime\": \"100\",\n      \"measuredTime\": \"99\"\n    }\n  ],\n  \"tolerance\": {\n    \"operator\": \"<=\",\n    \"value\": \"8%\"\n  }\n}"
+          }
+        }
+      },
+      {
+        "name": "Get Accuracy of Irradiation Time by Test ID",
+        "request": {
+          "method": "GET",
+          "url": {
+            "raw": "http://localhost:8000/anteso/admin/service-report/fixed-radio-fluro/accuracy-of-irradiation-time/{{testId}}",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "8000",
+            "path": [
+              "anteso",
+              "admin",
+              "service-report",
+              "fixed-radio-fluro",
+              "accuracy-of-irradiation-time",
+              "{{testId}}"
+            ]
+          }
+        }
+      }
+    ],
+    "variable": [
+      {
+        "key": "serviceId",
+        "value": "6746abcd12efcd9088123456"
+      },
+      {
+        "key": "testId",
+        "value": "6746bcde78ffcd1122334455"
+      }
+    ]
+  }
+  

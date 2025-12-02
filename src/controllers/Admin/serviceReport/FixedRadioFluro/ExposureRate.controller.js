@@ -37,13 +37,6 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
-        // Check existing
-        const existing = await ExposureRateTableTop.findOne({ serviceId }).session(session);
-        if (existing) {
-            await session.abortTransaction();
-            return res.status(400).json({ message: "Exposure Rate data already exists for this service" });
-        }
-
         // Get or Create ServiceReport
         let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
         if (!serviceReport) {
@@ -51,20 +44,57 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await ExposureRateTableTop.create(
-            [{
-                serviceId,
-                reportId: serviceReport._id,
-                rows: rows || [],
-                nonAecTolerance: nonAecTolerance || "",
-                aecTolerance: aecTolerance || "",
-                minFocusDistance: minFocusDistance || "",
-            }],
-            { session }
-        );
+        // Check existing within transaction - if exists, update instead of creating
+        const existing = await ExposureRateTableTop.findOne({ serviceId }).session(session);
+        
+        let testData;
+        if (existing) {
+            // Update existing record
+            testData = await ExposureRateTableTop.findByIdAndUpdate(
+                existing._id,
+                {
+                    $set: {
+                        rows: rows || [],
+                        nonAecTolerance: nonAecTolerance || "",
+                        aecTolerance: aecTolerance || "",
+                        minFocusDistance: minFocusDistance || "",
+                        updatedAt: Date.now(),
+                    },
+                },
+                { new: true, runValidators: true, session }
+            );
+            
+            // Link back to ServiceReport
+            serviceReport.ExposureRateTableTopFixedRadioFlouro = testData._id;
+            await serviceReport.save({ session });
+            
+            await session.commitTransaction();
+            session.endSession();
+
+            return res.status(200).json({
+                success: true,
+                message: "Exposure Rate test updated successfully",
+                data: testData,
+            });
+        } else {
+            // Create new record
+            const newTest = await ExposureRateTableTop.create(
+                [{
+                    serviceId,
+                    reportId: serviceReport._id,
+                    rows: rows || [],
+                    nonAecTolerance: nonAecTolerance || "",
+                    aecTolerance: aecTolerance || "",
+                    minFocusDistance: minFocusDistance || "",
+                }],
+                { session }
+            );
+
+            testData = newTest[0];
+        }
 
         // Link back to ServiceReport
-        serviceReport.ExposureRateTableTopFixedRadioFlouro = newTest[0]._id;
+        serviceReport.ExposureRateTableTopFixedRadioFlouro = testData._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -73,7 +103,7 @@ const create = asyncHandler(async (req, res) => {
         return res.status(201).json({
             success: true,
             message: "Exposure Rate test created successfully",
-            data: newTest[0],
+            data: testData,
         });
     } catch (error) {
         await session.abortTransaction();

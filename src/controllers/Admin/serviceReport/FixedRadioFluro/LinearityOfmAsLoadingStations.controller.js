@@ -2,6 +2,7 @@
 import mongoose from "mongoose";
 import LinearityOfmAsLoadingFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/LinearityOfmAsLoadingStations.model.js";
 import Service from "../../../../models/Services.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "Radiography and Fluoroscopy";
@@ -15,34 +16,59 @@ const create = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Valid serviceId is required" });
   }
 
-  const service = await Service.findById(serviceId).lean();
-  if (!service) {
-    return res.status(404).json({ message: "Service not found" });
-  }
-  if (service.machineType !== MACHINE_TYPE) {
-    return res.status(403).json({
-      message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const service = await Service.findById(serviceId).session(session);
+    if (!service) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Service not found" });
+    }
+    if (service.machineType !== MACHINE_TYPE) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(403).json({
+        message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+      });
+    }
+
+    // Get or Create ServiceReport
+    let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+    if (!serviceReport) {
+      serviceReport = new ServiceReport({ serviceId });
+      await serviceReport.save({ session });
+    }
+
+    const doc = await LinearityOfmAsLoadingFixedRadioFluoro.findOneAndUpdate(
+      { serviceId },
+      {
+        serviceId,
+        reportId: serviceReport._id,
+        testName: testName || "Linearity of mAs Loading",
+        table1: table1 || [],
+        table2: table2 || [],
+        measHeaders: measHeaders || [],
+        tolerance: tolerance ?? "0.1",
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true, session }
+    );
+
+    await serviceReport.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(201).json({
+      success: true,
+      data: doc,
+      message: "Linearity of mAs Loading (Fixed Radio Fluoro) saved successfully",
     });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
   }
-
-  const doc = await LinearityOfmAsLoadingFixedRadioFluoro.findOneAndUpdate(
-    { serviceId },
-    {
-      serviceId,
-      testName: testName || "Linearity of mAs Loading",
-      table1: table1 || [],
-      table2: table2 || [],
-      measHeaders: measHeaders || [],
-      tolerance: tolerance ?? "0.1",
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
-
-  return res.status(201).json({
-    success: true,
-    data: doc,
-    message: "Linearity of mAs Loading (Fixed Radio Fluoro) saved successfully",
-  });
 });
 
 // GET by testId

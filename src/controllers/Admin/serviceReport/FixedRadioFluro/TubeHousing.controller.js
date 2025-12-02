@@ -43,13 +43,6 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
-        // Check existing
-        const existing = await TubeHousingLeakage.findOne({ serviceId }).session(session);
-        if (existing) {
-            await session.abortTransaction();
-            return res.status(400).json({ message: "Tube Housing Leakage data already exists for this service" });
-        }
-
         // Get or Create ServiceReport
         let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
         if (!serviceReport) {
@@ -57,35 +50,73 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await TubeHousingLeakage.create(
-            [{
-                serviceId,
-                reportId: serviceReport._id,
-                fcd: fcd || "",
-                kv: kv || "",
-                ma: ma || "",
-                time: time || "",
-                workload: workload || "",
-                leakageMeasurements: leakageMeasurements || [],
-                toleranceValue: toleranceValue || "",
-                toleranceOperator: toleranceOperator || "",
-                toleranceTime: toleranceTime || "",
-                remark: remark || "",
-            }],
-            { session }
-        );
+        // Check existing within transaction - if exists, update instead of creating
+        const existing = await TubeHousingLeakage.findOne({ serviceId }).session(session);
+        
+        let testData;
+        if (existing) {
+            // Update existing record
+            testData = await TubeHousingLeakage.findByIdAndUpdate(
+                existing._id,
+                {
+                    $set: {
+                        fcd: fcd || "",
+                        kv: kv || "",
+                        ma: ma || "",
+                        time: time || "",
+                        workload: workload || "",
+                        leakageMeasurements: leakageMeasurements || [],
+                        toleranceValue: toleranceValue || "",
+                        toleranceOperator: toleranceOperator || "",
+                        toleranceTime: toleranceTime || "",
+                        remark: remark || "",
+                        updatedAt: Date.now(),
+                    },
+                },
+                { new: true, runValidators: true, session }
+            );
+            
+            await serviceReport.save({ session });
+            await session.commitTransaction();
+            session.endSession();
 
-        // Link back to ServiceReport (check the model name in serviceReport.model.js)
-        // Note: You may need to add this field to ServiceReport model if not present
+            return res.status(200).json({
+                success: true,
+                message: "Tube Housing Leakage test updated successfully",
+                data: testData,
+            });
+        } else {
+            // Create new record
+            const newTest = await TubeHousingLeakage.create(
+                [{
+                    serviceId,
+                    reportId: serviceReport._id,
+                    fcd: fcd || "",
+                    kv: kv || "",
+                    ma: ma || "",
+                    time: time || "",
+                    workload: workload || "",
+                    leakageMeasurements: leakageMeasurements || [],
+                    toleranceValue: toleranceValue || "",
+                    toleranceOperator: toleranceOperator || "",
+                    toleranceTime: toleranceTime || "",
+                    remark: remark || "",
+                }],
+                { session }
+            );
+
+            testData = newTest[0];
+        }
+
+        // Link back to ServiceReport
         await serviceReport.save({ session });
-
         await session.commitTransaction();
         session.endSession();
 
         return res.status(201).json({
             success: true,
             message: "Tube Housing Leakage test created successfully",
-            data: newTest[0],
+            data: testData,
         });
     } catch (error) {
         await session.abortTransaction();

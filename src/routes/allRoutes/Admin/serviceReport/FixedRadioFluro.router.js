@@ -80,6 +80,12 @@ router.get('/linearity-of-mas-loading-stations-by-service/:serviceId', Linearity
 router.put('/linearity-of-mas-loading-stations/:testId', LinearityOfmAsLoadingStationsController.update)
 router.get('/linearity-of-mas-loading-stations/:testId', LinearityOfmAsLoadingStationsController.getById)
 
+// Linearity of mAs Loading (alias paths without "stations") - used by frontend
+router.post('/linearity-of-mas-loading/:serviceId', LinearityOfmAsLoadingStationsController.create)
+router.get('/linearity-of-mas-loading-by-service/:serviceId', LinearityOfmAsLoadingStationsController.getByServiceId)
+router.put('/linearity-of-mas-loading/:testId', LinearityOfmAsLoadingStationsController.update)
+router.get('/linearity-of-mas-loading/:testId', LinearityOfmAsLoadingStationsController.getById)
+
 // Radiation Protection Survey - Fixed Radio Fluoro
 router.post('/radiation-protection-survey/:serviceId', RadiationProtectionSurveyController.create)
 router.get('/radiation-protection-survey-by-service/:serviceId', RadiationProtectionSurveyController.getByServiceId)
