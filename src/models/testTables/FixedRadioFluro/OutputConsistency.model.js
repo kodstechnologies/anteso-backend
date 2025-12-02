@@ -59,4 +59,4 @@ const outputConsistencySchema = new mongoose.Schema(
 
 outputConsistencySchema.index({ serviceId: 1 }, { unique: true });
 
-export default mongoose.model("OutputConsistencyForFixedRadioFlouro", outputConsistencySchema);
+export default mongoose.model("OutputConsistencyForFixedRadioFluoro", outputConsistencySchema);

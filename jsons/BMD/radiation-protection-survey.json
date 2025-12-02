@@ -1,0 +1,79 @@
+{
+  "info": {
+    "name": "Radiation Protection Survey (BMD)",
+    "_postman_id": "a1b2c3d4-ef56-7890-ab12-cd34ef56ab78",
+    "description": "Postman collection for Radiation Protection Survey (Interventional Radiology - BMD)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Radiation Protection Survey",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{serviceId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "radiation-protection-survey", "{{serviceId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"surveyDate\": \"2025-01-01\",\n    \"surveyMeterModel\": \"Model XYZ\",\n    \"calibrationCertificateValid\": \"Yes\",\n    \"leadApronsAvailable\": \"3 available\",\n    \"thyroidShieldsAvailable\": \"2 available\",\n    \"leadGlassesAvailable\": \"Yes\",\n    \"ceilingSuspendedShield\": \"Available\",\n    \"tableLeadCurtain\": \"Present\",\n    \"doseAreaProductMeter\": \"Working\",\n    \"patientDoseMonitoring\": \"Enabled\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Survey by Test ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "radiation-protection-survey", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Radiation Protection Survey",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "radiation-protection-survey", "{{testId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"surveyDate\": \"2025-02-01\",\n    \"surveyMeterModel\": \"Updated Meter\",\n    \"calibrationCertificateValid\": \"No\",\n    \"leadApronsAvailable\": \"4 available\",\n    \"thyroidShieldsAvailable\": \"3 available\",\n    \"leadGlassesAvailable\": \"Yes\",\n    \"ceilingSuspendedShield\": \"Repaired\",\n    \"tableLeadCurtain\": \"Good condition\",\n    \"doseAreaProductMeter\": \"Calibrated\",\n    \"patientDoseMonitoring\": \"Active\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Survey by Service ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:5000/api/radiation-protection-survey-by-serviceId/{{serviceId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": ["api", "radiation-protection-survey-by-serviceId", "{{serviceId}}"]
+        }
+      }
+    }
+  ]
+}

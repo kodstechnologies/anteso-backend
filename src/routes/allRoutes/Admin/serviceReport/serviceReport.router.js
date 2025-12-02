@@ -10,7 +10,7 @@ const  router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
 router.put('/report-header/:serviceId', reportDetailController.saveReportHeader)
-router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
 
 // router.get('/get-tools-for-technician-assigned/:serviceId',reportDetailController.)
 router.use('/ct-scan', CTScanRouter)

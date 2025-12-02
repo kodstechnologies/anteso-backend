@@ -13,6 +13,10 @@ import TubeHousingController from "../../../../controllers/Admin/serviceReport/F
 import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/FixedRadioFluro/AccuracyOfIrradiationTime.controller.js";
 import LinearityOfmAsLoadingStationsController from "../../../../controllers/Admin/serviceReport/FixedRadioFluro/LinearityOfmAsLoadingStations.controller.js";
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/FixedRadioFluro/RadiationProtectionSurvey.controller.js";
+import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
+
+router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
+
 
 // Accuracy of Operating Potential
 router.post('/accuracy-of-operating-potential/:serviceId', AccuracyOfOperatingPotentialController.create)
