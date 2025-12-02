@@ -230,7 +230,27 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "ExposureRateTableTopFixedRadioFlouro"
     },
-    
+    LinearityOfmAsLoadingFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingFixedRadioFluoro",
+
+    },
+    RadiationProtectionSurvey: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionSurvey"
+    },
+    TubeHousingLeakageFixedRadioFlouro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageFixedRadioFlouro"
+    },
+    AccuracyOfIrradiationTimeFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeFixedRadioFluoro"
+    },
+    accuracyOfOperatingPotentialFixedRadioFluoro: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialFixedRadioFluoro"
+    },
     CongruenceOfRadiationRadiographyFixedMobie: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "CongruenceOfRadiationRadiographyFixedMobie"

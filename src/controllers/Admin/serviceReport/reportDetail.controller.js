@@ -568,79 +568,207 @@ const saveReportHeader = async (req, res) => {
 };
 
 
+// const getReportHeader = async (req, res) => {
+//     const { serviceId } = req.params;
+
+//     try {
+//         const report = await serviceReportModel
+//             .findOne({ serviceId })
+//             .populate('toolsUsed.tool', 'nomenclature make model')
+//             .lean();
+
+//         if (!report) {
+//             return res.status(200).json({ exists: false });
+//         }
+
+//         const format = (date) => (date ? new Date(date).toISOString().split('T')[0] : '');
+
+//         res.status(200).json({
+//             exists: true,
+//             data: {
+//                 customerName: report.customerName || '',
+//                 address: report.address || '',
+//                 srfNumber: report.srfNumber || '',
+//                 srfDate: format(report.srfDate),
+//                 testReportNumber: report.testReportNumber || '',
+//                 issueDate: format(report.issueDate),
+//                 nomenclature: report.nomenclature || '',
+//                 make: report.make || '',
+//                 model: report.model || '',
+//                 category:report.category||'',
+//                 slNumber: report.slNumber || '',
+//                 condition: report.condition || '',
+//                 testingProcedureNumber: report.testingProcedureNumber || '',
+//                 engineerNameRPId: report.engineerNameRPId || '',
+//                 testDate: format(report.testDate),
+//                 testDueDate: format(report.testDueDate),
+//                 location: report.location || '',
+//                 temperature: report.temperature || '',
+//                 humidity: report.humidity || '',
+//                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+//                     slNumber: String(i + 1),
+//                     toolId: t.tool?._id || null,
+//                     nomenclature: t.nomenclature || '',
+//                     make: t.make || '',
+//                     model: t.model || '',
+//                     SrNo: t.SrNo || '',
+//                     range: t.range || '',
+//                     calibrationCertificateNo: t.calibrationCertificateNo || '',
+//                     calibrationValidTill: t.calibrationValidTill || '',
+//                     certificate: t.certificate || '',
+//                     uncertainity: t.uncertainity || '',
+//                 })),
+//                 notes: report.notes || [],
+
+//                 // THIS IS THE FINAL FIX — SUPPORT BOTH OLD & NEW FIELD NAMES
+//                 // radiationProfileWidthId: report.radiationProfileWidthId || report.RadiationProfileWidthForCTScan || null,
+//                 // operatingPotentialId: report.operatingPotentialId || report.MeasurementOfOperatingPotential || null,
+//                 // maLinearityId: report.maLinearityId || report.MeasurementOfMaLinearity || null,
+//                 // timerAccuracyId: report.timerAccuracyId || report.TimerAccuracy || null,
+//                 // ctdiId: report.ctdiId || report.MeasurementOfCTDI || null,
+//                 // totalFiltrationId: report.totalFiltrationId || report.TotalFilterationForCTScan || null,
+//                 // radiationLeakageId: report.radiationLeakageId || report.RadiationLeakageLevel || null,
+//                 // outputConsistencyId:
+//                 //     report.outputConsistencyId ||
+//                 //     report.ConsistencyOfRadiationOutput ||
+//                 //     report.OutputConsistency ||
+//                 //     null
+//             },
+//         });
+//     } catch (error) {
+//         console.error('Get report header error:', error);
+//         res.status(500).json({ exists: false, message: 'Server error' });
+//     }
+// };
+
 const getReportHeader = async (req, res) => {
     const { serviceId } = req.params;
 
     try {
-        const report = await serviceReportModel
+        // ⭐ All fields to populate
+        const fixedRadioFluoroFields = [
+            "accuracyOfOperatingPotentialFixedRadioFluoro",
+            "OutputConsistencyForFixedRadioFluoro",
+            "LowContrastResolutionFixedRadioFlouro",
+            "HighContrastResolutionFixedRadioFluoro",
+            "ExposureRateTableTopFixedRadioFlouro",
+            "LinearityOfmAsLoadingFixedRadioFluoro",
+            "TubeHousingLeakageFixedRadioFlouro",
+            "AccuracyOfIrradiationTimeFixedRadioFluoro",
+
+            // Radiography Fixed / Mobile
+            "CongruenceOfRadiationRadiographyFixedMobie",
+            "CentralBeamAlignmentRadiographyFixedMobile",
+            "EffectiveFocalSpotForRadiographyFixedAndMobile",
+            "accuracyOfOperatingPotentialRadigraphyFixedMobile"
+        ];
+
+        // ⭐ Build query
+        let query = serviceReportModel
             .findOne({ serviceId })
-            .populate('toolsUsed.tool', 'nomenclature make model')
-            .lean();
+            .populate("toolsUsed.tool", "nomenclature make model");
+
+        // ⭐ Populate all fixed radio flouro fields
+        fixedRadioFluoroFields.forEach((field) => {
+            query = query.populate(field);
+        });
+
+        // ⭐ Execute
+        const report = await query.lean();
 
         if (!report) {
             return res.status(200).json({ exists: false });
         }
 
-        const format = (date) => (date ? new Date(date).toISOString().split('T')[0] : '');
+        // Date Formatter
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
 
+        // ⭐ FINAL RESPONSE
         res.status(200).json({
             exists: true,
             data: {
-                customerName: report.customerName || '',
-                address: report.address || '',
-                srfNumber: report.srfNumber || '',
+                customerName: report.customerName || "",
+                address: report.address || "",
+                srfNumber: report.srfNumber || "",
                 srfDate: format(report.srfDate),
-                testReportNumber: report.testReportNumber || '',
+                testReportNumber: report.testReportNumber || "",
                 issueDate: format(report.issueDate),
-                nomenclature: report.nomenclature || '',
-                make: report.make || '',
-                model: report.model || '',
-                category:report.category||'',
-                slNumber: report.slNumber || '',
-                condition: report.condition || '',
-                testingProcedureNumber: report.testingProcedureNumber || '',
-                engineerNameRPId: report.engineerNameRPId || '',
+                nomenclature: report.nomenclature || "",
+                make: report.make || "",
+                model: report.model || "",
+                category: report.category || "",
+                slNumber: report.slNumber || "",
+                condition: report.condition || "",
+                testingProcedureNumber: report.testingProcedureNumber || "",
+                engineerNameRPId: report.engineerNameRPId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
-                location: report.location || '',
-                temperature: report.temperature || '',
-                humidity: report.humidity || '',
+                location: report.location || "",
+                temperature: report.temperature || "",
+                humidity: report.humidity || "",
+
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: String(i + 1),
                     toolId: t.tool?._id || null,
-                    nomenclature: t.nomenclature || '',
-                    make: t.make || '',
-                    model: t.model || '',
-                    SrNo: t.SrNo || '',
-                    range: t.range || '',
-                    calibrationCertificateNo: t.calibrationCertificateNo || '',
-                    calibrationValidTill: t.calibrationValidTill || '',
-                    certificate: t.certificate || '',
-                    uncertainity: t.uncertainity || '',
+                    nomenclature: t.nomenclature || "",
+                    make: t.make || "",
+                    model: t.model || "",
+                    SrNo: t.SrNo || "",
+                    range: t.range || "",
+                    calibrationCertificateNo: t.calibrationCertificateNo || "",
+                    calibrationValidTill: t.calibrationValidTill || "",
+                    certificate: t.certificate || "",
+                    uncertainity: t.uncertainity || "",
                 })),
+
                 notes: report.notes || [],
 
-                // THIS IS THE FINAL FIX — SUPPORT BOTH OLD & NEW FIELD NAMES
-                // radiationProfileWidthId: report.radiationProfileWidthId || report.RadiationProfileWidthForCTScan || null,
-                // operatingPotentialId: report.operatingPotentialId || report.MeasurementOfOperatingPotential || null,
-                // maLinearityId: report.maLinearityId || report.MeasurementOfMaLinearity || null,
-                // timerAccuracyId: report.timerAccuracyId || report.TimerAccuracy || null,
-                // ctdiId: report.ctdiId || report.MeasurementOfCTDI || null,
-                // totalFiltrationId: report.totalFiltrationId || report.TotalFilterationForCTScan || null,
-                // radiationLeakageId: report.radiationLeakageId || report.RadiationLeakageLevel || null,
-                // outputConsistencyId:
-                //     report.outputConsistencyId ||
-                //     report.ConsistencyOfRadiationOutput ||
-                //     report.OutputConsistency ||
-                //     null
+                // ⭐ ALL FIXED RADIO FLUORO POPULATED DATA
+                accuracyOfOperatingPotentialFixedRadioFluoro:
+                    report.accuracyOfOperatingPotentialFixedRadioFluoro || null,
+
+                OutputConsistencyForFixedRadioFluoro:
+                    report.OutputConsistencyForFixedRadioFluoro || null,
+
+                LowContrastResolutionFixedRadioFlouro:
+                    report.LowContrastResolutionFixedRadioFlouro || null,
+
+                HighContrastResolutionFixedRadioFluoro:
+                    report.HighContrastResolutionFixedRadioFluoro || null,
+
+                ExposureRateTableTopFixedRadioFlouro:
+                    report.ExposureRateTableTopFixedRadioFlouro || null,
+
+                LinearityOfmAsLoadingFixedRadioFluoro:
+                    report.LinearityOfmAsLoadingFixedRadioFluoro || null,
+
+                TubeHousingLeakageFixedRadioFlouro:
+                    report.TubeHousingLeakageFixedRadioFlouro || null,
+
+                AccuracyOfIrradiationTimeFixedRadioFluoro:
+                    report.AccuracyOfIrradiationTimeFixedRadioFluoro || null,
+
+                // ⭐ Radiography Fixed / Mobile
+                CongruenceOfRadiationRadiographyFixedMobie:
+                    report.CongruenceOfRadiationRadiographyFixedMobie || null,
+
+                CentralBeamAlignmentRadiographyFixedMobile:
+                    report.CentralBeamAlignmentRadiographyFixedMobile || null,
+
+                EffectiveFocalSpotForRadiographyFixedAndMobile:
+                    report.EffectiveFocalSpotForRadiographyFixedAndMobile || null,
+
+                accuracyOfOperatingPotentialRadigraphyFixedMobile:
+                    report.accuracyOfOperatingPotentialRadigraphyFixedMobile ||
+                    null,
             },
         });
     } catch (error) {
-        console.error('Get report header error:', error);
-        res.status(500).json({ exists: false, message: 'Server error' });
+        console.error("Get report header error:", error);
+        res.status(500).json({ exists: false, message: "Server error" });
     }
 };
-
 
 
 

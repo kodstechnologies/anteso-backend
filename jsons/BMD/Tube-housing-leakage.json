@@ -1,0 +1,74 @@
+{
+  "info": {
+    "name": "BMD - Tube Housing Leakage (Radiation Leakage Level)",
+    "_postman_id": "tube-housing-leakage-collection-001",
+    "description": "API Collection for Tube Housing Leakage test in BMD Service Report",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create Tube Housing Leakage",
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{serviceId}}"]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"measurementSettings\": {\n    \"distance\": \"100\",\n    \"kv\": \"80\",\n    \"ma\": \"10\",\n    \"time\": \"1\"\n  },\n  \"leakageMeasurements\": [\n    {\n      \"location\": \"Tube Housing\",\n      \"front\": \"0.5\",\n      \"back\": \"0.4\",\n      \"left\": \"0.3\",\n      \"right\": \"0.6\",\n      \"top\": \"0.5\",\n      \"max\": \"0.6\",\n      \"unit\": \"mGy/h\"\n    }\n  ],\n  \"workload\": {\n    \"value\": \"500\",\n    \"unit\": \"mA·min/week\"\n  },\n  \"tolerance\": {\n    \"value\": \"1.0\",\n    \"operator\": \"less than or equal to\",\n    \"time\": \"1\"\n  },\n  \"calculatedResult\": {\n    \"maxLeakageIntermediate\": \"0.05\",\n    \"finalLeakageRate\": \"0.0004\",\n    \"remark\": \"Pass\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Tube Housing Leakage by Test ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{testId}}"]
+        }
+      }
+    },
+    {
+      "name": "Update Tube Housing Leakage",
+      "request": {
+        "method": "PUT",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level/{{testId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level", "{{testId}}"]
+        },
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"measurementSettings\": {\n    \"distance\": \"120\",\n    \"kv\": \"85\",\n    \"ma\": \"20\",\n    \"time\": \"1\"\n  },\n  \"leakageMeasurements\": [\n    {\n      \"location\": \"Tube Housing\",\n      \"front\": \"0.6\",\n      \"back\": \"0.5\",\n      \"left\": \"0.4\",\n      \"right\": \"0.7\",\n      \"top\": \"0.6\",\n      \"max\": \"0.7\",\n      \"unit\": \"mGy/h\"\n    }\n  ],\n  \"workload\": {\n    \"value\": \"600\",\n    \"unit\": \"mA·min/week\"\n  },\n  \"tolerance\": {\n    \"value\": \"1.0\",\n    \"operator\": \"less than or equal to\",\n    \"time\": \"1\"\n  },\n  \"calculatedResult\": {\n    \"maxLeakageIntermediate\": \"0.06\",\n    \"finalLeakageRate\": \"0.0005\",\n    \"remark\": \"Pass\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get Tube Housing Leakage by Service ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/radiation-leakage-level-by-serviceId/{{serviceId}}",
+          "host": ["{{base_url}}"],
+          "path": ["radiation-leakage-level-by-serviceId", "{{serviceId}}"]
+        }
+      }
+    }
+  ]
+}
