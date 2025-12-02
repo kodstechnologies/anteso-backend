@@ -230,6 +230,7 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "ExposureRateTableTopFixedRadioFlouro"
     },
+    
     CongruenceOfRadiationRadiographyFixedMobie: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "CongruenceOfRadiationRadiographyFixedMobie"

@@ -5,6 +5,7 @@ import InventionalRadiology from "../serviceReport/InventionalRadiology.router.j
 import Mammography from "../serviceReport/Mammography.router.js"
 import CArm from "../serviceReport/CArm.router.js"
 import FixedRadioFluro from "../serviceReport/FixedRadioFluro.router.js"
+import BMD from "../serviceReport/bmd.router.js"
 const  router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -17,5 +18,6 @@ router.use('/inventional-radiology', InventionalRadiology)
 router.use('/mammography',Mammography)
 router.use('/c-arm',CArm)
 router.use('/fixed-radio-fluro', FixedRadioFluro)
+router.use('/bmd', BMD)
 
 export default router;

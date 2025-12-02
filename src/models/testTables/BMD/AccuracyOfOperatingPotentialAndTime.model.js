@@ -20,6 +20,7 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
         rows: [
             {
                 setTime: { type: String },
+                appliedkVp: { type: String },
                 maStation1: {
                     kvp: { type: String },
                     time: { type: String },

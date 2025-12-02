@@ -1,0 +1,92 @@
+{
+  "info": {
+    "name": "BMD - Accuracy Operating Potential & Time",
+    "_postman_id": "92c87299-d281-48d5-9839-729fb25478dd",
+    "description": "API Testing for Accuracy of Operating Potential & Time (BMD)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create / Upsert (POST: /accuracy-of-operating-potential-and-time/:serviceId)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/accuracy-of-operating-potential-and-time/{{serviceId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": [
+            "api",
+            "accuracy-of-operating-potential-and-time",
+            "{{serviceId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"setTime\": \"0.8\",\n      \"appliedkVp\": \"80\",\n      \"maStation1\": {\n        \"kvp\": \"79.5\",\n        \"time\": \"0.78\"\n      },\n      \"maStation2\": {\n        \"kvp\": \"80.2\",\n        \"time\": \"0.81\"\n      },\n      \"avgKvp\": \"79.85\",\n      \"avgTime\": \"0.795\",\n      \"remark\": \"PASS\"\n    }\n  ],\n  \"kvpToleranceSign\": \"±\",\n  \"kvpToleranceValue\": \"5\",\n  \"timeToleranceSign\": \"±\",\n  \"timeToleranceValue\": \"5\",\n  \"totalFiltration\": {\n    \"atKvp\": \"80\",\n    \"measured1\": \"2.6 mmAl\",\n    \"measured2\": \"2.7 mmAl\"\n  },\n  \"filtrationTolerance\": {\n    \"value1\": \"2.5\",\n    \"operator1\": \">=\",\n    \"kvp1\": \"80\",\n    \"value2\": \"3.0\",\n    \"operator2\": \"<=\",\n    \"kvp2\": \"100\",\n    \"value3\": \"\",\n    \"operator3\": \"\",\n    \"kvp3\": \"\"\n  }\n}"
+        }
+      }
+    },
+    {
+      "name": "Get by Test ID (GET: /accuracy-of-operating-potential/:testId)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/accuracy-of-operating-potential/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": [
+            "api",
+            "accuracy-of-operating-potential",
+            "{{testId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update by Test ID (PUT: /accuracy-of-operating-potential/:testId)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/accuracy-of-operating-potential/{{testId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": [
+            "api",
+            "accuracy-of-operating-potential",
+            "{{testId}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rows\": [\n    {\n      \"setTime\": \"1.0\",\n      \"appliedkVp\": \"90\",\n      \"maStation1\": {\n        \"kvp\": \"89.7\",\n        \"time\": \"0.98\"\n      },\n      \"maStation2\": {\n        \"kvp\": \"90.3\",\n        \"time\": \"1.02\"\n      },\n      \"avgKvp\": \"90.0\",\n      \"avgTime\": \"1.0\",\n      \"remark\": \"PASS\"\n    }\n  ],\n  \"remarks\": \"Updated values\",\n  \"kvpToleranceSign\": \"±\",\n  \"kvpToleranceValue\": \"10\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Get by Service ID (GET: /accuracy-of-operating-potential-by-serviceId/:serviceId)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:5000/api/accuracy-of-operating-potential-by-serviceId/{{serviceId}}",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "5000",
+          "path": [
+            "api",
+            "accuracy-of-operating-potential-by-serviceId",
+            "{{serviceId}}"
+          ]
+        }
+      }
+    }
+  ]
+}

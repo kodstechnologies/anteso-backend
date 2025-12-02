@@ -1,16 +1,16 @@
-// controllers/OutputConsistency.js
+// controllers/OutputConsistencyForCArm.js
 import mongoose from "mongoose";
-import OutputConsistencyForFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/OutputConsistency.model.js";
+import OutputConsistencyModel from "../../../../models/testTables/FixedRadioFluro/OutputConsistency.model.js";  // Updated model
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Radiography and Fluoroscopy";
+const MACHINE_TYPE = "Radiography and Fluoroscopy";  // You can keep or change later
 
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
-        parameters,
+        ffd,                    // Only this field now
         outputRows,
         measurementHeaders,
         tolerance,
@@ -39,7 +39,7 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // Check existing
-        const existing = await OutputConsistencyForFixedRadioFluoro.findOne({ serviceId }).session(session);
+        const existing = await OutputConsistencyModel.findOne({ serviceId }).session(session);
         if (existing) {
             await session.abortTransaction();
             return res.status(400).json({ message: "Output Consistency data already exists for this service" });
@@ -52,11 +52,11 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await OutputConsistencyForFixedRadioFluoro.create(
+        const newTest = await OutputConsistencyModel.create(
             [{
                 serviceId,
                 reportId: serviceReport._id,
-                parameters: parameters || { mas: "", sliceThickness: "", time: "" },
+                ffd: ffd || "",                                   // Only ffd now
                 outputRows: outputRows || [],
                 measurementHeaders: measurementHeaders || ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
                 tolerance: tolerance || "",
@@ -65,8 +65,8 @@ const create = asyncHandler(async (req, res) => {
             { session }
         );
 
-        // Link back to ServiceReport
-        serviceReport.OutputConsistencyForFixedRadioFluoro = newTest[0]._id;
+        // Link back to ServiceReport (adjust field name if needed in your ServiceReport schema)
+        serviceReport.OutputConsistencyModel = newTest[0]._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -91,7 +91,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Valid serviceId is required" });
     }
 
-    const testData = await OutputConsistencyForFixedRadioFluoro.findOne({ serviceId }).lean();
+    const testData = await OutputConsistencyModel.findOne({ serviceId }).lean();
 
     if (!testData) {
         return res.status(404).json({ message: "No Output Consistency data found for this service" });
@@ -110,7 +110,7 @@ const getById = asyncHandler(async (req, res) => {
         return res.status(400).json({ message: "Invalid testId" });
     }
 
-    const testData = await OutputConsistencyForFixedRadioFluoro.findById(testId).lean();
+    const testData = await OutputConsistencyModel.findById(testId).lean();
 
     if (!testData) {
         return res.status(404).json({ message: "Output Consistency test not found" });
@@ -137,7 +137,7 @@ const update = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        const updatedTest = await OutputConsistencyForFixedRadioFluoro.findByIdAndUpdate(
+        const updatedTest = await OutputConsistencyModel.findByIdAndUpdate(
             testId,
             {
                 $set: {
@@ -174,4 +174,3 @@ export default {
     update,
     getByServiceId,
 };
-
