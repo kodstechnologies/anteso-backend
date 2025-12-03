@@ -65,7 +65,7 @@ TotalFilterationSchema.pre('save', function (next) {
 TotalFilterationSchema.index({ serviceId: 1 });
 TotalFilterationSchema.index({ reportId: 1 });
 
-const TotalFilterationForInventionalRadiology = model(
+const AccuracyOfOperatingPotential = model(
   'AccuracyOfOperatingPotentialCBCT',
   TotalFilterationSchema
 );
