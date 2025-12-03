@@ -296,8 +296,25 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
 
         ref: "RadiationProtectionSurveyCBCT"
-    }
+    },
 
+    //dental intra
+    AccuracyOfOperatingPotentialAndTimeDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfOperatingPotentialAndTimeDentalIntra"
+    },
+    LinearityOfTimeDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfTimeDentalIntra"
+    },
+    ReproducibilityOfRadiationOutputDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ReproducibilityOfRadiationOutputDentalIntra"
+    },
+    TubeHousingLeakageDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageDentalIntra"
+    }
 })
 export default mongoose.model(
     "ServiceReport",
