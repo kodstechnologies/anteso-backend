@@ -214,9 +214,9 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "accuracyOfOperatingPotentialFixedRadioFluoro"
     },
-    OutputConsistencyForFixedRadioFluoro: {
+    OutputConsistencyForFixedRadioFlouro: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "OutputConsistencyForFixedRadioFluoro"
+        ref: "OutputConsistencyForFixedRadioFlouro"
     },
     LowContrastResolutionFixedRadioFlouro: {
         type: mongoose.Schema.Types.ObjectId,
@@ -247,10 +247,7 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "AccuracyOfIrradiationTimeFixedRadioFluoro"
     },
-    accuracyOfOperatingPotentialFixedRadioFluoro: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "accuracyOfOperatingPotentialFixedRadioFluoro"
-    },
+
     CongruenceOfRadiationRadiographyFixedMobie: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "CongruenceOfRadiationRadiographyFixedMobie"
@@ -266,6 +263,39 @@ const serviceReportSchema = new mongoose.Schema({
     accuracyOfOperatingPotentialRadigraphyFixedMobile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "accuracyOfOperatingPotentialRadigraphyFixedMobile"
+    },
+
+
+    //cbct
+    AccuracyOfIrradiationTimeCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfIrradiationTimeCBCT"
+    },
+    AccuracyOfOperatingPotentialCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfOperatingPotentialCBCT"
+    },
+    OutputConsistencyForCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "OutputConsistencyForCBCT"
+    },
+    LinearityOfMaLoadingCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "LinearityOfMaLoadingCBCT"
+    },
+    RadiationLeakageTestCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationLeakageTestCBCT"
+    },
+    RadiationProtectionSurveyCBCT: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationProtectionSurveyCBCT"
     }
 
 })

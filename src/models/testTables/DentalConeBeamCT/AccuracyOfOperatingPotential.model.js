@@ -4,9 +4,14 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 const TotalFilterationSchema = new Schema({
-  serviceId: {
+  serviceReportId: {
     type: Schema.Types.ObjectId,
-    ref: 'Service',
+    ref: 'ServiceReport',
+    required: false,
+  },
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
   },
 
   // Table 1: kVp Accuracy at Different mA Stations
@@ -16,7 +21,7 @@ const TotalFilterationSchema = new Schema({
 
   measurements: [
     {
-      appliedKvp: { type: String,  },
+      appliedKvp: { type: String, },
       measuredValues: [{ type: String, }], // Must have values
       averageKvp: { type: String },
       remarks: { type: String }, // No enum — fully flexible
@@ -26,7 +31,7 @@ const TotalFilterationSchema = new Schema({
   // Tolerance for kVp
   tolerance: {
     sign: { type: String, },    // e.g., "±", "+", "-"
-    value: { type: String,  },   // e.g., "2.0"
+    value: { type: String, },   // e.g., "2.0"
   },
 
   // Table 2: Total Filtration
@@ -65,4 +70,4 @@ const TotalFilterationForInventionalRadiology = model(
   TotalFilterationSchema
 );
 
- export default AccuracyOfOperatingPotential;
+export default AccuracyOfOperatingPotential;

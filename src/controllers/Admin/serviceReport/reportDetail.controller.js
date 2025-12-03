@@ -647,13 +647,16 @@ const getReportHeader = async (req, res) => {
     try {
         const fixedRadioFluoroFields = [
             "accuracyOfOperatingPotentialFixedRadioFluoro",
-            "OutputConsistencyForFixedRadioFluoro",
+            "OutputConsistencyForFixedRadioFlouro",
             "LowContrastResolutionFixedRadioFlouro",
             "HighContrastResolutionFixedRadioFluoro",
             "ExposureRateTableTopFixedRadioFlouro",
             "LinearityOfmAsLoadingFixedRadioFluoro",
             "TubeHousingLeakageFixedRadioFlouro",
             "AccuracyOfIrradiationTimeFixedRadioFluoro",
+            "CongruenceOfRadiationForRadioFluro",
+            "CentralBeamAlignmentForRadioFluoro",
+            "RadiationProtectionSurvey",
         ];
 
         let query = serviceReportModel
@@ -714,8 +717,8 @@ const getReportHeader = async (req, res) => {
                 accuracyOfOperatingPotentialFixedRadioFluoro:
                     report.accuracyOfOperatingPotentialFixedRadioFluoro,
 
-                OutputConsistencyForFixedRadioFluoro:
-                    report.OutputConsistencyForFixedRadioFluoro,
+                OutputConsistencyForFixedRadioFlouro:
+                    report.OutputConsistencyForFixedRadioFlouro,
 
                 LowContrastResolutionFixedRadioFlouro:
                     report.LowContrastResolutionFixedRadioFlouro,
@@ -734,6 +737,10 @@ const getReportHeader = async (req, res) => {
 
                 AccuracyOfIrradiationTimeFixedRadioFluoro:
                     report.AccuracyOfIrradiationTimeFixedRadioFluoro,
+                CongruenceOfRadiationForRadioFluro: report.CongruenceOfRadiationForRadioFluro,
+                CentralBeamAlignmentForRadioFluoro: report.CentralBeamAlignmentForRadioFluoro,
+                RadiationProtectionSurvey: report.RadiationProtectionSurvey,
+
             },
         });
     } catch (error) {

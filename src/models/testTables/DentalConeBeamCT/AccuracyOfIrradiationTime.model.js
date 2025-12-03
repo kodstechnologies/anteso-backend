@@ -4,12 +4,15 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 const AccuracyOfIrradiationTimeSchema = new Schema({
-  serviceId: {
+  serviceReportId: {
     type: Schema.Types.ObjectId,
-    ref: 'Service', // or whatever your service model is
-    required: true,
+    ref: 'ServiceReport',
+    required: false,
   },
-
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
+  },
   // Table 1: Test Conditions (Single fixed row)
   testConditions: {
     fcd: { type: String, default: "" }, // FCD in cm
