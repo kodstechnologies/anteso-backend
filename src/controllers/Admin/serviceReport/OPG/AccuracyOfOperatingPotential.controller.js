@@ -1,16 +1,16 @@
-// controllers/Admin/serviceReport/DentalConeBeamCT/AccuracyOfOperatingPotential.controller.js
+// controllers/Admin/serviceReport/OPG/AccuracyOfOperatingPotential.controller.js
 import mongoose from "mongoose";
-import AccuracyOfOperatingPotential from "../../../../models/testTables/DentalConeBeamCT/AccuracyOfOperatingPotential.model.js";
+import AccuracyOfOperatingPotential from "../../../../models/testTables/OPG/AccuracyOfOperatingPotential.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental Cone Beam CT";
+const MACHINE_TYPE = "Ortho Pantomography (OPG)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -51,7 +51,6 @@ const create = asyncHandler(async (req, res) => {
       testRecord.measurements = measurements !== undefined ? measurements : testRecord.measurements;
       testRecord.tolerance = tolerance !== undefined ? tolerance : testRecord.tolerance;
       testRecord.totalFiltration = totalFiltration !== undefined ? totalFiltration : testRecord.totalFiltration;
-      if (ffd !== undefined) testRecord.ffd = ffd;
     } else {
       // Create new
       testRecord = new AccuracyOfOperatingPotential({
@@ -61,14 +60,13 @@ const create = asyncHandler(async (req, res) => {
         measurements: measurements || [],
         tolerance: tolerance || { sign: "±", value: "" },
         totalFiltration: totalFiltration || { measured: "", required: "" },
-        ffd: ffd || "",
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.AccuracyOfOperatingPotentialCBCT = testRecord._id;
+    serviceReport.AccuracyOfOperatingPotentialOPG = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -130,7 +128,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -162,7 +160,6 @@ const update = asyncHandler(async (req, res) => {
     if (measurements !== undefined) testRecord.measurements = measurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
     if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
-    if (ffd !== undefined) testRecord.ffd = ffd;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -220,3 +217,4 @@ const getByServiceId = asyncHandler(async (req, res) => {
 });
 
 export default { create, getById, update, getByServiceId };
+

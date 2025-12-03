@@ -297,6 +297,37 @@ const serviceReportSchema = new mongoose.Schema({
 
         ref: "RadiationProtectionSurveyCBCT"
     },
+    //opg
+    AccuracyOfIrradiationTimeOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfIrradiationTimeOPG"
+    },
+    AccuracyOfOperatingPotentialOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfOperatingPotentialOPG"
+    },
+    OutputConsistencyForOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "OutputConsistencyForOPG"
+    },
+    LinearityOfMaLoadingOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "LinearityOfMaLoadingOPG"
+    },
+    RadiationLeakageTestOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationLeakageTestOPG"
+    },
+    RadiationProtectionSurveyOPG: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationProtectionSurveyOPG"
+    },
 
     //dental intra
     AccuracyOfOperatingPotentialAndTimeDentalIntra: {

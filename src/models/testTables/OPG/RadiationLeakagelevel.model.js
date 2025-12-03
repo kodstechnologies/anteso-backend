@@ -42,7 +42,7 @@ const RadiationLeakageTestSchema = new Schema(
         },
         // === Workload ===
         workload: { type: String, required: true }, // e.g., "500"
-        workloadUnit: { type: String, default: 'mA·min/week' },
+        workloadUnit: { type: String, default: '' },
 
         // === Measurement Settings ===
         settings: [SettingsRowSchema],
@@ -60,7 +60,7 @@ const RadiationLeakageTestSchema = new Schema(
             type: String,
             default: '',
         },
-        toleranceTime: { type: String, default: '1' },       // in hours
+        toleranceTime: { type: String, default: '' },       // in hours
 
         // === Metadata ===
        
@@ -74,6 +74,7 @@ const RadiationLeakageTestSchema = new Schema(
 );
 
 // Optional: Index for performance
-RadiationLeakageTestSchema.index({ serviceId: 1, performedAt: -1 });
+RadiationLeakageTestSchema.index({ serviceId: 1 }, { unique: true });
 
-export default model('RadiationLeakageTestCBCT', RadiationLeakageTestSchema);
+export default model('RadiationLeakageTestOPG', RadiationLeakageTestSchema);
+

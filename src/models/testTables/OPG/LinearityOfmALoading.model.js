@@ -68,7 +68,7 @@ const LinearityOfMaLoadingSchema = new Schema(
     // Tolerance for CoL (e.g., 0.1)
     tolerance: {
       type: String,
-      default: '0.1',
+      default: '',
       trim: true,
     },
 
@@ -95,16 +95,16 @@ const LinearityOfMaLoadingSchema = new Schema(
   },
   {
     timestamps: true, // createdAt, updatedAt
-    collection: 'linearityofmaloading', // Optional: explicit collection name
   }
 );
 
 // Indexes for performance
-LinearityOfMaLoadingSchema.index({ serviceId: 1, testId: 1 });
+LinearityOfMaLoadingSchema.index({ serviceId: 1 }, { unique: true });
 LinearityOfMaLoadingSchema.index({ serviceReportId: 1 });
 
-// Prevent model recompilation in development (Next.js hot reload)
+// Prevent model recompilation in development
 const LinearityOfMaLoading =
-  model('LinearityOfMaLoadingCBCT', LinearityOfMaLoadingSchema);
+  model('LinearityOfMaLoadingOPG', LinearityOfMaLoadingSchema);
 
 export default LinearityOfMaLoading;
+

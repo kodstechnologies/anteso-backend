@@ -1,4 +1,4 @@
-// models/TotalFilterationForInventionalRadiology.js
+// models/TotalFilterationForOPG.js
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
@@ -17,11 +17,6 @@ const TotalFilterationSchema = new Schema({
   // Table 1: kVp Accuracy at Different mA Stations
   mAStations: {
     type: [String],
-  },
-
-  // Single FFD value for the test (cm)
-  ffd: {
-    type: String,
   },
 
   measurements: [
@@ -67,12 +62,13 @@ TotalFilterationSchema.pre('save', function (next) {
 });
 
 // Indexes for performance
-TotalFilterationSchema.index({ serviceId: 1 });
+TotalFilterationSchema.index({ serviceId: 1 }, { unique: true });
 TotalFilterationSchema.index({ reportId: 1 });
 
 const AccuracyOfOperatingPotential = model(
-  'AccuracyOfOperatingPotentialCBCT',
+  'AccuracyOfOperatingPotentialOPG',
   TotalFilterationSchema
 );
 
 export default AccuracyOfOperatingPotential;
+

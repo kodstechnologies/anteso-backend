@@ -7,6 +7,7 @@ import CArm from "../serviceReport/CArm.router.js"
 import FixedRadioFluro from "../serviceReport/FixedRadioFluro.router.js"
 import BMD from "../serviceReport/bmd.router.js"
 import DentalConeBeamCT from "../serviceReport/DentalConeBeamCT.router.js"
+import OPG from "../serviceReport/OPG.router.js"
 const  router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -21,5 +22,6 @@ router.use('/c-arm',CArm)
 router.use('/fixed-radio-fluro', FixedRadioFluro)
 router.use('/bmd', BMD)
 router.use('/dental-cone-beam-ct', DentalConeBeamCT)
+router.use('/opg', OPG)
 
 export default router;

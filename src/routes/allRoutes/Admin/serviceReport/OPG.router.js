@@ -1,14 +1,14 @@
 import { Router } from "express";
 const router = Router();
-import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/AccuracyOfIrradiationTime.controller.js";
-import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/AccuracyOfOperatingPotential.controller.js";
-import ConsistencyOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/ConsistencyOfRadiationOutput.controller.js";
-import LinearityOfmALoadingController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/LinearityOfmALoading.controller.js";
-import RadiationLeakagelevelController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/RadiationLeakagelevel.controller.js";
-import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/DentalConeBeamCT/RadiationProtectionSurvey.controller.js";
+import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/OPG/AccuracyOfIrradiationTime.controller.js";
+import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/OPG/AccuracyOfOperatingPotential.controller.js";
+import ConsistencyOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/OPG/ConsistencyOfRadiationOutput.controller.js";
+import LinearityOfmALoadingController from "../../../../controllers/Admin/serviceReport/OPG/LinearityOfmALoading.controller.js";
+import RadiationLeakagelevelController from "../../../../controllers/Admin/serviceReport/OPG/RadiationLeakagelevel.controller.js";
+import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/OPG/RadiationProtectionSurvey.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCBCT)
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderOPG)
 
 // 1. Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)

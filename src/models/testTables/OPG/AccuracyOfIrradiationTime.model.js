@@ -44,9 +44,12 @@ AccuracyOfIrradiationTimeSchema.pre('save', function (next) {
   next();
 });
 
+AccuracyOfIrradiationTimeSchema.index({ serviceId: 1 }, { unique: true });
+
 const AccuracyOfIrradiationTime = model(
-  'AccuracyOfIrradiationTimeCBCT',
+  'AccuracyOfIrradiationTimeOPG',
   AccuracyOfIrradiationTimeSchema
 );
 
 export default AccuracyOfIrradiationTime;
+

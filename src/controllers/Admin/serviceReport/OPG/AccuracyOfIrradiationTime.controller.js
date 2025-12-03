@@ -1,16 +1,16 @@
-// controllers/Admin/serviceReport/DentalConeBeamCT/AccuracyOfOperatingPotential.controller.js
+// controllers/Admin/serviceReport/OPG/AccuracyOfIrradiationTime.controller.js
 import mongoose from "mongoose";
-import AccuracyOfOperatingPotential from "../../../../models/testTables/DentalConeBeamCT/AccuracyOfOperatingPotential.model.js";
+import AccuracyOfIrradiationTime from "../../../../models/testTables/OPG/AccuracyOfIrradiationTime.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental Cone Beam CT";
+const MACHINE_TYPE = "Ortho Pantomography (OPG)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
+  const { testConditions, irradiationTimes, tolerance } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -43,32 +43,28 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // Upsert Test Record (create or update)
-    let testRecord = await AccuracyOfOperatingPotential.findOne({ serviceId }).session(session);
+    let testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).session(session);
 
     if (testRecord) {
       // Update existing
-      testRecord.mAStations = mAStations !== undefined ? mAStations : testRecord.mAStations;
-      testRecord.measurements = measurements !== undefined ? measurements : testRecord.measurements;
-      testRecord.tolerance = tolerance !== undefined ? tolerance : testRecord.tolerance;
-      testRecord.totalFiltration = totalFiltration !== undefined ? totalFiltration : testRecord.totalFiltration;
-      if (ffd !== undefined) testRecord.ffd = ffd;
+      testRecord.testConditions = testConditions || testRecord.testConditions;
+      testRecord.irradiationTimes = irradiationTimes || testRecord.irradiationTimes;
+      testRecord.tolerance = tolerance || testRecord.tolerance;
     } else {
       // Create new
-      testRecord = new AccuracyOfOperatingPotential({
+      testRecord = new AccuracyOfIrradiationTime({
         serviceId,
         serviceReportId: serviceReport._id,
-        mAStations: mAStations || [],
-        measurements: measurements || [],
-        tolerance: tolerance || { sign: "±", value: "" },
-        totalFiltration: totalFiltration || { measured: "", required: "" },
-        ffd: ffd || "",
+        testConditions: testConditions || { fcd: "", kv: "", ma: "" },
+        irradiationTimes: irradiationTimes || [],
+        tolerance: tolerance || { operator: "<=", value: "" },
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.AccuracyOfOperatingPotentialCBCT = testRecord._id;
+    serviceReport.AccuracyOfIrradiationTimeOPG = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -83,7 +79,7 @@ const create = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("AccuracyOfOperatingPotential Create Error:", error);
+    console.error("AccuracyOfIrradiationTime Create Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to save test",
@@ -103,7 +99,7 @@ const getById = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await AccuracyOfOperatingPotential.findById(testId).lean();
+    const testRecord = await AccuracyOfIrradiationTime.findById(testId).lean();
     if (!testRecord) {
       return res.status(404).json({ success: false, message: "Test record not found" });
     }
@@ -130,7 +126,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
+  const { testConditions, irradiationTimes, tolerance } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -141,7 +137,7 @@ const update = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const testRecord = await AccuracyOfOperatingPotential.findById(testId).session(session);
+    const testRecord = await AccuracyOfIrradiationTime.findById(testId).session(session);
     if (!testRecord) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Test record not found" });
@@ -158,11 +154,9 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (mAStations !== undefined) testRecord.mAStations = mAStations;
-    if (measurements !== undefined) testRecord.measurements = measurements;
+    if (testConditions !== undefined) testRecord.testConditions = testConditions;
+    if (irradiationTimes !== undefined) testRecord.irradiationTimes = irradiationTimes;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
-    if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
-    if (ffd !== undefined) testRecord.ffd = ffd;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -174,7 +168,7 @@ const update = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("AccuracyOfOperatingPotential Update Error:", error);
+    console.error("AccuracyOfIrradiationTime Update Error:", error);
     return res.status(500).json({
       success: false,
       message: "Update failed",
@@ -194,7 +188,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await AccuracyOfOperatingPotential.findOne({ serviceId }).lean();
+    const testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });
@@ -220,3 +214,4 @@ const getByServiceId = asyncHandler(async (req, res) => {
 });
 
 export default { create, getById, update, getByServiceId };
+

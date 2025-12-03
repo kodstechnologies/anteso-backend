@@ -1,15 +1,12 @@
-// models/OutputConsistencyForCArm.js
+// models/OutputConsistencyForOPG.js
 import mongoose from "mongoose";
 
 const outputRowSchema = new mongoose.Schema(
   {
-    kvp: { type: String, trim: true },
-    mas: { type: String, trim: true },
     ffd: { type: String, trim: true },           // FFD per row
     outputs: [{ type: String, trim: true }],     // measurement values
     mean: { type: String, trim: true },
     cov: { type: String, trim: true },
-    remarks: { type: String, trim: true },
   },
   { _id: false }
 );
@@ -62,4 +59,5 @@ const outputConsistencySchema = new mongoose.Schema(
 
 outputConsistencySchema.index({ serviceId: 1 }, { unique: true });
 
-export default mongoose.model("OutputConsistencyForCBCT", outputConsistencySchema);
+export default mongoose.model("OutputConsistencyForOPG", outputConsistencySchema);
+
