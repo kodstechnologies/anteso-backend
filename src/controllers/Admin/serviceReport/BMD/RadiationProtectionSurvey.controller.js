@@ -22,6 +22,12 @@ const create = asyncHandler(async (req, res) => {
         tableLeadCurtain,
         doseAreaProductMeter,
         patientDoseMonitoring,
+        // Maximum Radiation Level Survey fields
+        appliedCurrent,
+        appliedVoltage,
+        exposureTime,
+        workload,
+        locations,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -80,6 +86,12 @@ const create = asyncHandler(async (req, res) => {
                     tableLeadCurtain: tableLeadCurtain || "",
                     doseAreaProductMeter: doseAreaProductMeter || "",
                     patientDoseMonitoring: patientDoseMonitoring || "",
+                    // Maximum Radiation Level Survey fields
+                    appliedCurrent: appliedCurrent || "",
+                    appliedVoltage: appliedVoltage || "",
+                    exposureTime: exposureTime || "",
+                    workload: workload || "",
+                    locations: locations || [],
                 },
             ],
             { session }
@@ -141,7 +153,23 @@ const update = asyncHandler(async (req, res) => {
         tableLeadCurtain,
         doseAreaProductMeter,
         patientDoseMonitoring,
+        // Maximum Radiation Level Survey fields
+        appliedCurrent,
+        appliedVoltage,
+        exposureTime,
+        workload,
+        locations,
     } = req.body;
+
+    // Debug logging
+    console.log('=== Radiation Protection Survey UPDATE ===');
+    console.log('testId:', testId);
+    console.log('locations received:', locations);
+    console.log('appliedCurrent:', appliedCurrent);
+    console.log('appliedVoltage:', appliedVoltage);
+    console.log('exposureTime:', exposureTime);
+    console.log('workload:', workload);
+    console.log('Full body:', JSON.stringify(req.body, null, 2));
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ message: "Valid testId is required" });
@@ -165,6 +193,12 @@ const update = asyncHandler(async (req, res) => {
                     tableLeadCurtain: tableLeadCurtain || "",
                     doseAreaProductMeter: doseAreaProductMeter || "",
                     patientDoseMonitoring: patientDoseMonitoring || "",
+                    // Maximum Radiation Level Survey fields
+                    appliedCurrent: appliedCurrent !== undefined ? appliedCurrent : "",
+                    appliedVoltage: appliedVoltage !== undefined ? appliedVoltage : "",
+                    exposureTime: exposureTime !== undefined ? exposureTime : "",
+                    workload: workload !== undefined ? workload : "",
+                    locations: locations !== undefined ? locations : [],
                     updatedAt: Date.now(),
                 },
             },
@@ -179,6 +213,9 @@ const update = asyncHandler(async (req, res) => {
 
         await session.commitTransaction();
         session.endSession();
+
+        console.log('Updated survey data:', JSON.stringify(updatedSurvey, null, 2));
+        console.log('Locations saved:', updatedSurvey.locations);
 
         return res.status(200).json({
             success: true,

@@ -1,6 +1,15 @@
 // models/RadiationProtectionInterventionalRadiology.js
 import mongoose from 'mongoose';
 
+// Location measurement schema for Maximum Radiation Level Survey
+const LocationMeasurementSchema = new mongoose.Schema({
+  location: { type: String, trim: true, required: true },
+  mRPerHr: { type: String, trim: true, default: '' },
+  mRPerWeek: { type: String, trim: true, default: '' },
+  result: { type: String, trim: true, default: '' },
+  category: { type: String, enum: ['worker', 'public'], default: 'worker' },
+}, { _id: false });
+
 const RadiationProtectionIRSchema = new mongoose.Schema(
   {
     // Survey Details
@@ -20,6 +29,15 @@ const RadiationProtectionIRSchema = new mongoose.Schema(
     // Dose Monitoring
     doseAreaProductMeter: { type: String, trim: true },          // Yes/No
     patientDoseMonitoring: { type: String, trim: true },         // Real-time system
+
+    // Maximum Radiation Level Survey - Equipment Settings
+    appliedCurrent: { type: String, trim: true, default: '' },      // mA
+    appliedVoltage: { type: String, trim: true, default: '' },      // kV
+    exposureTime: { type: String, trim: true, default: '' },        // seconds
+    workload: { type: String, trim: true, default: '' },            // mA min/week
+
+    // Maximum Radiation Level Survey - Location Measurements
+    locations: [LocationMeasurementSchema],
 
     // Foreign Keys
     serviceId: {
