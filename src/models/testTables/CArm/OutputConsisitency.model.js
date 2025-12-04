@@ -26,9 +26,8 @@ const outputConsistencySchema = new mongoose.Schema(
 
     // Fixed test parameters
     parameters: {
-      mas: { type: String, trim: true, default: "" },
-      sliceThickness: { type: String, trim: true, default: "" },
-      time: { type: String, trim: true, default: "" },
+      ffd: { type: String, trim: true,},   // ← FFD in cm
+      time: { type: String, trim: true },  // ← Exposure time
     },
 
     // Dynamic table

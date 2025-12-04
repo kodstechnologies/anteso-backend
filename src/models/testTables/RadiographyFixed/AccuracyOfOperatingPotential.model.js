@@ -44,7 +44,7 @@ const MeasurementOfOperatingPotentialSchema = new Schema(
 MeasurementOfOperatingPotentialSchema.index({ serviceReportId: 1 });
 
 const MeasurementOfOperatingPotential = model(
-    'accuracyOfOperatingPotentialRadigraphyFixedMobile',
+    'accuracyOfOperatingPotentialRadigraphyFixed',
     MeasurementOfOperatingPotentialSchema
 );
 

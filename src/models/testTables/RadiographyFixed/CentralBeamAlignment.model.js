@@ -50,7 +50,6 @@ const CentralBeamAlignmentSchema = new Schema(
     }
 );
 
-// One record per service
 CentralBeamAlignmentSchema.index({ serviceId: 1 }, { unique: true });
 
-export default mongoose.model("CentralBeamAlignmentRadiographyFixedMobile", CentralBeamAlignmentSchema);
+export default mongoose.model("CentralBeamAlignmentRadiographyFixed", CentralBeamAlignmentSchema);

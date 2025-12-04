@@ -6,6 +6,7 @@ const exposureRateRowSchema = new mongoose.Schema({
     appliedMa: { type: String }, // mA
     exposure: { type: String }, // cGy/Min
     remark: { type: String }, // "AEC Mode" or "Manual Mode"
+    result: { type: String,  }
 });
 
 const exposureRateTableTopSchema = new mongoose.Schema({

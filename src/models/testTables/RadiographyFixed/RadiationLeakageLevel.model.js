@@ -2,7 +2,7 @@
 import mongoose from 'mongoose';
 
 const LeakageMeasurementSchema = new mongoose.Schema({
-    location: { type: String, trim: true }, // "Tube" or "Collimator"
+    location: { type: String, trim: true },
     left: { type: String, trim: true },
     right: { type: String, trim: true },
     front: { type: String, trim: true },
@@ -56,5 +56,5 @@ TubeHousingLeakageSchema.index({ reportId: 1 });
 TubeHousingLeakageSchema.index({ serviceId: 1, reportId: 1 });
 TubeHousingLeakageSchema.index({ isDeleted: 1 });
 
-export default mongoose.models.TubeHousingLeakage ||
-    mongoose.model('TubeHousingLeakageCArm', TubeHousingLeakageSchema);
+export default 
+    mongoose.model('RadiationLeakageLevelRadiographyFixed', TubeHousingLeakageSchema);

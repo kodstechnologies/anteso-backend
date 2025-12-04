@@ -82,4 +82,4 @@ const EffectiveFocalSpotSchema = new Schema(
 EffectiveFocalSpotSchema.index({ serviceId: 1 }, { unique: true });
 
 export default mongoose.models.EffectiveFocalSpot ||
-  mongoose.model("EffectiveFocalSpotForRadiographyFixedAndMobile", EffectiveFocalSpotSchema);
+  mongoose.model("EffectiveFocalSpotRadiographyFixed", EffectiveFocalSpotSchema);

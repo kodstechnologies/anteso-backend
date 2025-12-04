@@ -16,24 +16,27 @@ const create = asyncHandler(async (req, res) => {
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
-        return res.status(400).json({
-            success: false,
-            message: "Valid Service ID is required",
-        });
+        return res.status(400).json({ success: false, message: "Valid Service ID is required" });
     }
 
     if (!outputRows || !Array.isArray(outputRows) || outputRows.length === 0) {
-        return res.status(400).json({
-            success: false,
-            message: "At least one output row is required",
-        });
+        return res.status(400).json({ success: false, message: "At least one output row is required" });
+    }
+
+    // Validate kVp + mA
+    for (const row of outputRows) {
+        if (!row.kvp?.trim() || !row.ma?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Each row must have both kVp and mA",
+            });
+        }
     }
 
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        // Check for existing test inside transaction
         const existingTest = await OutputConsistencyForCArm.findOne({ serviceId }).session(session);
         if (existingTest) {
             await session.abortTransaction();
@@ -48,15 +51,21 @@ const create = asyncHandler(async (req, res) => {
                 serviceId,
                 reportId: reportId || null,
                 parameters: {
-                    mas: parameters?.mas?.toString().trim() || "",
-                    sliceThickness: parameters?.sliceThickness?.toString().trim() || "",
-                    time: parameters?.time?.toString().trim() || "",
+                    ffd: parameters?.ffd?.toString().trim() || "100",
+                    time: parameters?.time?.toString().trim() || "1.0",
                 },
-                outputRows,
-                measurementHeaders: measurementHeaders && Array.isArray(measurementHeaders)
+                outputRows: outputRows.map(row => ({
+                    kvp: row.kvp?.toString().trim(),
+                    ma: row.ma?.toString().trim(),
+                    outputs: row.outputs?.map(o => o?.toString().trim() || "") || [],
+                    mean: row.mean || "",
+                    cov: row.cov || "",
+                    remark: row.remark || "",  // ← Save remark per row
+                })),
+                measurementHeaders: Array.isArray(measurementHeaders) && measurementHeaders.length > 0
                     ? measurementHeaders
                     : ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-                tolerance: tolerance?.toString().trim() || "",
+                tolerance: tolerance?.toString().trim() || "0.02",  // decimal
                 finalRemark: finalRemark || "",
             }],
             { session }
@@ -74,11 +83,10 @@ const create = asyncHandler(async (req, res) => {
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-
-        console.error("Create Output Consistency failed:", error);
+        console.error("Create failed:", error);
         return res.status(500).json({
             success: false,
-            message: "Failed to create test. Please try again.",
+            message: "Failed to create test",
         });
     }
 });
@@ -144,17 +152,20 @@ const update = asyncHandler(async (req, res) => {
     } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(testId)) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid Test ID",
-        });
+        return res.status(400).json({ success: false, message: "Invalid Test ID" });
     }
 
     if (!outputRows || !Array.isArray(outputRows) || outputRows.length === 0) {
-        return res.status(400).json({
-            success: false,
-            message: "At least one output row is required",
-        });
+        return res.status(400).json({ success: false, message: "At least one output row is required" });
+    }
+
+    for (const row of outputRows) {
+        if (!row.kvp?.trim() || !row.ma?.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: "Each row must have both kVp and mA values",
+            });
+        }
     }
 
     const session = await mongoose.startSession();
@@ -165,15 +176,20 @@ const update = asyncHandler(async (req, res) => {
             testId,
             {
                 parameters: {
-                    mas: parameters?.mas?.toString().trim() || "",
-                    sliceThickness: parameters?.sliceThickness?.toString().trim() || "",
-                    time: parameters?.time?.toString().trim() || "",
+                    ffd: parameters?.ffd?.toString().trim(),
+                    time: parameters?.time?.toString().trim(),
                 },
-                outputRows,
-                measurementHeaders: measurementHeaders && Array.isArray(measurementHeaders)
+                outputRows: outputRows.map(row => ({
+                    kvp: row.kvp?.toString().trim(),
+                    ma: row.ma?.toString().trim(),
+                    outputs: row.outputs?.map(o => o?.toString().trim() || "") || [],
+                    mean: row.mean || "",
+                    cov: row.cov || "",
+                })),
+                measurementHeaders: Array.isArray(measurementHeaders) && measurementHeaders.length > 0
                     ? measurementHeaders
                     : ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-                tolerance: tolerance?.toString().trim() || "",
+                tolerance: tolerance?.toString().trim() || "2.0",
                 finalRemark: finalRemark || "",
                 updatedAt: Date.now(),
             },
@@ -183,10 +199,7 @@ const update = asyncHandler(async (req, res) => {
         if (!updatedTest) {
             await session.abortTransaction();
             session.endSession();
-            return res.status(404).json({
-                success: false,
-                message: "Test not found",
-            });
+            return res.status(404).json({ success: false, message: "Test not found" });
         }
 
         await session.commitTransaction();
@@ -194,19 +207,15 @@ const update = asyncHandler(async (req, res) => {
 
         return res.status(200).json({
             success: true,
-            message: "Output Consistency test updated successfully",
+            message: "Updated successfully",
             data: updatedTest,
         });
 
     } catch (error) {
         await session.abortTransaction();
         session.endSession();
-
-        console.error("Update Output Consistency failed:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to update test. Please try again.",
-        });
+        console.error("Update failed:", error);
+        return res.status(500).json({ success: false, message: "Failed to update test" });
     }
 });
 

@@ -345,7 +345,87 @@ const serviceReportSchema = new mongoose.Schema({
     TubeHousingLeakageDentalIntra: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageDentalIntra"
-    }
+    },
+
+
+    //C-Arm
+    ExposureRateTableTopCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExposureRateTableTopCArm"
+    },
+    HighContrastResolutionCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HighContrastResolutionCArm"
+    },
+    LowContrastResolutionCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LowContrastResolutionCArm"
+    },
+    OutputConsistencyForCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "OutputConsistencyForCArm"
+    },
+    TotalFilterationForCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationForCArm"
+    },
+    TubeHousingLeakageCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageCArm"
+    },
+    LinearityOfmAsLoadingCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingCArm"
+    },
+
+
+    //radiography fixed
+    AccuracyOfIrradiationTimeRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfIrradiationTimeRadiographyFixed"
+    },
+    accuracyOfOperatingPotentialRadigraphyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "accuracyOfOperatingPotentialRadigraphyFixed"
+    },
+    CentralBeamAlignmentRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "CentralBeamAlignmentRadiographyFixed"
+    },
+    CongruenceOfRadiationRadioGraphyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "CongruenceOfRadiationRadioGraphyFixed"
+    },
+    EffectiveFocalSpotRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "EffectiveFocalSpotRadiographyFixed"
+    },
+    LinearityOfmAsLoadingRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "LinearityOfmAsLoadingRadiographyFixed"
+    },
+    ConsistencyOfRadiationOutputFixedRadiography: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "ConsistencyOfRadiationOutputFixedRadiography"
+    },
+    RadiationLeakageLevelRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationLeakageLevelRadiographyFixed"
+    },
+    RadiationProtectionSurveyRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "RadiationProtectionSurveyRadiographyFixed"
+    },
+
 })
 export default mongoose.model(
     "ServiceReport",

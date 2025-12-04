@@ -62,6 +62,6 @@ const CongruenceOfRadiationSchema = new Schema(
 CongruenceOfRadiationSchema.index({ serviceId: 1 }, { unique: true });
 
 export default mongoose.model(
-  "CongruenceOfRadiationRadiographyFixedMobie",
+  "CongruenceOfRadiationRadioGraphyFixed",
   CongruenceOfRadiationSchema
 );
