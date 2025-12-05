@@ -1,6 +1,8 @@
 // models/LinearityOfTime.js
 import mongoose from 'mongoose';
 
+const { Schema } = mongoose;
+
 const Table1RowSchema = new Schema({
   fcd: { type: String, required: true, trim: true },
   kv: { type: String, required: true, trim: true },
