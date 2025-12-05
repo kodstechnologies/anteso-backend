@@ -754,28 +754,109 @@ const getReportHeader = async (req, res) => {
 
 
 // Get Report Header for Dental Cone Beam CT
-const getReportHeaderCBCT = async (req, res) => {
+// const getReportHeaderCBCT = async (req, res) => {
+//     const { serviceId } = req.params;
+
+//     try {
+//         const cbctFields = [
+//             "AccuracyOfIrradiationTimeCBCT",
+//             "AccuracyOfOperatingPotentialCBCT",
+//             "OutputConsistencyForCBCT",
+//             "LinearityOfMaLoadingCBCT",
+//             "RadiationLeakageTestCBCT",
+//             "RadiationProtectionSurveyCBCT",
+//         ];
+
+//         let query = serviceReportModel
+//             .findOne({ serviceId })
+//             .populate("toolsUsed.tool", "nomenclature make model");
+
+//         cbctFields.forEach((field) => {
+//             query = query.populate(field);
+//         });
+
+//         const report = await query.lean();
+
+//         if (!report) {
+//             return res.status(200).json({ exists: false });
+//         }
+
+//         const format = (date) =>
+//             date ? new Date(date).toISOString().split("T")[0] : "";
+
+//         res.status(200).json({
+//             exists: true,
+//             data: {
+//                 customerName: report.customerName,
+//                 address: report.address,
+//                 srfNumber: report.srfNumber,
+//                 srfDate: format(report.srfDate),
+//                 testReportNumber: report.testReportNumber,
+//                 issueDate: format(report.issueDate),
+//                 nomenclature: report.nomenclature,
+//                 make: report.make,
+//                 model: report.model,
+//                 category: report.category,
+//                 slNumber: report.slNumber,
+//                 condition: report.condition,
+//                 testingProcedureNumber: report.testingProcedureNumber,
+//                 engineerNameRPId: report.engineerNameRPId,
+//                 testDate: format(report.testDate),
+//                 testDueDate: format(report.testDueDate),
+//                 location: report.location,
+//                 temperature: report.temperature,
+//                 humidity: report.humidity,
+
+//                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+//                     slNumber: i + 1,
+//                     toolId: t.tool?._id,
+//                     nomenclature: t.nomenclature,
+//                     make: t.make,
+//                     model: t.model,
+//                     SrNo: t.SrNo,
+//                     range: t.range,
+//                     calibrationCertificateNo: t.calibrationCertificateNo,
+//                     calibrationValidTill: t.calibrationValidTill,
+//                     certificate: t.certificate,
+//                     uncertainity: t.uncertainity,
+//                 })),
+
+//                 // ⭐ DENTAL CONE BEAM CT RESULTS
+//                 AccuracyOfIrradiationTimeCBCT: report.AccuracyOfIrradiationTimeCBCT,
+//                 AccuracyOfOperatingPotentialCBCT: report.AccuracyOfOperatingPotentialCBCT,
+//                 OutputConsistencyForCBCT: report.OutputConsistencyForCBCT,
+//                 LinearityOfMaLoadingCBCT: report.LinearityOfMaLoadingCBCT,
+//                 RadiationLeakageTestCBCT: report.RadiationLeakageTestCBCT,
+//                 RadiationProtectionSurveyCBCT: report.RadiationProtectionSurveyCBCT,
+
+//             },
+//         });
+//     } catch (error) {
+//         console.error("Get report header error (CBCT):", error);
+//         res.status(500).json({ exists: false, message: "Server error" });
+//     }
+// };
+
+export const getReportHeaderCBCT = async (req, res) => {
     const { serviceId } = req.params;
 
     try {
-        const cbctFields = [
-            "AccuracyOfIrradiationTimeCBCT",
-            "AccuracyOfOperatingPotentialCBCT",
-            "OutputConsistencyForCBCT",
-            "LinearityOfMaLoadingCBCT",
-            "RadiationLeakageTestCBCT",
-            "RadiationProtectionSurveyCBCT",
+        // All CBCT fields to populate
+        const cbctPopulations = [
+            { path: "AccuracyOfIrradiationTimeCBCT" },
+            { path: "AccuracyOfOperatingPotentialCBCT" },
+            { path: "OutputConsistencyForCBCT" },
+            { path: "LinearityOfMaLoadingCBCT" },
+            { path: "RadiationLeakageTestCBCT" },
+            { path: "RadiationProtectionSurveyCBCT" },
         ];
 
-        let query = serviceReportModel
+        // Build query
+        const report = await serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
-
-        cbctFields.forEach((field) => {
-            query = query.populate(field);
-        });
-
-        const report = await query.lean();
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate(cbctPopulations)
+            .lean();
 
         if (!report) {
             return res.status(200).json({ exists: false });
@@ -796,7 +877,6 @@ const getReportHeaderCBCT = async (req, res) => {
                 nomenclature: report.nomenclature,
                 make: report.make,
                 model: report.model,
-                category: report.category,
                 slNumber: report.slNumber,
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
@@ -821,14 +901,13 @@ const getReportHeaderCBCT = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
-                // ⭐ DENTAL CONE BEAM CT RESULTS
+                // ⭐ DENTAL CBCT TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeCBCT: report.AccuracyOfIrradiationTimeCBCT,
                 AccuracyOfOperatingPotentialCBCT: report.AccuracyOfOperatingPotentialCBCT,
                 OutputConsistencyForCBCT: report.OutputConsistencyForCBCT,
                 LinearityOfMaLoadingCBCT: report.LinearityOfMaLoadingCBCT,
                 RadiationLeakageTestCBCT: report.RadiationLeakageTestCBCT,
                 RadiationProtectionSurveyCBCT: report.RadiationProtectionSurveyCBCT,
-
             },
         });
     } catch (error) {
@@ -837,25 +916,29 @@ const getReportHeaderCBCT = async (req, res) => {
     }
 };
 
+
+
 // Get Report Header for OPG
-const getReportHeaderOPG = async (req, res) => {
+export const getReportHeaderOPG = async (req, res) => {
     const { serviceId } = req.params;
 
     try {
+        // All OPG fields
         const opgFields = [
             "AccuracyOfIrradiationTimeOPG",
             "AccuracyOfOperatingPotentialOPG",
             "OutputConsistencyForOPG",
             "LinearityOfMaLoadingOPG",
             "RadiationLeakageTestOPG",
-            "RadiationProtectionSurveyOPG",
+            "RadiationProtectionSurveyOPG"
         ];
 
         let query = serviceReportModel
             .findOne({ serviceId })
             .populate("toolsUsed.tool", "nomenclature make model");
 
-        opgFields.forEach((field) => {
+        // Populate all OPG fields
+        opgFields.forEach(field => {
             query = query.populate(field);
         });
 
@@ -880,7 +963,6 @@ const getReportHeaderOPG = async (req, res) => {
                 nomenclature: report.nomenclature,
                 make: report.make,
                 model: report.model,
-                category: report.category,
                 slNumber: report.slNumber,
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
@@ -905,14 +987,13 @@ const getReportHeaderOPG = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
-                // ⭐ OPG RESULTS
+                // ⭐ OPG TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeOPG: report.AccuracyOfIrradiationTimeOPG,
                 AccuracyOfOperatingPotentialOPG: report.AccuracyOfOperatingPotentialOPG,
                 OutputConsistencyForOPG: report.OutputConsistencyForOPG,
                 LinearityOfMaLoadingOPG: report.LinearityOfMaLoadingOPG,
                 RadiationLeakageTestOPG: report.RadiationLeakageTestOPG,
                 RadiationProtectionSurveyOPG: report.RadiationProtectionSurveyOPG,
-
             },
         });
     } catch (error) {
@@ -920,5 +1001,6 @@ const getReportHeaderOPG = async (req, res) => {
         res.status(500).json({ exists: false, message: "Server error" });
     }
 };
+
 
 export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, saveReportHeader }

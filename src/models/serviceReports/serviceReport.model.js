@@ -297,6 +297,8 @@ const serviceReportSchema = new mongoose.Schema({
 
         ref: "RadiationProtectionSurveyCBCT"
     },
+
+
     //opg
     AccuracyOfIrradiationTimeOPG: {
         type: mongoose.Schema.Types.ObjectId,
@@ -378,7 +380,6 @@ const serviceReportSchema = new mongoose.Schema({
         ref: "LinearityOfmAsLoadingCArm"
     },
 
-
     //radiography fixed
     AccuracyOfIrradiationTimeRadiographyFixed: {
         type: mongoose.Schema.Types.ObjectId,
@@ -426,6 +427,41 @@ const serviceReportSchema = new mongoose.Schema({
         ref: "RadiationProtectionSurveyRadiographyFixed"
     },
 
+    //radiography portable
+    accuracyOfOperatingPotentialRadigraphyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialRadigraphyPortable"
+    },
+    AccuracyOfIrradiationTimeRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "AccuracyOfIrradiationTimeRadiographyPortable"
+    },
+    CentralBeamAlignmentRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentRadiographyPortable"
+    },
+    CongruenceOfRadiationRadioGraphyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationRadioGraphyPortable"
+    },
+    ConsistencyOfRadiationOutputRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+
+        ref: "ConsistencyOfRadiationOutputRadiographyPortable"
+    },
+    EffectiveFocalSpotRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotRadiographyPortable"
+    },
+    LinearityOfmAsLoadingRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingRadiographyPortable"
+    },
+    RadiationLeakageLevelRadiographyPortable: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageLevelRadiographyPortable"
+    },
 })
 export default mongoose.model(
     "ServiceReport",
