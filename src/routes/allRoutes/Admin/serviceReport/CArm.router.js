@@ -6,6 +6,7 @@ import HighContrastResolutionController from "../../../../controllers/Admin/serv
 import LowContrastResolution from "../../../../controllers/Admin/serviceReport/CArm/LowContrastResolution.controller.js";
 import ExposureRate from "../../../../controllers/Admin/serviceReport/CArm/ExposureRate.controller.js"
 import TubeHousing from "../../../../controllers/Admin/serviceReport/CArm/TubeHousingLeakage.controller.js"
+import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.post('/total-filteration/:serviceId', TotalFilterationForCArmController.create)
 router.get('/total-filteration-by-service/:serviceId', TotalFilterationForCArmController.getByServiceId)
@@ -37,5 +38,7 @@ router.get('/tube-housing-by-service/:serviceId', TubeHousing.getByServiceId)
 router.put('/tube-housing/:testId', TubeHousing.update)
 router.get('/tube-housing/:testId', TubeHousing.getById)
 
+// Report Header
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCArm);
 
 export default router

@@ -349,6 +349,23 @@ const serviceReportSchema = new mongoose.Schema({
         ref: "TubeHousingLeakageDentalIntra"
     },
 
+    //Dental Hand-held
+    AccuracyOfOperatingPotentialAndTimeDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfOperatingPotentialAndTimeDentalHandHeld"
+    },
+    LinearityOfTimeDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfTimeDentalHandHeld"
+    },
+    ReproducibilityOfRadiationOutputDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ReproducibilityOfRadiationOutputDentalHandHeld"
+    },
+    TubeHousingLeakageDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageDentalHandHeld"
+    },
 
     //C-Arm
     ExposureRateTableTopCArm: {
@@ -427,6 +444,44 @@ const serviceReportSchema = new mongoose.Schema({
         ref: "RadiationProtectionSurveyRadiographyFixed"
     },
 
+    //radiography mobile with HT
+    AccuracyOfIrradiationTimeRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeRadiographyMobileHT"
+    },
+    accuracyOfOperatingPotentialRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialRadiographyMobileHT"
+    },
+    CentralBeamAlignmentRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentRadiographyMobileHT"
+    },
+    CongruenceOfRadiationRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationRadiographyMobileHT"
+    },
+    EffectiveFocalSpotRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotRadiographyMobileHT"
+    },
+    LinearityOfmAsLoadingRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingRadiographyMobileHT"
+    },
+    ConsistencyOfRadiationOutputRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ConsistencyOfRadiationOutputRadiographyMobileHT"
+    },
+    RadiationLeakageLevelRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageLevelRadiographyMobileHT"
+    },
+    RadiationProtectionSurveyRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionSurveyRadiographyMobileHT"
+    },
+
     //radiography portable
     accuracyOfOperatingPotentialRadigraphyPortable: {
         type: mongoose.Schema.Types.ObjectId,
@@ -461,6 +516,40 @@ const serviceReportSchema = new mongoose.Schema({
     RadiationLeakageLevelRadiographyPortable: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationLeakageLevelRadiographyPortable"
+    },
+
+    //radiography mobile
+    AccuracyOfIrradiationTimeRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeRadiographyMobile"
+    },
+    accuracyOfOperatingPotentialRadigraphyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialRadigraphyMobile"
+    },
+    CentralBeamAlignmentRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentRadiographyMobile"
+    },
+    CongruenceOfRadiationRadioGraphyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationRadioGraphyMobile"
+    },
+    EffectiveFocalSpotRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotRadiographyMobile"
+    },
+    LinearityOfmAsLoadingRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingRadiographyMobile"
+    },
+    ConsistencyOfRadiationOutputRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ConsistencyOfRadiationOutputRadiographyMobile"
+    },
+    RadiationLeakageLevelRadiographyMobile: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageLevelRadiographyMobile"
     },
 })
 export default mongoose.model(

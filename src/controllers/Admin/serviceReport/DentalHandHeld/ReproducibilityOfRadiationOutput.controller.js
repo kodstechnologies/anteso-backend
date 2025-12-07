@@ -1,11 +1,11 @@
-// controllers/Admin/serviceReport/DentalIntra/ReproducibilityOfRadiationOutput.controller.js
+// controllers/Admin/serviceReport/DentalHandHeld/ReproducibilityOfRadiationOutput.controller.js
 import mongoose from "mongoose";
-import ReproducibilityOfRadiationOutput from "../../../../models/testTables/DentalIntra/ReproducibilityOfRadiationOutput.model.js";
+import ReproducibilityOfRadiationOutput from "../../../../models/testTables/DentalHandHeld/ReproducibilityOfRadiationOutput.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental (Intra Oral)";
+const MACHINE_TYPE = "Dental (Hand-held)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
@@ -62,7 +62,7 @@ const create = asyncHandler(async (req, res) => {
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.ReproducibilityOfRadiationOutputDentalIntra = testRecord._id;
+    serviceReport.ReproducibilityOfRadiationOutputDentalHandHeld = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -211,4 +211,3 @@ const getByServiceId = asyncHandler(async (req, res) => {
 });
 
 export default { create, getById, update, getByServiceId };
-

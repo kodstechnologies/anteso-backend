@@ -1,0 +1,232 @@
+// controllers/Admin/serviceReport/RadiographyFixed/RadiationProtectionSurvey.controller.js
+import mongoose from "mongoose";
+import RadiationProtectionSurvey from "../../../../models/testTables/RadiographyFixed/RadiationProtectionSurvey.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
+import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "Radiography (Fixed)";
+
+const create = asyncHandler(async (req, res) => {
+  const { serviceId } = req.params;
+  const {
+    surveyDate,
+    hasValidCalibration,
+    appliedCurrent,
+    appliedVoltage,
+    exposureTime,
+    workload,
+    locations,
+    hospitalName,
+    equipmentId,
+    roomNo,
+    manufacturer,
+    model,
+    surveyorName,
+    surveyorDesignation,
+    remarks,
+  } = req.body;
+
+  if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+    return res.status(400).json({ success: false, message: "Valid serviceId is required" });
+  }
+
+  let session = null;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+
+    const service = await Service.findById(serviceId).session(session);
+    if (!service) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+    if (service.machineType !== MACHINE_TYPE) {
+      await session.abortTransaction();
+      return res.status(403).json({
+        success: false,
+        message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+      });
+    }
+
+    let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+    if (!serviceReport) {
+      serviceReport = new ServiceReport({ serviceId });
+      await serviceReport.save({ session });
+    }
+
+    let testRecord = await RadiationProtectionSurvey.findOne({ serviceId }).session(session);
+
+    if (testRecord) {
+      if (surveyDate !== undefined) testRecord.surveyDate = surveyDate;
+      if (hasValidCalibration !== undefined) testRecord.hasValidCalibration = hasValidCalibration;
+      if (appliedCurrent !== undefined) testRecord.appliedCurrent = appliedCurrent;
+      if (appliedVoltage !== undefined) testRecord.appliedVoltage = appliedVoltage;
+      if (exposureTime !== undefined) testRecord.exposureTime = exposureTime;
+      if (workload !== undefined) testRecord.workload = workload;
+      if (locations !== undefined) testRecord.locations = locations;
+      if (hospitalName !== undefined) testRecord.hospitalName = hospitalName;
+      if (equipmentId !== undefined) testRecord.equipmentId = equipmentId;
+      if (roomNo !== undefined) testRecord.roomNo = roomNo;
+      if (manufacturer !== undefined) testRecord.manufacturer = manufacturer;
+      if (model !== undefined) testRecord.model = model;
+      if (surveyorName !== undefined) testRecord.surveyorName = surveyorName;
+      if (surveyorDesignation !== undefined) testRecord.surveyorDesignation = surveyorDesignation;
+      if (remarks !== undefined) testRecord.remarks = remarks;
+    } else {
+      testRecord = new RadiationProtectionSurvey({
+        serviceId,
+        reportId: serviceReport._id,
+        surveyDate: surveyDate || new Date(),
+        hasValidCalibration: hasValidCalibration || "",
+        appliedCurrent: appliedCurrent || "",
+        appliedVoltage: appliedVoltage || "",
+        exposureTime: exposureTime || "",
+        workload: workload || "",
+        locations: locations || [],
+        hospitalName: hospitalName || "",
+        equipmentId: equipmentId || "",
+        roomNo: roomNo || "",
+        manufacturer: manufacturer || "",
+        model: model || "",
+        surveyorName: surveyorName || "",
+        surveyorDesignation: surveyorDesignation || "",
+        remarks: remarks || "",
+      });
+    }
+
+    await testRecord.save({ session });
+    serviceReport.RadiationProtectionSurveyRadiographyFixed = testRecord._id;
+    await serviceReport.save({ session });
+
+    await session.commitTransaction();
+
+    return res.json({
+      success: true,
+      message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
+      data: { _id: testRecord._id.toString(), serviceId: testRecord.serviceId.toString() },
+    });
+  } catch (error) {
+    if (session) await session.abortTransaction();
+    console.error("RadiationProtectionSurvey Create Error:", error);
+    return res.status(500).json({ success: false, message: "Failed to save test", error: error.message });
+  } finally {
+    if (session) session.endSession();
+  }
+});
+
+const getById = asyncHandler(async (req, res) => {
+  const { testId } = req.params;
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ success: false, message: "Valid testId is required" });
+  }
+  try {
+    const testRecord = await RadiationProtectionSurvey.findById(testId).lean();
+    if (!testRecord) {
+      return res.status(404).json({ success: false, message: "Test record not found" });
+    }
+    const service = await Service.findById(testRecord.serviceId).lean();
+    if (service && service.machineType !== MACHINE_TYPE) {
+      return res.status(403).json({
+        success: false,
+        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+      });
+    }
+    return res.json({ success: true, data: testRecord });
+  } catch (error) {
+    console.error("getById Error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch test", error: error.message });
+  }
+});
+
+const update = asyncHandler(async (req, res) => {
+  const { testId } = req.params;
+  const {
+    surveyDate,
+    hasValidCalibration,
+    appliedCurrent,
+    appliedVoltage,
+    exposureTime,
+    workload,
+    locations,
+    hospitalName,
+    equipmentId,
+    roomNo,
+    manufacturer,
+    model,
+    surveyorName,
+    surveyorDesignation,
+    remarks,
+  } = req.body;
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ success: false, message: "Valid testId is required" });
+  }
+  let session = null;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+    const testRecord = await RadiationProtectionSurvey.findById(testId).session(session);
+    if (!testRecord) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: "Test record not found" });
+    }
+    const service = await Service.findById(testRecord.serviceId).session(session);
+    if (service && service.machineType !== MACHINE_TYPE) {
+      await session.abortTransaction();
+      return res.status(403).json({
+        success: false,
+        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+      });
+    }
+    if (surveyDate !== undefined) testRecord.surveyDate = surveyDate;
+    if (hasValidCalibration !== undefined) testRecord.hasValidCalibration = hasValidCalibration;
+    if (appliedCurrent !== undefined) testRecord.appliedCurrent = appliedCurrent;
+    if (appliedVoltage !== undefined) testRecord.appliedVoltage = appliedVoltage;
+    if (exposureTime !== undefined) testRecord.exposureTime = exposureTime;
+    if (workload !== undefined) testRecord.workload = workload;
+    if (locations !== undefined) testRecord.locations = locations;
+    if (hospitalName !== undefined) testRecord.hospitalName = hospitalName;
+    if (equipmentId !== undefined) testRecord.equipmentId = equipmentId;
+    if (roomNo !== undefined) testRecord.roomNo = roomNo;
+    if (manufacturer !== undefined) testRecord.manufacturer = manufacturer;
+    if (model !== undefined) testRecord.model = model;
+    if (surveyorName !== undefined) testRecord.surveyorName = surveyorName;
+    if (surveyorDesignation !== undefined) testRecord.surveyorDesignation = surveyorDesignation;
+    if (remarks !== undefined) testRecord.remarks = remarks;
+    await testRecord.save({ session });
+    await session.commitTransaction();
+    return res.json({ success: true, message: "Updated successfully", data: { _id: testRecord._id.toString() } });
+  } catch (error) {
+    if (session) await session.abortTransaction();
+    console.error("Update Error:", error);
+    return res.status(500).json({ success: false, message: "Update failed", error: error.message });
+  } finally {
+    if (session) session.endSession();
+  }
+});
+
+const getByServiceId = asyncHandler(async (req, res) => {
+  const { serviceId } = req.params;
+  if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+    return res.status(400).json({ success: false, message: "Valid serviceId is required" });
+  }
+  try {
+    const testRecord = await RadiationProtectionSurvey.findOne({ serviceId }).lean();
+    if (!testRecord) {
+      return res.json({ success: true, data: null });
+    }
+    const service = await Service.findById(serviceId).lean();
+    if (service && service.machineType !== MACHINE_TYPE) {
+      return res.status(403).json({
+        success: false,
+        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+      });
+    }
+    return res.json({ success: true, data: testRecord });
+  } catch (error) {
+    console.error("getByServiceId Error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch test", error: error.message });
+  }
+});
+
+export default { create, getById, update, getByServiceId };

@@ -5,7 +5,7 @@ import ServiceReport from "../../../../models/serviceReports/serviceReport.model
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental Intra";
+const MACHINE_TYPE = "Dental (Intra Oral)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {

@@ -12,6 +12,63 @@ import { asyncHandler } from "../../../utils/AsyncHandler.js";
 import TotalFilterationForCTScan from "../../../models/testTables/CTScan/TotalFilterationForCTScan.js";
 import RadiationLeakageLeveFromXRayTube from "../../../models/testTables/CTScan/radiationLeakageLevelFromXRayTubeHouse.model.js";
 import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
+// Import DentalIntra models to ensure they're registered with Mongoose
+import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTime.model.js";
+import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
+import "../../../models/testTables/DentalIntra/ReproducibilityOfRadiationOutput.model.js";
+import "../../../models/testTables/DentalIntra/TubeHousingLeakage.model.js";
+// Import DentalHandHeld models to ensure they're registered with Mongoose
+import "../../../models/testTables/DentalHandHeld/AccuracyOfOperatingPotentialAndTime.model.js";
+import "../../../models/testTables/DentalHandHeld/LinearityOfTime.model.js";
+import "../../../models/testTables/DentalHandHeld/ReproducibilityOfRadiationOutput.model.js";
+import "../../../models/testTables/DentalHandHeld/TubeHousingLeakage.model.js";
+// Import RadiographyFixed models to ensure they're registered with Mongoose
+import "../../../models/testTables/RadiographyFixed/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/RadiographyFixed/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/RadiographyFixed/CentralBeamAlignment.model.js";
+import "../../../models/testTables/RadiographyFixed/congruence.model.js";
+import "../../../models/testTables/RadiographyFixed/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/RadiographyFixed/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/RadiographyFixed/OutputConsistency.model.js";
+import "../../../models/testTables/RadiographyFixed/RadiationLeakageLevel.model.js";
+import "../../../models/testTables/RadiographyFixed/RadiationProtectionSurvey.model.js";
+// Import RadiographyMobileHT models to ensure they're registered with Mongoose
+import "../../../models/testTables/RadiographyMobileHT/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/RadiographyMobileHT/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/RadiographyMobileHT/CentralBeamAlignment.model.js";
+import "../../../models/testTables/RadiographyMobileHT/congruence.model.js";
+import "../../../models/testTables/RadiographyMobileHT/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/RadiographyMobileHT/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/RadiographyMobileHT/OutputConsistency.model.js";
+import "../../../models/testTables/RadiographyMobileHT/RadiationLeakageLevel.model.js";
+import "../../../models/testTables/RadiographyMobileHT/RadiationProtectionSurvey.model.js";
+
+// Import RadiographyPortable models to ensure they're registered with Mongoose
+import "../../../models/testTables/RadiographyPortable/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/RadiographyPortable/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/RadiographyPortable/CentralBeamAlignment.model.js";
+import "../../../models/testTables/RadiographyPortable/CongruenceOfRadiation.model.js";
+import "../../../models/testTables/RadiographyPortable/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/RadiographyPortable/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/RadiographyPortable/ConsisitencyOfRadiationOutput.model.js";
+import "../../../models/testTables/RadiographyPortable/RadiationLeakageLevel.model.js";
+// Import RadiographyMobile models to ensure they're registered with Mongoose
+import "../../../models/testTables/RadiographyMobile/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/RadiographyMobile/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/RadiographyMobile/CentralBeamAlignment.model.js";
+import "../../../models/testTables/RadiographyMobile/CongruenceOfRadiation.model.js";
+import "../../../models/testTables/RadiographyMobile/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/RadiographyMobile/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/RadiographyMobile/ConsisitencyOfRadiationOutput.model.js";
+import "../../../models/testTables/RadiographyMobile/RadiationLeakageLevel.model.js";
+// Import CArm models to ensure they're registered with Mongoose
+import "../../../models/testTables/CArm/ExposureRateTableTop.model.js";
+import "../../../models/testTables/CArm/HighContrastResolution.model.js";
+import "../../../models/testTables/CArm/LowContrastResolution.model.js";
+import "../../../models/testTables/CArm/OutputConsisitency.model.js";
+import "../../../models/testTables/CArm/TotalFilteration.model.js";
+import "../../../models/testTables/CArm/TubeHousingLeakage.model.js";
+import "../../../models/testTables/CArm/LinearityOfMasLoadingStation.model.js";
 
 export const getCustomerDetails = asyncHandler(async (req, res) => {
     try {
@@ -1002,5 +1059,563 @@ export const getReportHeaderOPG = async (req, res) => {
     }
 };
 
+// Get Report Header for Dental Intra
+export const getReportHeaderDentalIntra = async (req, res) => {
+    const { serviceId } = req.params;
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, saveReportHeader }
+    try {
+        // All Dental Intra fields to populate (must match schema EXACTLY)
+        const dentalIntraFields = [
+            "AccuracyOfOperatingPotentialAndTimeDentalIntra",
+            "LinearityOfTimeDentalIntra",
+            "ReproducibilityOfRadiationOutputDentalIntra",
+            "TubeHousingLeakageDentalIntra"
+        ];
+
+        // Build the query
+        let query = serviceReportModel
+            .findOne({ serviceId })
+            .populate("toolsUsed.tool", "nomenclature make model");
+
+        // Populate each Dental Intra field
+        dentalIntraFields.forEach(field => {
+            query = query.populate(field);
+        });
+
+        const report = await query.lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ DENTAL INTRA TEST RESULTS (POPULATED OR NULL IF NOT AVAILABLE)
+                AccuracyOfOperatingPotentialAndTimeDentalIntra:
+                    report.AccuracyOfOperatingPotentialAndTimeDentalIntra || null,
+
+                LinearityOfTimeDentalIntra:
+                    report.LinearityOfTimeDentalIntra || null,
+
+                ReproducibilityOfRadiationOutputDentalIntra:
+                    report.ReproducibilityOfRadiationOutputDentalIntra || null,
+
+                TubeHousingLeakageDentalIntra:
+                    report.TubeHousingLeakageDentalIntra || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Dental Intra):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+
+
+export const getReportHeaderDentalHandHeld = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually (same pattern as CBCT and DentalIntra)
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfOperatingPotentialAndTimeDentalHandHeld")
+            .populate("LinearityOfTimeDentalHandHeld")
+            .populate("ReproducibilityOfRadiationOutputDentalHandHeld")
+            .populate("TubeHousingLeakageDentalHandHeld")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ DENTAL HAND-HELD TEST RESULTS (POPULATED)
+                AccuracyOfOperatingPotentialAndTimeDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
+                LinearityOfTimeDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
+                ReproducibilityOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
+                TubeHousingLeakageDentalHandHeld: report.TubeHousingLeakageDentalHandHeld || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Dental Hand-held):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const getReportHeaderRadiographyFixed = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfIrradiationTimeRadiographyFixed")
+            .populate("accuracyOfOperatingPotentialRadigraphyFixed")
+            .populate("CentralBeamAlignmentRadiographyFixed")
+            .populate("CongruenceOfRadiationRadioGraphyFixed")
+            .populate("EffectiveFocalSpotRadiographyFixed")
+            .populate("LinearityOfmAsLoadingRadiographyFixed")
+            .populate("ConsistencyOfRadiationOutputFixedRadiography")
+            .populate("RadiationLeakageLevelRadiographyFixed")
+            .populate("RadiationProtectionSurveyRadiographyFixed")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ RADIOGRAPHY FIXED TEST RESULTS (POPULATED)
+                AccuracyOfIrradiationTimeRadiographyFixed: report.AccuracyOfIrradiationTimeRadiographyFixed || null,
+                accuracyOfOperatingPotentialRadigraphyFixed: report.accuracyOfOperatingPotentialRadigraphyFixed || null,
+                CentralBeamAlignmentRadiographyFixed: report.CentralBeamAlignmentRadiographyFixed || null,
+                CongruenceOfRadiationRadioGraphyFixed: report.CongruenceOfRadiationRadioGraphyFixed || null,
+                EffectiveFocalSpotRadiographyFixed: report.EffectiveFocalSpotRadiographyFixed || null,
+                LinearityOfmAsLoadingRadiographyFixed: report.LinearityOfmAsLoadingRadiographyFixed || null,
+                ConsistencyOfRadiationOutputFixedRadiography: report.ConsistencyOfRadiationOutputFixedRadiography || null,
+                RadiationLeakageLevelRadiographyFixed: report.RadiationLeakageLevelRadiographyFixed || null,
+                RadiationProtectionSurveyRadiographyFixed: report.RadiationProtectionSurveyRadiographyFixed || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Radiography Fixed):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const getReportHeaderRadiographyMobileHT = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfIrradiationTimeRadiographyMobileHT")
+            .populate("accuracyOfOperatingPotentialRadiographyMobileHT")
+            .populate("CentralBeamAlignmentRadiographyMobileHT")
+            .populate("CongruenceOfRadiationRadiographyMobileHT")
+            .populate("EffectiveFocalSpotRadiographyMobileHT")
+            .populate("LinearityOfmAsLoadingRadiographyMobileHT")
+            .populate("ConsistencyOfRadiationOutputRadiographyMobileHT")
+            .populate("RadiationLeakageLevelRadiographyMobileHT")
+            .populate("RadiationProtectionSurveyRadiographyMobileHT")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ RADIOGRAPHY MOBILE WITH HT TEST RESULTS (POPULATED)
+                AccuracyOfIrradiationTimeRadiographyMobileHT: report.AccuracyOfIrradiationTimeRadiographyMobileHT || null,
+                accuracyOfOperatingPotentialRadiographyMobileHT: report.accuracyOfOperatingPotentialRadiographyMobileHT || null,
+                CentralBeamAlignmentRadiographyMobileHT: report.CentralBeamAlignmentRadiographyMobileHT || null,
+                CongruenceOfRadiationRadiographyMobileHT: report.CongruenceOfRadiationRadiographyMobileHT || null,
+                EffectiveFocalSpotRadiographyMobileHT: report.EffectiveFocalSpotRadiographyMobileHT || null,
+                LinearityOfmAsLoadingRadiographyMobileHT: report.LinearityOfmAsLoadingRadiographyMobileHT || null,
+                ConsistencyOfRadiationOutputRadiographyMobileHT: report.ConsistencyOfRadiationOutputRadiographyMobileHT || null,
+                RadiationLeakageLevelRadiographyMobileHT: report.RadiationLeakageLevelRadiographyMobileHT || null,
+                RadiationProtectionSurveyRadiographyMobileHT: report.RadiationProtectionSurveyRadiographyMobileHT || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Radiography Mobile with HT):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const getReportHeaderRadiographyPortable = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfIrradiationTimeRadiographyPortable")
+            .populate("accuracyOfOperatingPotentialRadigraphyPortable")
+            .populate("CentralBeamAlignmentRadiographyPortable")
+            .populate("CongruenceOfRadiationRadioGraphyPortable")
+            .populate("EffectiveFocalSpotRadiographyPortable")
+            .populate("LinearityOfmAsLoadingRadiographyPortable")
+            .populate("ConsistencyOfRadiationOutputRadiographyPortable")
+            .populate("RadiationLeakageLevelRadiographyPortable")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ RADIOGRAPHY PORTABLE TEST RESULTS (POPULATED)
+                AccuracyOfIrradiationTimeRadiographyPortable: report.AccuracyOfIrradiationTimeRadiographyPortable || null,
+                accuracyOfOperatingPotentialRadigraphyPortable: report.accuracyOfOperatingPotentialRadigraphyPortable || null,
+                CentralBeamAlignmentRadiographyPortable: report.CentralBeamAlignmentRadiographyPortable || null,
+                CongruenceOfRadiationRadioGraphyPortable: report.CongruenceOfRadiationRadioGraphyPortable || null,
+                EffectiveFocalSpotRadiographyPortable: report.EffectiveFocalSpotRadiographyPortable || null,
+                LinearityOfmAsLoadingRadiographyPortable: report.LinearityOfmAsLoadingRadiographyPortable || null,
+                ConsistencyOfRadiationOutputRadiographyPortable: report.ConsistencyOfRadiationOutputRadiographyPortable || null,
+                RadiationLeakageLevelRadiographyPortable: report.RadiationLeakageLevelRadiographyPortable || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Radiography Portable):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const getReportHeaderRadiographyMobile = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfIrradiationTimeRadiographyMobile")
+            .populate("accuracyOfOperatingPotentialRadigraphyMobile")
+            .populate("CentralBeamAlignmentRadiographyMobile")
+            .populate("CongruenceOfRadiationRadioGraphyMobile")
+            .populate("EffectiveFocalSpotRadiographyMobile")
+            .populate("LinearityOfmAsLoadingRadiographyMobile")
+            .populate("ConsistencyOfRadiationOutputRadiographyMobile")
+            .populate("RadiationLeakageLevelRadiographyMobile")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ RADIOGRAPHY MOBILE TEST RESULTS (POPULATED)
+                AccuracyOfIrradiationTimeRadiographyMobile: report.AccuracyOfIrradiationTimeRadiographyMobile || null,
+                accuracyOfOperatingPotentialRadigraphyMobile: report.accuracyOfOperatingPotentialRadigraphyMobile || null,
+                CentralBeamAlignmentRadiographyMobile: report.CentralBeamAlignmentRadiographyMobile || null,
+                CongruenceOfRadiationRadioGraphyMobile: report.CongruenceOfRadiationRadioGraphyMobile || null,
+                EffectiveFocalSpotRadiographyMobile: report.EffectiveFocalSpotRadiographyMobile || null,
+                LinearityOfmAsLoadingRadiographyMobile: report.LinearityOfmAsLoadingRadiographyMobile || null,
+                ConsistencyOfRadiationOutputRadiographyMobile: report.ConsistencyOfRadiationOutputRadiographyMobile || null,
+                RadiationLeakageLevelRadiographyMobile: report.RadiationLeakageLevelRadiographyMobile || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Radiography Mobile):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const getReportHeaderCArm = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("ExposureRateTableTopCArm")
+            .populate("HighContrastResolutionCArm")
+            .populate("LowContrastResolutionCArm")
+            .populate("OutputConsistencyForCArm")
+            .populate("TotalFilterationForCArm")
+            .populate("TubeHousingLeakageCArm")
+            .populate("LinearityOfmAsLoadingCArm")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ C-ARM TEST RESULTS (POPULATED)
+                ExposureRateTableTopCArm: report.ExposureRateTableTopCArm || null,
+                HighContrastResolutionCArm: report.HighContrastResolutionCArm || null,
+                LowContrastResolutionCArm: report.LowContrastResolutionCArm || null,
+                OutputConsistencyForCArm: report.OutputConsistencyForCArm || null,
+                TotalFilterationForCArm: report.TotalFilterationForCArm || null,
+                TubeHousingLeakageCArm: report.TubeHousingLeakageCArm || null,
+                LinearityOfmAsLoadingCArm: report.LinearityOfmAsLoadingCArm || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (C-Arm):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, saveReportHeader }
