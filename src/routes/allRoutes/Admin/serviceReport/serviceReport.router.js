@@ -14,6 +14,7 @@ import RadiographyFixed from "../serviceReport/RadiographyFixed.router.js"
 import RadiographyMobileHT from "../serviceReport/RadiographyMobileHT.router.js"
 import RadiographyPortable from "../serviceReport/RadiographyPortable.router.js"
 import RadiographyMobile from "../serviceReport/RadiographyMobile.router.js"
+import LeadApron from "../serviceReport/LeadApron.router.js"
 const  router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -35,5 +36,6 @@ router.use('/radiography-fixed', RadiographyFixed)
 router.use('/radiography-mobile-ht', RadiographyMobileHT)
 router.use('/radiography-portable', RadiographyPortable)
 router.use('/radiography-mobile', RadiographyMobile)
+router.use('/lead-apron', LeadApron)
 
 export default router;

@@ -1,6 +1,7 @@
 import orderModel from "../../../models/order.model.js";
 import QATest from "../../../models/QATest.model.js";
 import serviceReportModel from "../../../models/serviceReports/serviceReport.model.js";
+import LeadApronServiceReport from "../../../models/serviceReports/leadApronServiceReport.model.js";
 import Services from "../../../models/Services.js";
 import MeasurementOfMaLinearity from "../../../models/testTables/CTScan/measurementOfMaLinearity.model.js";
 import MeasurementOfOperatingPotential from "../../../models/testTables/CTScan/MeasurementOfOperatingPotential.model.js";
@@ -1618,4 +1619,173 @@ export const getReportHeaderCArm = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, saveReportHeader }
+// Get Report Header for Lead Apron
+export const getReportHeaderLeadApron = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        const leadApronFields = [
+            "LeadApronTest",
+        ];
+
+        let query = LeadApronServiceReport
+            .findOne({ serviceId })
+            .populate("toolsUsed.tool", "nomenclature make model");
+
+        leadApronFields.forEach((field) => {
+            query = query.populate(field);
+        });
+
+        const report = await query.lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName || "",
+                address: report.address || "",
+                srfNumber: report.srfNumber || "",
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber || "",
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature || "",
+                make: report.make || "",
+                model: report.model || "",
+                category: report.category || "",
+                slNumber: report.slNumber || "",
+                condition: report.condition || "OK",
+                testingProcedureNumber: report.testingProcedureNumber || "",
+                engineerNameRPId: report.engineerNameRPId || "",
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location || "",
+                temperature: report.temperature || "",
+                humidity: report.humidity || "",
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature || "",
+                    make: t.make || "",
+                    model: t.model || "",
+                    SrNo: t.SrNo || "",
+                    range: t.range || "",
+                    calibrationCertificateNo: t.calibrationCertificateNo || "",
+                    calibrationValidTill: t.calibrationValidTill || "",
+                    certificate: t.certificate || "",
+                    uncertainity: t.uncertainity || "",
+                })),
+
+                // ⭐ LEAD APRON RESULTS
+                LeadApronTest: report.LeadApronTest,
+
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Lead Apron):", error);
+        console.error("Error details:", error.stack);
+        res.status(500).json({ exists: false, message: "Server error", error: error.message });
+    }
+};
+
+// Save Report Header for Lead Apron
+export const saveReportHeaderLeadApron = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        category,
+        model,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+    } = req.body;
+
+    try {
+        let report = await LeadApronServiceReport.findOne({ serviceId });
+        if (!report) {
+            // Create new report if it doesn't exist
+            report = new LeadApronServiceReport({ serviceId });
+        }
+
+        // FORMAT TOOLS
+        const formattedTools = toolsUsed?.map((tool) => ({
+            tool: tool.toolId || null,
+            SrNo: tool.SrNo,
+            nomenclature: tool.nomenclature,
+            make: tool.make,
+            model: tool.model,
+            range: tool.range,
+            calibrationCertificateNo: tool.calibrationCertificateNo,
+            calibrationValidTill: tool.calibrationValidTill,
+            certificate: tool.certificate,
+            uncertainity: tool.uncertainity,
+        })) || [];
+
+        // FORMAT NOTES
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        // UPDATE HEADER FIELDS
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            category,
+            model,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Lead Apron report header saved successfully!",
+            report,
+        });
+
+    } catch (error) {
+        console.error("Save Lead Apron report header error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron }
