@@ -22,6 +22,11 @@ const HighContrastResolutionForCTScanSchema = new Schema(
     table1: [ParamRowSchema],
     table2: [ResultRowSchema],
     tolerance: { type: String, default: '', trim: true },
+    serviceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Service',
+      required: true,
+    },
     serviceReportId: {
       type: Schema.Types.ObjectId,
       ref: 'ServiceReport',
@@ -31,6 +36,7 @@ const HighContrastResolutionForCTScanSchema = new Schema(
   { timestamps: true }
 );
 
+HighContrastResolutionForCTScanSchema.index({ serviceId: 1 });
 HighContrastResolutionForCTScanSchema.index({ serviceReportId: 1 });
 
 const HighContrastResolutionForCTScan = model(

@@ -1,11 +1,11 @@
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
-import LowContrastResolutionForCTScan from "../../../../models/testTables/CTScan/LowContrastResolutionForCTScan.model.js";
+import HighContrastResolutionForCTScan from "../../../../models/testTables/CTScan/HighContrasrResolutionForCTScan.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-    const { acquisitionParams, result, tolerances } = req.body;
+    const { table1, table2, tolerance } = req.body;
     const { serviceId } = req.params;
 
     if (!serviceId) {
@@ -39,32 +39,32 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Create or Update Test Record
-        let testRecord = await LowContrastResolutionForCTScan.findOne({ serviceId }).session(session);
+        let testRecord = await HighContrastResolutionForCTScan.findOne({ serviceId }).session(session);
 
         const updateData = {
-            acquisitionParams: acquisitionParams || {},
-            result: result || {},
-            tolerances: Array.isArray(tolerances) ? tolerances : undefined,
+            table1: Array.isArray(table1) ? table1 : [],
+            table2: Array.isArray(table2) ? table2 : [],
+            tolerance: tolerance?.toString().trim() || "",
             serviceId,
-            reportId: serviceReport._id,
+            serviceReportId: serviceReport._id,
         };
 
         if (testRecord) {
             Object.assign(testRecord, updateData);
         } else {
-            testRecord = new LowContrastResolutionForCTScan(updateData);
+            testRecord = new HighContrastResolutionForCTScan(updateData);
         }
         await testRecord.save({ session });
 
         // 4. Link to ServiceReport
-        serviceReport.lowContrastResolutionForCTScan = testRecord._id;
+        serviceReport.HighContrastResolutionForCTScan = testRecord._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
 
         return res.json({
             success: true,
-            message: "Low Contrast Resolution saved",
+            message: "High Contrast Resolution saved",
             data: {
                 testId: testRecord._id,
                 serviceReportId: serviceReport._id,
@@ -72,7 +72,7 @@ const create = asyncHandler(async (req, res) => {
         });
     } catch (error) {
         if (session) await session.abortTransaction();
-        console.error("LowContrastResolution Create Error:", error);
+        console.error("HighContrastResolution Create Error:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to save",
@@ -84,7 +84,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { acquisitionParams, result, tolerances } = req.body;
+    const { table1, table2, tolerance } = req.body;
     const { testId } = req.params;
 
     if (!testId) {
@@ -96,7 +96,7 @@ const update = asyncHandler(async (req, res) => {
         session = await mongoose.startSession();
         session.startTransaction();
 
-        const testRecord = await LowContrastResolutionForCTScan.findById(testId).session(session);
+        const testRecord = await HighContrastResolutionForCTScan.findById(testId).session(session);
         if (!testRecord) {
             await session.abortTransaction();
             return res.status(404).json({ success: false, message: "Test record not found" });
@@ -113,9 +113,9 @@ const update = asyncHandler(async (req, res) => {
         }
 
         // Update only provided fields
-        if (acquisitionParams) testRecord.acquisitionParams = acquisitionParams;
-        if (result) testRecord.result = result;
-        if (Array.isArray(tolerances)) testRecord.tolerances = tolerances;
+        if (Array.isArray(table1)) testRecord.table1 = table1;
+        if (Array.isArray(table2)) testRecord.table2 = table2;
+        if (tolerance !== undefined) testRecord.tolerance = tolerance?.toString().trim() || "";
 
         await testRecord.save({ session });
         await session.commitTransaction();
@@ -127,7 +127,7 @@ const update = asyncHandler(async (req, res) => {
         });
     } catch (error) {
         if (session) await session.abortTransaction();
-        console.error("LowContrastResolution Update Error:", error);
+        console.error("HighContrastResolution Update Error:", error);
         return res.status(500).json({
             success: false,
             message: "Update failed",
@@ -146,7 +146,7 @@ const getById = asyncHandler(async (req, res) => {
     }
 
     try {
-        const testRecord = await LowContrastResolutionForCTScan.findById(testId)
+        const testRecord = await HighContrastResolutionForCTScan.findById(testId)
             .lean()
             .exec();
 
@@ -168,7 +168,7 @@ const getById = asyncHandler(async (req, res) => {
             data: testRecord,
         });
     } catch (error) {
-        console.error("Get LowContrastResolution Error:", error);
+        console.error("Get HighContrastResolution Error:", error);
         return res.status(500).json({
             success: false,
             message: "Failed to fetch",
@@ -185,7 +185,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
     }
 
     try {
-        const testRecord = await LowContrastResolutionForCTScan.findOne({ serviceId }).lean().exec();
+        const testRecord = await HighContrastResolutionForCTScan.findOne({ serviceId }).lean().exec();
 
         if (!testRecord) {
             return res.status(200).json({

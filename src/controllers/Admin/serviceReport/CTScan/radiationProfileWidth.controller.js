@@ -30,11 +30,11 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // === CHECK MACHINE TYPE ===
-        if (service.machineType !== "CT Scan") {
+        if (service.machineType !== "Computed Tomography") {
             await session.abortTransaction();
             return res.status(403).json({
                 success: false,
-                message: `This test is only allowed for CT Scan. Current machine: ${service.machineType}`,
+                message: `This test is only allowed for Computed Tomography. Current machine: ${service.machineType}`,
             });
         }
 
@@ -118,11 +118,11 @@ const update = asyncHandler(async (req, res) => {
             await session.abortTransaction();
             return res.status(404).json({ success: false, message: "Associated service not found" });
         }
-        if (service.machineType !== "CT Scan") {
+        if (service.machineType !== "Computed Tomography") {
             await session.abortTransaction();
             return res.status(403).json({
                 success: false,
-                message: `This test can only be updated for CT Scan. Found: ${service.machineType}`,
+                message: `This test can only be updated for Computed Tomography. Found: ${service.machineType}`,
             });
         }
 
@@ -172,10 +172,10 @@ const getById = asyncHandler(async (req, res) => {
 
         // Optional: Validate machine type via serviceId
         const service = await Service.findById(testRecord.serviceId).lean();
-        if (service && service.machineType !== "CT Scan") {
+        if (service && service.machineType !== "Computed Tomography") {
             return res.status(403).json({
                 success: false,
-                message: `This test belongs to ${service.machineType}, not CT Scan`,
+                message: `This test belongs to ${service.machineType}, not Computed Tomography`,
             });
         }
         return res.json({
@@ -219,10 +219,10 @@ const getByServiceId = asyncHandler(async (req, res) => {
 
         // Optional safety check (you already have machineType validation)
         const service = await Service.findById(serviceId).lean();
-        if (service && service.machineType !== "CT Scan") {
+        if (service && service.machineType !== "Computed Tomography") {
             return res.status(403).json({
                 success: false,
-                message: `This test belongs to ${service.machineType}, not CT Scan`,
+                message: `This test belongs to ${service.machineType}, not Computed Tomography`,
             });
         }
 

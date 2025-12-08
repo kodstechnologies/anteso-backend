@@ -70,6 +70,14 @@ import "../../../models/testTables/CArm/OutputConsisitency.model.js";
 import "../../../models/testTables/CArm/TotalFilteration.model.js";
 import "../../../models/testTables/CArm/TubeHousingLeakage.model.js";
 import "../../../models/testTables/CArm/LinearityOfMasLoadingStation.model.js";
+// Import OArm models to ensure they're registered with Mongoose
+import "../../../models/testTables/OArm/ExposureRateTableTop.model.js";
+import "../../../models/testTables/OArm/HighContrastResolution.model.js";
+import "../../../models/testTables/OArm/LowContrastResolution.model.js";
+import "../../../models/testTables/OArm/OutputConsisitency.model.js";
+import "../../../models/testTables/OArm/TotalFilteration.model.js";
+import "../../../models/testTables/OArm/TubeHousingLeakage.model.js";
+import "../../../models/testTables/OArm/LinearityOfMasLoadingStation.model.js";
 
 export const getCustomerDetails = asyncHandler(async (req, res) => {
     try {
@@ -1788,4 +1796,167 @@ export const saveReportHeaderLeadApron = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron }
+export const getReportHeaderOArm = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("ExposureRateTableTopOArm")
+            .populate("HighContrastResolutionOArm")
+            .populate("LowContrastResolutionOArm")
+            .populate("OutputConsistencyForOArm")
+            .populate("TotalFilterationForOArm")
+            .populate("TubeHousingLeakageOArm")
+            .populate("LinearityOfmAsLoadingOArm")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ O-ARM TEST RESULTS (POPULATED)
+                ExposureRateTableTopOArm: report.ExposureRateTableTopOArm || null,
+                HighContrastResolutionOArm: report.HighContrastResolutionOArm || null,
+                LowContrastResolutionOArm: report.LowContrastResolutionOArm || null,
+                OutputConsistencyForOArm: report.OutputConsistencyForOArm || null,
+                TotalFilterationForOArm: report.TotalFilterationForOArm || null,
+                TubeHousingLeakageOArm: report.TubeHousingLeakageOArm || null,
+                LinearityOfmAsLoadingOArm: report.LinearityOfmAsLoadingOArm || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (O-Arm):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+// Get Report Header for CT Scan (Computed Tomography)
+export const getReportHeaderForCTScan = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each CT Scan test field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("RadiationProfileWidthForCTScan")
+            .populate("MeasurementOfOperatingPotential")
+            .populate("TimerAccuracy")
+            .populate("MeasurementOfMaLinearity")
+            .populate("MeasurementOfCTDI")
+            .populate("TotalFilterationForCTScan")
+            .populate("RadiationLeakageLevel")
+            .populate("MeasureMaxRadiationLevel")
+            .populate("OutputConsistency")
+            .populate("lowContrastResolutionForCTScan")
+            .populate("HighContrastResolutionForCTScan")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ CT SCAN (COMPUTED TOMOGRAPHY) TEST RESULTS (POPULATED)
+                RadiationProfileWidthForCTScan: report.RadiationProfileWidthForCTScan || null,
+                MeasurementOfOperatingPotential: report.MeasurementOfOperatingPotential || null,
+                TimerAccuracy: report.TimerAccuracy || null,
+                MeasurementOfMaLinearity: report.MeasurementOfMaLinearity || null,
+                MeasurementOfCTDI: report.MeasurementOfCTDI || null,
+                TotalFilterationForCTScan: report.TotalFilterationForCTScan || null,
+                RadiationLeakageLevel: report.RadiationLeakageLevel || null,
+                MeasureMaxRadiationLevel: report.MeasureMaxRadiationLevel || null,
+                OutputConsistency: report.OutputConsistency || null,
+                lowContrastResolutionForCTScan: report.lowContrastResolutionForCTScan || null,
+                HighContrastResolutionForCTScan: report.HighContrastResolutionForCTScan || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (CT Scan):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron,getReportHeaderForCTScan,getReportHeaderOArm }

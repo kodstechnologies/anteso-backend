@@ -30,11 +30,11 @@ const create = asyncHandler(async (req, res) => {
             return res.status(404).json({ success: false, message: "Service not found" });
         }
 
-        if (service.machineType !== "CT Scan") {
+        if (service.machineType !== "Computed Tomography") {
             await session.abortTransaction();
             return res.status(403).json({
                 success: false,
-                message: `This test is only allowed for CT Scan. Current machine: "${service.machineType}"`,
+                message: `This test is only allowed for Computed Tomography. Current machine: "${service.machineType}"`,
             });
         }
 
@@ -161,11 +161,11 @@ const update = asyncHandler(async (req, res) => {
 
         // Validate machine type
         const service = await Services.findById(testRecord.serviceId).session(session);
-        if (!service || service.machineType !== "CT Scan") {
+        if (!service || service.machineType !== "Computed Tomography") {
             await session.abortTransaction();
             return res.status(403).json({
                 success: false,
-                message: "This test can only be updated for CT Scan",
+                message: "This test can only be updated for Computed Tomography",
             });
         }
 
@@ -205,4 +205,43 @@ const update = asyncHandler(async (req, res) => {
     }
 });
 
-export default { create, getById, update }
+const getByServiceId = asyncHandler(async (req, res) => {
+    const { serviceId } = req.params;
+
+    if (!serviceId) {
+        return res.status(400).json({ success: false, message: "serviceId is required" });
+    }
+
+    try {
+        const testRecord = await MeasurementOfOperatingPotential.findOne({ serviceId }).lean().exec();
+
+        if (!testRecord) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+            });
+        }
+
+        const service = await Services.findById(serviceId).lean();
+        if (service && service.machineType !== "Computed Tomography") {
+            return res.status(403).json({
+                success: false,
+                message: `This test belongs to ${service.machineType}, not Computed Tomography`,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,
+        });
+    } catch (error) {
+        console.error("getByServiceId Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch test record",
+            error: error.message,
+        });
+    }
+});
+
+export default { create, getById, update, getByServiceId }

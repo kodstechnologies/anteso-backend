@@ -166,14 +166,14 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MeasurementOfCTDI'
     },
-    // LowContrastResolutionForCTScan: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'LowContrastResolutionForCTScan'
-    // },
-    // HighContrastResolutionForCTScan: {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: 'HighContrastResolutionForCTScan'
-    // },
+    lowContrastResolutionForCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LowContrastResolutionForCTScan'
+    },
+    HighContrastResolutionForCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'HighContrastResolutionForCTScan'
+    },
     TotalFilterationForCTScan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TotalFilterationForCTScan'
@@ -395,6 +395,35 @@ const serviceReportSchema = new mongoose.Schema({
     LinearityOfmAsLoadingCArm: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfmAsLoadingCArm"
+    },
+    //O-Arm
+    ExposureRateTableTopOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExposureRateTableTopOArm"
+    },
+    HighContrastResolutionOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HighContrastResolutionOArm"
+    },
+    LowContrastResolutionOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LowContrastResolutionOArm"
+    },
+    OutputConsistencyForOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "OutputConsistencyForOArm"
+    },
+    TotalFilterationForOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationForOArm"
+    },
+    TubeHousingLeakageOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageOArm"
+    },
+    LinearityOfmAsLoadingOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingOArm"
     },
 
     //radiography fixed
