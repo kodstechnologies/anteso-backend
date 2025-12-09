@@ -52,10 +52,28 @@ const create = asyncHandler(async (req, res) => {
 
     if (testRecord) {
       // Update existing
-      if (reportDetails !== undefined) testRecord.reportDetails = { ...testRecord.reportDetails, ...reportDetails };
-      if (operatingParameters !== undefined) testRecord.operatingParameters = { ...testRecord.operatingParameters, ...operatingParameters };
-      if (doseMeasurements !== undefined) testRecord.doseMeasurements = { ...testRecord.doseMeasurements, ...doseMeasurements };
-      if (footer !== undefined) testRecord.footer = { ...testRecord.footer, ...footer };
+      if (reportDetails !== undefined) {
+        testRecord.reportDetails = { ...testRecord.reportDetails, ...reportDetails };
+      }
+      if (operatingParameters !== undefined) {
+        testRecord.operatingParameters = { ...testRecord.operatingParameters, ...operatingParameters };
+      }
+      if (doseMeasurements !== undefined) {
+        // Handle positions array properly - replace entire array if provided
+        if (doseMeasurements.positions !== undefined && Array.isArray(doseMeasurements.positions)) {
+          testRecord.doseMeasurements.positions = doseMeasurements.positions;
+        }
+        // Update other doseMeasurement fields
+        const { positions, ...otherDoseFields } = doseMeasurements;
+        Object.keys(otherDoseFields).forEach(key => {
+          if (otherDoseFields[key] !== undefined) {
+            testRecord.doseMeasurements[key] = otherDoseFields[key];
+          }
+        });
+      }
+      if (footer !== undefined) {
+        testRecord.footer = { ...testRecord.footer, ...footer };
+      }
     } else {
       // Create new
       testRecord = new LeadApronTest({
@@ -77,9 +95,7 @@ const create = asyncHandler(async (req, res) => {
         },
         doseMeasurements: doseMeasurements || {
           neutral: "",
-          position1: "",
-          position2: "",
-          position3: "",
+          positions: [],
           averageValue: "",
           percentReduction: "",
           remark: "",
@@ -194,7 +210,17 @@ const update = asyncHandler(async (req, res) => {
       testRecord.operatingParameters = { ...testRecord.operatingParameters, ...operatingParameters };
     }
     if (doseMeasurements !== undefined) {
-      testRecord.doseMeasurements = { ...testRecord.doseMeasurements, ...doseMeasurements };
+      // Handle positions array properly - replace entire array if provided
+      if (doseMeasurements.positions !== undefined && Array.isArray(doseMeasurements.positions)) {
+        testRecord.doseMeasurements.positions = doseMeasurements.positions;
+      }
+      // Update other doseMeasurement fields
+      const { positions, ...otherDoseFields } = doseMeasurements;
+      Object.keys(otherDoseFields).forEach(key => {
+        if (otherDoseFields[key] !== undefined) {
+          testRecord.doseMeasurements[key] = otherDoseFields[key];
+        }
+      });
     }
     if (footer !== undefined) {
       testRecord.footer = { ...testRecord.footer, ...footer };

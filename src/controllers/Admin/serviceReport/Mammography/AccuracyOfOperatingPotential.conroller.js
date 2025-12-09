@@ -89,7 +89,7 @@ const create = asyncHandler(async (req, res) => {
         await testRecord.save({ session });
 
         // 4. Link back to ServiceReport
-        serviceReport.AccuracyOfOperatingPotential = testRecord._id;
+        serviceReport.AccuracyOfOperatingPotentialMammography = testRecord._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();

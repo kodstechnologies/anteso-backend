@@ -6,7 +6,13 @@ import HighContrastResolutionController from "../../../../controllers/Admin/serv
 import LowContrastResolution from "../../../../controllers/Admin/serviceReport/CArm/LowContrastResolution.controller.js";
 import ExposureRate from "../../../../controllers/Admin/serviceReport/CArm/ExposureRate.controller.js"
 import TubeHousing from "../../../../controllers/Admin/serviceReport/CArm/TubeHousingLeakage.controller.js"
+import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/CArm/AccuracyOfIrradiationTime.controller.js"
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
+
+router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)
+router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTimeController.getByServiceId)
+router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.update)
+router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.getById)
 
 router.post('/total-filteration/:serviceId', TotalFilterationForCArmController.create)
 router.get('/total-filteration-by-service/:serviceId', TotalFilterationForCArmController.getByServiceId)

@@ -1,11 +1,11 @@
-// controllers/Admin/serviceReport/InventionalRadiology/AccuracyOfIrradiationTime.js
+// controllers/Admin/serviceReport/CArm/AccuracyOfIrradiationTime.controller.js
 import mongoose from "mongoose";
-import AccuracyOfIrradiationTime from "../../../../models/testTables/InventionalRadiology/accuracyOfIrradiationTime.model.js";
+import AccuracyOfIrradiationTime from "../../../../models/testTables/CArm/AccuracyOfIrradiationTime.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Interventional Radiology";
+const MACHINE_TYPE = "C-Arm";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
@@ -54,6 +54,7 @@ const create = asyncHandler(async (req, res) => {
       // Create new
       testRecord = new AccuracyOfIrradiationTime({
         serviceId,
+        serviceReportId: serviceReport._id,
         testConditions: testConditions || { fcd: "", kv: "", ma: "" },
         irradiationTimes: irradiationTimes || [],
         tolerance: tolerance || { operator: "<=", value: "" },
@@ -63,7 +64,7 @@ const create = asyncHandler(async (req, res) => {
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.AccuracyOfIrradiationTimeInventionalRadiology = testRecord._id;
+    serviceReport.AccuracyOfIrradiationTimeCArm = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -94,16 +95,33 @@ const create = asyncHandler(async (req, res) => {
 const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
-  const test = await AccuracyOfIrradiationTime.findById(testId);
-
-  if (!test) {
-    return res.status(404).json({ message: "Test data not found" });
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
 
-  return res.status(200).json({
-    success: true,
-    data: test,
-  });
+  try {
+    const testRecord = await AccuracyOfIrradiationTime.findById(testId).lean();
+    if (!testRecord) {
+      return res.status(404).json({ success: false, message: "Test record not found" });
+    }
+
+    const service = await Service.findById(testRecord.serviceId).lean();
+    if (service && service.machineType !== MACHINE_TYPE) {
+      return res.status(403).json({
+        success: false,
+        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+      });
+    }
+
+    return res.json({ success: true, data: testRecord });
+  } catch (error) {
+    console.error("getById Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch test",
+      error: error.message,
+    });
+  }
 });
 
 // UPDATE by testId (Mongo _id) with transaction

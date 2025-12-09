@@ -1,16 +1,16 @@
-// controllers/Admin/serviceReport/InventionalRadiology/AccuracyOfIrradiationTime.js
+// controllers/Admin/serviceReport/OBI/CentralBeamAlignment.controller.js
 import mongoose from "mongoose";
-import AccuracyOfIrradiationTime from "../../../../models/testTables/InventionalRadiology/accuracyOfIrradiationTime.model.js";
+import CentralBeamAlignment from "../../../../models/testTables/OBI/CentralBeamAlignment.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Interventional Radiology";
+const MACHINE_TYPE = "On-Board Imaging (OBI)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testConditions, irradiationTimes, tolerance } = req.body;
+  const { techniqueFactors, observedTilt, tolerance, finalResult } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -43,27 +43,30 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // Upsert Test Record (create or update)
-    let testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).session(session);
+    let testRecord = await CentralBeamAlignment.findOne({ serviceId }).session(session);
 
     if (testRecord) {
       // Update existing
-      if (testConditions !== undefined) testRecord.testConditions = testConditions;
-      if (irradiationTimes !== undefined) testRecord.irradiationTimes = irradiationTimes;
+      if (techniqueFactors !== undefined) testRecord.techniqueFactors = techniqueFactors;
+      if (observedTilt !== undefined) testRecord.observedTilt = observedTilt;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (finalResult !== undefined) testRecord.finalResult = finalResult;
     } else {
       // Create new
-      testRecord = new AccuracyOfIrradiationTime({
+      testRecord = new CentralBeamAlignment({
         serviceId,
-        testConditions: testConditions || { fcd: "", kv: "", ma: "" },
-        irradiationTimes: irradiationTimes || [],
-        tolerance: tolerance || { operator: "<=", value: "" },
+        reportId: serviceReport._id,
+        techniqueFactors: techniqueFactors || {},
+        observedTilt: observedTilt || {},
+        tolerance: tolerance || {},
+        finalResult: finalResult || "",
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.AccuracyOfIrradiationTimeInventionalRadiology = testRecord._id;
+    serviceReport.CentralBeamAlignmentOBI = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -72,14 +75,13 @@ const create = asyncHandler(async (req, res) => {
       success: true,
       message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
       data: {
-        _id: testRecord._id.toString(),
         testId: testRecord._id.toString(),
         serviceId: testRecord.serviceId.toString(),
       },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("AccuracyOfIrradiationTime Create Error:", error);
+    console.error("CentralBeamAlignment Create Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to save test",
@@ -90,26 +92,43 @@ const create = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by testId (Mongo _id)
+// GET by testId
 const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
-  const test = await AccuracyOfIrradiationTime.findById(testId);
-
-  if (!test) {
-    return res.status(404).json({ message: "Test data not found" });
+  if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
+    return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
 
-  return res.status(200).json({
-    success: true,
-    data: test,
-  });
+  try {
+    const testRecord = await CentralBeamAlignment.findById(testId).lean();
+    if (!testRecord) {
+      return res.status(404).json({ success: false, message: "Test record not found" });
+    }
+
+    const service = await Service.findById(testRecord.serviceId).lean();
+    if (service && service.machineType !== MACHINE_TYPE) {
+      return res.status(403).json({
+        success: false,
+        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+      });
+    }
+
+    return res.json({ success: true, data: testRecord });
+  } catch (error) {
+    console.error("getById Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch test",
+      error: error.message,
+    });
+  }
 });
 
-// UPDATE by testId (Mongo _id) with transaction
+// UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testConditions, irradiationTimes, tolerance } = req.body;
+  const { techniqueFactors, observedTilt, tolerance, finalResult } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -120,7 +139,7 @@ const update = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const testRecord = await AccuracyOfIrradiationTime.findById(testId).session(session);
+    const testRecord = await CentralBeamAlignment.findById(testId).session(session);
     if (!testRecord) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Test record not found" });
@@ -137,9 +156,10 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (testConditions !== undefined) testRecord.testConditions = testConditions;
-    if (irradiationTimes !== undefined) testRecord.irradiationTimes = irradiationTimes;
+    if (techniqueFactors !== undefined) testRecord.techniqueFactors = techniqueFactors;
+    if (observedTilt !== undefined) testRecord.observedTilt = observedTilt;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (finalResult !== undefined) testRecord.finalResult = finalResult;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -151,7 +171,7 @@ const update = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("AccuracyOfIrradiationTime Update Error:", error);
+    console.error("CentralBeamAlignment Update Error:", error);
     return res.status(500).json({
       success: false,
       message: "Update failed",
@@ -162,7 +182,7 @@ const update = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by serviceId (convenience for frontend)
+// GET by serviceId
 const getByServiceId = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
 
@@ -171,7 +191,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).lean();
+    const testRecord = await CentralBeamAlignment.findOne({ serviceId }).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });

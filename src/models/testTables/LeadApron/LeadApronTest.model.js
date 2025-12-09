@@ -40,9 +40,10 @@ const LeadApronTestSchema = new Schema(
     // Dose Measurements
     doseMeasurements: {
       neutral: { type: String, trim: true, default: "" },
-      position1: { type: String, trim: true, default: "" },
-      position2: { type: String, trim: true, default: "" },
-      position3: { type: String, trim: true, default: "" },
+      positions: [{
+        position: { type: String, trim: true, default: "" },
+        value: { type: String, trim: true, default: "" },
+      }],
       averageValue: { type: String, trim: true, default: "" },
       percentReduction: { type: String, trim: true, default: "" },
       remark: { type: String, trim: true, default: "" }, // e.g., "Pass, Can use further"

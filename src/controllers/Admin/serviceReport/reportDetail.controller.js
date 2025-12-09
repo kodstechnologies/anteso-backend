@@ -62,6 +62,20 @@ import "../../../models/testTables/RadiographyMobile/EffectiveFocalSpot.model.js
 import "../../../models/testTables/RadiographyMobile/LinearityOfMasLoadingStations.model.js";
 import "../../../models/testTables/RadiographyMobile/ConsisitencyOfRadiationOutput.model.js";
 import "../../../models/testTables/RadiographyMobile/RadiationLeakageLevel.model.js";
+// Import OBI models to ensure they're registered with Mongoose
+import "../../../models/testTables/OBI/AlignmentTest.model.js";
+import "../../../models/testTables/OBI/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/OBI/CentralBeamAlignment.model.js";
+import "../../../models/testTables/OBI/CongruenceOfRadiation.model.js";
+import "../../../models/testTables/OBI/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/OBI/HighContrastSensitivity.model.js";
+import "../../../models/testTables/OBI/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/OBI/LinearityOfTime.model.js";
+import "../../../models/testTables/OBI/LowContrastSensitivity.model.js";
+import "../../../models/testTables/OBI/OutputConsistency.model.js";
+import "../../../models/testTables/OBI/RadiationProtection.model.js";
+import "../../../models/testTables/OBI/TimerTest.model.js";
+import "../../../models/testTables/OBI/TubeHousingLeakage.model.js";
 // Import CArm models to ensure they're registered with Mongoose
 import "../../../models/testTables/CArm/ExposureRateTableTop.model.js";
 import "../../../models/testTables/CArm/HighContrastResolution.model.js";
@@ -78,6 +92,17 @@ import "../../../models/testTables/OArm/OutputConsisitency.model.js";
 import "../../../models/testTables/OArm/TotalFilteration.model.js";
 import "../../../models/testTables/OArm/TubeHousingLeakage.model.js";
 import "../../../models/testTables/OArm/LinearityOfMasLoadingStation.model.js";
+// Import Mammography models to ensure they're registered with Mongoose
+import "../../../models/testTables/Mammography/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/Mammography/TotalFiltrationAndAluminium.model.js";
+import "../../../models/testTables/Mammography/ImagingPhantom.model.js";
+import "../../../models/testTables/Mammography/ReproducibilityOfOutput.model.js";
+import "../../../models/testTables/Mammography/RadiationLeakageLevel.model.js";
+import "../../../models/testTables/Mammography/DetailsOfRadiationProtectionMammography.model.js";
+import "../../../models/testTables/Mammography/EquipmentSetting.model.js";
+import "../../../models/testTables/Mammography/MaxRadiationLevel.model.js";
+import "../../../models/testTables/Mammography/LinearityOfMasLoading.model.js";
+import mongoose from "mongoose";
 
 export const getCustomerDetails = asyncHandler(async (req, res) => {
     try {
@@ -806,6 +831,8 @@ const getReportHeader = async (req, res) => {
                 CongruenceOfRadiationForRadioFluro: report.CongruenceOfRadiationForRadioFluro,
                 CentralBeamAlignmentForRadioFluoro: report.CentralBeamAlignmentForRadioFluoro,
                 RadiationProtectionSurvey: report.RadiationProtectionSurvey,
+
+                notes: report.notes || [],
 
             },
         });
@@ -1627,6 +1654,84 @@ export const getReportHeaderCArm = async (req, res) => {
     }
 };
 
+// Get Report Header for Interventional Radiology
+export const getReportHeaderInventionalRadiology = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // Build query - populate each field individually
+        const report = await serviceReportModel
+            .findOne({ serviceId })
+            .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("AccuracyOfIrradiationTimeInventionalRadiology")
+            .populate("TotalFilterationForInventionalRadiology")
+            .populate("ExposureRateTableTopInventionalRadiology")
+            .populate("HighContrastResolutionInventionalRadiology")
+            .populate("LowContrastResolutionInventionalRadiology")
+            .populate("TubeHousingLeakageInventionalRadiology")
+            .lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                notes: report.notes || [],
+
+                // ⭐ INTERVENTIONAL RADIOLOGY TEST RESULTS (POPULATED)
+                AccuracyOfIrradiationTimeInventionalRadiology: report.AccuracyOfIrradiationTimeInventionalRadiology || null,
+                TotalFilterationForInventionalRadiology: report.TotalFilterationForInventionalRadiology || null,
+                ExposureRateTableTopInventionalRadiology: report.ExposureRateTableTopInventionalRadiology || null,
+                HighContrastResolutionInventionalRadiology: report.HighContrastResolutionInventionalRadiology || null,
+                LowContrastResolutionInventionalRadiology: report.LowContrastResolutionInventionalRadiology || null,
+                TubeHousingLeakageInventionalRadiology: report.TubeHousingLeakageInventionalRadiology || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Interventional Radiology):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
 // Get Report Header for Lead Apron
 export const getReportHeaderLeadApron = async (req, res) => {
     const { serviceId } = req.params;
@@ -1959,4 +2064,198 @@ export const getReportHeaderForCTScan = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron,getReportHeaderForCTScan,getReportHeaderOArm }
+export const getReportHeaderOBI = async (req, res) => {
+    try {
+        const { serviceId } = req.params;
+
+        if (!serviceId) {
+            return res.status(400).json({
+                success: false,
+                message: "serviceId is required",
+            });
+        }
+
+        // All OBI fields
+        const obiFields = [
+            "AlignmentTestOBI",
+            "accuracyOfOperatingPotentialOBI",
+            "CentralBeamAlignmentOBI",
+            "CongruenceOfRadiationOBI",
+            "EffectiveFocalSpotOBI",
+            "HighContrastSensitivityOBI",
+            "LinearityOfMasLoadingStationsOBI",
+            "LinearityOfTimeOBI",
+            "LowContrastSensitivityOBI",
+            "OutputConsistencyOBI",
+            "RadiationProtectionSurveyOBI",
+            "TimerTestOBI",
+            "TubeHousingLeakageOBI"
+        ];
+
+        let query = serviceReportModel
+            .findOne({ serviceId })
+            .populate("toolsUsed.tool", "nomenclature make model");
+
+        // Populate all OBI fields
+        obiFields.forEach(field => {
+            query = query.populate(field);
+        });
+
+        const report = await query.lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                // ⭐ OBI TEST RESULTS (POPULATED)
+                AlignmentTestOBI: report.AlignmentTestOBI,
+                accuracyOfOperatingPotentialOBI: report.accuracyOfOperatingPotentialOBI,
+                CentralBeamAlignmentOBI: report.CentralBeamAlignmentOBI,
+                CongruenceOfRadiationOBI: report.CongruenceOfRadiationOBI,
+                EffectiveFocalSpotOBI: report.EffectiveFocalSpotOBI,
+                HighContrastSensitivityOBI: report.HighContrastSensitivityOBI,
+                LinearityOfMasLoadingStationsOBI: report.LinearityOfMasLoadingStationsOBI,
+                LinearityOfTimeOBI: report.LinearityOfTimeOBI,
+                LowContrastSensitivityOBI: report.LowContrastSensitivityOBI,
+                OutputConsistencyOBI: report.OutputConsistencyOBI,
+                RadiationProtectionSurveyOBI: report.RadiationProtectionSurveyOBI,
+                TimerTestOBI: report.TimerTestOBI,
+                TubeHousingLeakageOBI: report.TubeHousingLeakageOBI,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (OBI):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+// Get Report Header for Mammography
+export const getReportHeaderMammography = async (req, res) => {
+    const { serviceId } = req.params;
+
+    try {
+        // All Mammography fields to populate
+        const mammographyFields = [
+            "AccuracyOfOperatingPotentialMammography",
+            "TotalFilterationAndAlluminiumMammography",
+            "ImagingPhantomMammography",
+            "ReproducibilityOfRadiationOutputMammography",
+            "RadiationLeakageLevelMammography",
+            "DetailsOfRadiationProtectionMammography",
+            "EquipmentSettingMammography",
+            "MaximumRadiationLevelMammography",
+            "LinearityOfMasLoadingMammography"
+        ];
+
+        // Build the query
+        let query = serviceReportModel
+            .findOne({ serviceId })
+            .populate("toolsUsed.tool", "nomenclature make model");
+
+        // Populate each Mammography field
+        mammographyFields.forEach(field => {
+            query = query.populate(field);
+        });
+
+        const report = await query.lean();
+
+        const format = (date) =>
+            date ? new Date(date).toISOString().split("T")[0] : "";
+
+        res.status(200).json({
+            exists: true,
+            data: {
+                customerName: report.customerName,
+                address: report.address,
+                srfNumber: report.srfNumber,
+                srfDate: format(report.srfDate),
+                testReportNumber: report.testReportNumber,
+                issueDate: format(report.issueDate),
+                nomenclature: report.nomenclature,
+                make: report.make,
+                model: report.model,
+                category: report.category,
+                slNumber: report.slNumber,
+                condition: report.condition,
+                testingProcedureNumber: report.testingProcedureNumber,
+                engineerNameRPId: report.engineerNameRPId,
+                testDate: format(report.testDate),
+                testDueDate: format(report.testDueDate),
+                location: report.location,
+                temperature: report.temperature,
+                humidity: report.humidity,
+
+                toolsUsed: (report.toolsUsed || []).map((t, i) => ({
+                    slNumber: i + 1,
+                    toolId: t.tool?._id,
+                    nomenclature: t.nomenclature,
+                    make: t.make,
+                    model: t.model,
+                    SrNo: t.SrNo,
+                    range: t.range,
+                    calibrationCertificateNo: t.calibrationCertificateNo,
+                    calibrationValidTill: t.calibrationValidTill,
+                    certificate: t.certificate,
+                    uncertainity: t.uncertainity,
+                })),
+
+                notes: report.notes || [],
+
+                // ⭐ MAMMOGRAPHY TEST RESULTS (POPULATED OR NULL IF NOT AVAILABLE)
+                AccuracyOfOperatingPotentialMammography: report.AccuracyOfOperatingPotentialMammography || null,
+                TotalFilterationAndAlluminiumMammography: report.TotalFilterationAndAlluminiumMammography || null,
+                ImagingPhantomMammography: report.ImagingPhantomMammography || null,
+                ReproducibilityOfRadiationOutputMammography: report.ReproducibilityOfRadiationOutputMammography || null,
+                RadiationLeakageLevelMammography: report.RadiationLeakageLevelMammography || null,
+                DetailsOfRadiationProtectionMammography: report.DetailsOfRadiationProtectionMammography || null,
+                EquipmentSettingMammography: report.EquipmentSettingMammography || null,
+                MaximumRadiationLevelMammography: report.MaximumRadiationLevelMammography || null,
+                LinearityOfMasLoadingMammography: report.LinearityOfMasLoadingMammography || null,
+            },
+        });
+    } catch (error) {
+        console.error("Get report header error (Mammography):", error);
+        res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron,getReportHeaderForCTScan,getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }

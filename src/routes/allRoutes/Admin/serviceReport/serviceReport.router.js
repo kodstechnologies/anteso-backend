@@ -16,6 +16,7 @@ import RadiographyPortable from "../serviceReport/RadiographyPortable.router.js"
 import RadiographyMobile from "../serviceReport/RadiographyMobile.router.js"
 import OArm from "../serviceReport/OArm.router.js"
 import LeadApron from "../serviceReport/LeadApron.router.js"
+import OBI from "../serviceReport/OBI.router.js"
 const  router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -39,5 +40,6 @@ router.use('/radiography-portable', RadiographyPortable)
 router.use('/radiography-mobile', RadiographyMobile)
 router.use('/o-arm', OArm)
 router.use('/lead-apron', LeadApron)
+router.use('/obi', OBI)
 
 export default router;

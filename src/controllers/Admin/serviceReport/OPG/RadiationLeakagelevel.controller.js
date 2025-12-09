@@ -8,6 +8,9 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 const MACHINE_TYPE = "Ortho Pantomography (OPG)";
 
 // CREATE (with transaction)
+// Expected structure:
+// settings: [{ ffd: string, kvp: string, ma: string, time: string }]
+// leakageMeasurements: [{ location: string, left: string, right: string, top: string, up: string, down: string, max: string, unit: string, remark: string }]
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
   const {
@@ -137,6 +140,9 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 // UPDATE with transaction
+// Expected structure:
+// settings: [{ ffd: string, kvp: string, ma: string, time: string }]
+// leakageMeasurements: [{ location: string, left: string, right: string, top: string, up: string, down: string, max: string, unit: string, remark: string }]
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
   const {

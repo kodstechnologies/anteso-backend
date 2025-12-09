@@ -4,10 +4,11 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 
 /**
- * Measurement Settings (kV, mA, Time)
+ * Measurement Settings (FFD, kVp, mA, Time)
  */
 const SettingsRowSchema = new Schema({
-    kv: { type: String, trim: true, default: '' },
+    ffd: { type: String, trim: true, default: '' }, // FFD in cm
+    kvp: { type: String, trim: true, default: '' },
     ma: { type: String, trim: true, default: '' },
     time: { type: String, trim: true, default: '' }, // in seconds
 });
@@ -17,10 +18,11 @@ const SettingsRowSchema = new Schema({
  */
 const LeakageRowSchema = new Schema({
     location: { type: String, trim: true, required: true }, // e.g., "Tube", "Collimator"
-    front: { type: String, trim: true, default: '' },
-    back: { type: String, trim: true, default: '' },
     left: { type: String, trim: true, default: '' },
     right: { type: String, trim: true, default: '' },
+    top: { type: String, trim: true, default: '' },
+    up: { type: String, trim: true, default: '' },
+    down: { type: String, trim: true, default: '' },
     max: { type: String, trim: true, default: '' }, // auto-calculated
     unit: { type: String, trim: true, default: '' },
     remark: { type: String, default: '' },

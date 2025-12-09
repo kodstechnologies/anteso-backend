@@ -368,6 +368,10 @@ const serviceReportSchema = new mongoose.Schema({
     },
 
     //C-Arm
+    AccuracyOfIrradiationTimeCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeCArm"
+    },
     ExposureRateTableTopCArm: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ExposureRateTableTopCArm"
@@ -579,6 +583,124 @@ const serviceReportSchema = new mongoose.Schema({
     RadiationLeakageLevelRadiographyMobile: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationLeakageLevelRadiographyMobile"
+    },
+
+    //OBI
+    AlignmentTestOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AlignmentTestOBI"
+    },
+    accuracyOfOperatingPotentialOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "accuracyOfOperatingPotentialOBI"
+    },
+    CentralBeamAlignmentOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CentralBeamAlignmentOBI"
+    },
+    CongruenceOfRadiationOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CongruenceOfRadiationOBI"
+    },
+    EffectiveFocalSpotOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EffectiveFocalSpotOBI"
+    },
+    HighContrastSensitivityOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HighContrastSensitivityOBI"
+    },
+    LinearityOfMasLoadingStationsOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMasLoadingStationsOBI"
+    },
+    LinearityOfTimeOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfTimeOBI"
+    },
+    LowContrastSensitivityOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LowContrastSensitivityOBI"
+    },
+    OutputConsistencyOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "OutputConsistencyOBI"
+    },
+    RadiationProtectionSurveyOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionSurveyOBI"
+    },
+    TimerTestOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TimerTestOBI"
+    },
+    TubeHousingLeakageOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageOBI"
+    },
+
+    //Mammography
+    AccuracyOfOperatingPotentialMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfOperatingPotentialMammography"
+    },
+    TotalFilterationAndAlluminiumMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationAndAlluminiumMammography"
+    },
+    ImagingPhantomMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ImagingPhantomMammography"
+    },
+    ReproducibilityOfRadiationOutputMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ReproducibilityOfOutputMmmography"
+    },
+    RadiationLeakageLevelMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageLevelMammography"
+    },
+    DetailsOfRadiationProtectionMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "DetailsOfRadiationProtectionMammography"
+    },
+    EquipmentSettingMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "EquipmentSettingForMammography"
+    },
+    MaximumRadiationLevelMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MaximumRadiationLevelMammography"
+    },
+    LinearityOfMasLoadingMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMasLLoadingMammography"
+    },
+
+    //Interventional Radiology
+    AccuracyOfIrradiationTimeInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeInventionalRadiology"
+    },
+    TotalFilterationForInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationForInventionalRadiology"
+    },
+    ExposureRateTableTopInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ExposureRateTableTopInventionalRadiology"
+    },
+    HighContrastResolutionInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HighContrastResolutionInventionalRadiology"
+    },
+    LowContrastResolutionInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LowContrastResolutionInventionalRadiology"
+    },
+    TubeHousingLeakageInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageInventionalRadiology"
     },
 })
 export default mongoose.model(

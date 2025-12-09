@@ -5,10 +5,12 @@ import TotalFilterationForInventionalRadiologyController from "../../../../contr
 import ExposureRateAtTableTop from "../../../../controllers/Admin/serviceReport/InventionalRadiology/ExposureRateAtTableTop.js";
 import LowContrastResolutionController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/LowContrastResolution.controller.js";
 import HighContrastResolutionController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/HighContrastResolution.controller.js";
+import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTime.create)
 router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.getById)
 router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.update)
+router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTime.getByServiceId)
 
 router.post('/total-filteration/:serviceId', TotalFilterationForInventionalRadiologyController.create)
 router.get('/total-filteration/:testId', TotalFilterationForInventionalRadiologyController.getById)
@@ -27,5 +29,6 @@ router.post('/high-contrast-resolution/:serviceId', HighContrastResolutionContro
 router.get('/high-contrast-resolution/:serviceId', HighContrastResolutionController.getById)
 router.put('/high-contrast-resolution/:testId', HighContrastResolutionController.update)
 
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
 
 export default router

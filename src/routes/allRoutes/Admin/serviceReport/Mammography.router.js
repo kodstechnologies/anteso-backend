@@ -8,6 +8,9 @@ import ReproducibilityOfIrradiationOutput from "../../../../controllers/Admin/se
 import RadiationLeakageLevel from "../../../../controllers/Admin/serviceReport/Mammography/RadiationLeakageLevel.controller.js"
 import RadiationProtectionSurvey from "../../../../controllers/Admin/serviceReport/Mammography/DetailsOfRadiationProtection.controller.js"
 import EquipmentSetting from "../../../../controllers/Admin/serviceReport/Mammography/EquipmentSetting.controller.js"
+import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js"
+
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
 
 router.post('/total-filteration/:serviceId', TotalFilteration.create)
 router.get('/total-filteration-by-serviceId/:serviceId', TotalFilteration.getByServiceId)
