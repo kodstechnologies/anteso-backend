@@ -4,6 +4,7 @@ import AccuracyOfOperatingPotentialAndTimeController from "../../../../controlle
 import LinearityOfTimeController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/LinearityOfTime.controller.js";
 import ReproducibilityOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/ReproducibilityOfRadiationOutput.controller.js";
 import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/TubeHousingLeakage.controller.js";
+import RadiationLeakagelevelController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/RadiationLeakagelevel.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderDentalHandHeld)
@@ -27,5 +28,11 @@ router.post('/tube-housing-leakage/:serviceId', TubeHousingLeakageController.cre
 router.get('/tube-housing-leakage-by-service/:serviceId', TubeHousingLeakageController.getByServiceId)
 router.put('/tube-housing-leakage/:testId', TubeHousingLeakageController.update)
 router.get('/tube-housing-leakage/:testId', TubeHousingLeakageController.getById)
+
+// Radiation Leakage Level
+router.post('/radiation-leakage-level/:serviceId', RadiationLeakagelevelController.create)
+router.get('/radiation-leakage-level/:testId', RadiationLeakagelevelController.getById)
+router.put('/radiation-leakage-level/:testId', RadiationLeakagelevelController.update)
+router.get('/radiation-leakage-level-by-serviceId/:serviceId', RadiationLeakagelevelController.getByServiceId)
 
 export default router;

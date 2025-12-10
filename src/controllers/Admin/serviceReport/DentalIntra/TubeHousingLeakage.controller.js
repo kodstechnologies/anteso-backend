@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Intra Oral)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { measurementSettings, leakageMeasurements, workload, tolerance, calculatedResult } = req.body;
+  const { measurementSettings, leakageMeasurements, workload, workloadInput, tolerance, calculatedResult } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -50,6 +50,7 @@ const create = asyncHandler(async (req, res) => {
       if (measurementSettings !== undefined) testRecord.measurementSettings = measurementSettings;
       if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
       if (workload !== undefined) testRecord.workload = workload;
+      if (workloadInput !== undefined) testRecord.workloadInput = workloadInput;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
       if (calculatedResult !== undefined) testRecord.calculatedResult = calculatedResult;
     } else {
@@ -143,7 +144,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { measurementSettings, leakageMeasurements, workload, tolerance, calculatedResult } = req.body;
+  const { measurementSettings, leakageMeasurements, workload, workloadInput, tolerance, calculatedResult } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });

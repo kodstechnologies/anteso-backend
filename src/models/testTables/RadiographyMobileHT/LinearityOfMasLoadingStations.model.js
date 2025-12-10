@@ -11,10 +11,6 @@ const table2RowSchema = new mongoose.Schema({
     measuredOutputs: { type: [String], default: [] }, // Dynamic measured values
     average: { type: String },
     x: { type: String },
-    xMax: { type: String },
-    xMin: { type: String },
-    col: { type: String },
-    remarks: { type: String },
 });
 
 const linearityOfmAsLoadingSchema = new mongoose.Schema(
@@ -45,7 +41,23 @@ const linearityOfmAsLoadingSchema = new mongoose.Schema(
         // Tolerance entered by user
         tolerance: {
             type: String,
-            
+            default: "0.1",
+        },
+        toleranceOperator: {
+            type: String,
+            default: "<=",
+        },
+        xMax: {
+            type: String,
+        },
+        xMin: {
+            type: String,
+        },
+        col: {
+            type: String,
+        },
+        remarks: {
+            type: String,
         },
 
         // Optional: associate with a QA Report or order

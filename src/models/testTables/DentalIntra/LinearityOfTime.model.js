@@ -28,6 +28,10 @@ const LinearityOfTimeSchema = new Schema({
   table2: [Table2RowSchema],
 
   tolerance: { type: String, default: '0.1', trim: true },
+  xMax: { type: String, default: '' },
+  xMin: { type: String, default: '' },
+  col: { type: String, default: '' },
+  remarks: { type: String, enum: ['Pass', 'Fail', ''], default: '' },
   testId: { type: String, unique: true, sparse: true },
 }, { timestamps: true, collection: 'linearityoftime' });
 

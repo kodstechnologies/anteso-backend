@@ -9,7 +9,7 @@ const MACHINE_TYPE = "Radiography (Mobile) with HT";
 
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -47,6 +47,11 @@ const create = asyncHandler(async (req, res) => {
       if (table2 !== undefined) testRecord.table2 = table2;
       if (measHeaders !== undefined) testRecord.measHeaders = measHeaders;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+      if (xMax !== undefined) testRecord.xMax = xMax;
+      if (xMin !== undefined) testRecord.xMin = xMin;
+      if (col !== undefined) testRecord.col = col;
+      if (remarks !== undefined) testRecord.remarks = remarks;
     } else {
       testRecord = new LinearityOfMasLoadingStations({
         serviceId,
@@ -56,6 +61,11 @@ const create = asyncHandler(async (req, res) => {
         table2: table2 || [],
         measHeaders: measHeaders || [],
         tolerance: tolerance || "0.1",
+        toleranceOperator: toleranceOperator || "<=",
+        xMax: xMax || "",
+        xMin: xMin || "",
+        col: col || "",
+        remarks: remarks || "",
       });
     }
 
@@ -105,7 +115,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
@@ -131,6 +141,11 @@ const update = asyncHandler(async (req, res) => {
     if (table2 !== undefined) testRecord.table2 = table2;
     if (measHeaders !== undefined) testRecord.measHeaders = measHeaders;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+    if (xMax !== undefined) testRecord.xMax = xMax;
+    if (xMin !== undefined) testRecord.xMin = xMin;
+    if (col !== undefined) testRecord.col = col;
+    if (remarks !== undefined) testRecord.remarks = remarks;
     await testRecord.save({ session });
     await session.commitTransaction();
     return res.json({ success: true, message: "Updated successfully", data: { _id: testRecord._id.toString() } });

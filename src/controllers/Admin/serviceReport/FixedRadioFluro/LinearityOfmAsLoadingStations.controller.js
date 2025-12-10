@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Radiography and Fluoroscopy";
 // CREATE or UPDATE (Upsert) by serviceId
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -51,6 +51,11 @@ const create = asyncHandler(async (req, res) => {
         table2: table2 || [],
         measHeaders: measHeaders || [],
         tolerance: tolerance ?? "0.1",
+        toleranceOperator: toleranceOperator || "<=",
+        xMax: xMax || "",
+        xMin: xMin || "",
+        col: col || "",
+        remarks: remarks || "",
       },
       { upsert: true, new: true, setDefaultsOnInsert: true, session }
     );
@@ -94,7 +99,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance } = req.body;
+  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -108,6 +113,11 @@ const update = asyncHandler(async (req, res) => {
       ...(table2 !== undefined && { table2 }),
       ...(measHeaders !== undefined && { measHeaders }),
       ...(tolerance !== undefined && { tolerance }),
+      ...(toleranceOperator !== undefined && { toleranceOperator }),
+      ...(xMax !== undefined && { xMax }),
+      ...(xMin !== undefined && { xMin }),
+      ...(col !== undefined && { col }),
+      ...(remarks !== undefined && { remarks }),
       updatedAt: Date.now(),
     },
     { new: true, runValidators: true }

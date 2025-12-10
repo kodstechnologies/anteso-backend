@@ -2,6 +2,7 @@ import { Router } from "express";
 const router = Router();
 import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/AccuracyOfIrradiationTime.controller.js";
 import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/AccuracyOfOperatingPotential.controller.js";
+import TotalFilterationController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/TotalFilteration.controller.js";
 import CentralBeamAlignmentController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/CentralBeamAlignment.controller.js";
 import CongruenceController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/Congruence.controller.js";
 import EffectiveFocalSpotController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/EffectiveFocalSpot.controller.js";
@@ -25,6 +26,12 @@ router.post('/accuracy-of-operating-potential/:serviceId', AccuracyOfOperatingPo
 router.get('/accuracy-of-operating-potential-by-service/:serviceId', AccuracyOfOperatingPotentialController.getByServiceId);
 router.put('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.update);
 router.get('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.getById);
+
+// Total Filtration
+router.post('/total-filtration/:serviceId', TotalFilterationController.create);
+router.get('/total-filtration-by-service/:serviceId', TotalFilterationController.getByServiceId);
+router.put('/total-filtration/:testId', TotalFilterationController.update);
+router.get('/total-filtration/:testId', TotalFilterationController.getById);
 
 // Central Beam Alignment
 router.post('/central-beam-alignment/:serviceId', CentralBeamAlignmentController.create);

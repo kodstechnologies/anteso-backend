@@ -1,27 +1,37 @@
-// controllers/Admin/serviceReport/DentalHandHeld/TubeHousingLeakage.controller.js
+// controllers/Admin/serviceReport/DentalIntra/RadiationLeakagelevel.controller.js
 import mongoose from "mongoose";
-import TubeHousingLeakage from "../../../../models/testTables/DentalHandHeld/TubeHousingLeakage.model.js";
+import RadiationLeakagelevel from "../../../../models/testTables/DentalIntra/RadiationLeakagelevel.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental (Hand-held)";
+const MACHINE_TYPE = "Dental Intra";
 
-// CREATE or UPDATE (Upsert) by serviceId with transaction
+// CREATE (with transaction)
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { measurementSettings, leakageMeasurements, workload, workloadInput, tolerance, calculatedResult } = req.body;
+  const {
+    settings,
+    leakageMeasurements,
+    workload,
+    workloadUnit,
+    maxLeakageResult,
+    maxRadiationLeakage,
+    toleranceValue,
+    toleranceOperator,
+    toleranceTime,
+    notes,
+  } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
-    return res.status(400).json({ success: false, message: "Valid serviceId is required" });
+    return res.status(400).json({ message: "Valid serviceId is required" });
   }
 
-  let session = null;
-  try {
-    session = await mongoose.startSession();
-    session.startTransaction();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    // Validate Service & Machine Type
+  try {
+    // Validate machine type
     const service = await Service.findById(serviceId).session(session);
     if (!service) {
       await session.abortTransaction();
@@ -31,65 +41,63 @@ const create = asyncHandler(async (req, res) => {
       await session.abortTransaction();
       return res.status(403).json({
         success: false,
-        message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+        message: `This test is only allowed for ${MACHINE_TYPE}. Current: ${service.machineType}`,
       });
     }
 
-    // Get or Create ServiceReport
+    // Check existing - update if exists, create if not
+    const existing = await RadiationLeakagelevel.findOne({ serviceId }).session(session);
+
+    // Get or create ServiceReport
     let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
     if (!serviceReport) {
       serviceReport = new ServiceReport({ serviceId });
       await serviceReport.save({ session });
     }
 
-    // Upsert Test Record (create or update)
-    let testRecord = await TubeHousingLeakage.findOne({ serviceId }).session(session);
-
-    if (testRecord) {
+    let testRecord;
+    if (existing) {
       // Update existing
-      if (measurementSettings !== undefined) testRecord.measurementSettings = measurementSettings;
-      if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
-      if (workload !== undefined) testRecord.workload = workload;
-      if (workloadInput !== undefined) testRecord.workloadInput = workloadInput;
-      if (tolerance !== undefined) testRecord.tolerance = tolerance;
-      if (calculatedResult !== undefined) testRecord.calculatedResult = calculatedResult;
+      existing.settings = settings !== undefined ? settings : existing.settings;
+      existing.leakageMeasurements = leakageMeasurements !== undefined ? leakageMeasurements : existing.leakageMeasurements;
+      existing.workload = workload !== undefined ? workload : existing.workload;
+      existing.workloadUnit = workloadUnit !== undefined ? workloadUnit : existing.workloadUnit;
+      existing.maxLeakageResult = maxLeakageResult !== undefined ? maxLeakageResult : existing.maxLeakageResult;
+      existing.maxRadiationLeakage = maxRadiationLeakage !== undefined ? maxRadiationLeakage : existing.maxRadiationLeakage;
+      existing.toleranceValue = toleranceValue !== undefined ? toleranceValue : existing.toleranceValue;
+      existing.toleranceOperator = toleranceOperator !== undefined ? toleranceOperator : existing.toleranceOperator;
+      existing.toleranceTime = toleranceTime !== undefined ? toleranceTime : existing.toleranceTime;
+      existing.notes = notes !== undefined ? notes : existing.notes;
+      testRecord = existing;
     } else {
       // Create new
-      testRecord = new TubeHousingLeakage({
+      testRecord = new RadiationLeakagelevel({
         serviceId,
         reportId: serviceReport._id,
-        measurementSettings: measurementSettings || {
-          distance: "",
-          kv: "",
-          ma: "",
-          time: "",
-        },
+        settings: settings || [],
         leakageMeasurements: leakageMeasurements || [],
-        workload: workload || { value: "", unit: "mA·min/week" },
-        tolerance: tolerance || {
-          value: "",
-          operator: "less than or equal to",
-          time: "1",
-        },
-        calculatedResult: calculatedResult || {
-          maxLeakageIntermediate: "",
-          finalLeakageRate: "",
-          remark: "",
-        },
+        workload: workload || "",
+        workloadUnit: workloadUnit || "mA·min/week",
+        maxLeakageResult: maxLeakageResult || "",
+        maxRadiationLeakage: maxRadiationLeakage || "",
+        toleranceValue: toleranceValue || "",
+        toleranceOperator: toleranceOperator || "less than or equal to",
+        toleranceTime: toleranceTime || "1",
+        notes: notes || "",
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.TubeHousingLeakageDentalHandHeld = testRecord._id;
+    serviceReport.RadiationLeakageTestDentalIntra = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
 
     return res.json({
       success: true,
-      message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
+      message: existing ? "Test updated successfully" : "Test created successfully",
       data: {
         testId: testRecord._id.toString(),
         serviceId: testRecord.serviceId.toString(),
@@ -97,7 +105,7 @@ const create = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("TubeHousingLeakage Create Error:", error);
+    console.error("RadiationLeakagelevel Create Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to save test",
@@ -108,46 +116,44 @@ const create = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by testId (Mongo _id)
+// GET by testId (_id)
 const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
-    return res.status(400).json({ success: false, message: "Valid testId is required" });
+    return res.status(400).json({ message: "Valid testId is required" });
   }
 
-  try {
-    const testRecord = await TubeHousingLeakage.findById(testId).lean();
-    if (!testRecord) {
-      return res.status(404).json({ success: false, message: "Test record not found" });
-    }
+  const test = await RadiationLeakagelevel.findById(testId).lean();
 
-    const service = await Service.findById(testRecord.serviceId).lean();
-    if (service && service.machineType !== MACHINE_TYPE) {
-      return res.status(403).json({
-        success: false,
-        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
-      });
-    }
-
-    return res.json({ success: true, data: testRecord });
-  } catch (error) {
-    console.error("getById Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch test",
-      error: error.message,
-    });
+  if (!test) {
+    return res.status(404).json({ message: "Test data not found" });
   }
+
+  return res.status(200).json({
+    success: true,
+    data: test,
+  });
 });
 
-// UPDATE by testId (Mongo _id) with transaction
+// UPDATE with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { measurementSettings, leakageMeasurements, workload, workloadInput, tolerance, calculatedResult } = req.body;
+  const {
+    settings,
+    leakageMeasurements,
+    workload,
+    workloadUnit,
+    maxLeakageResult,
+    maxRadiationLeakage,
+    toleranceValue,
+    toleranceOperator,
+    toleranceTime,
+    notes,
+  } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
-    return res.status(400).json({ success: false, message: "Valid testId is required" });
+    return res.status(400).json({ message: "Valid testId is required" });
   }
 
   let session = null;
@@ -155,7 +161,7 @@ const update = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const testRecord = await TubeHousingLeakage.findById(testId).session(session);
+    const testRecord = await RadiationLeakagelevel.findById(testId).session(session);
     if (!testRecord) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Test record not found" });
@@ -172,11 +178,16 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (measurementSettings !== undefined) testRecord.measurementSettings = measurementSettings;
+    if (settings !== undefined) testRecord.settings = settings;
     if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
     if (workload !== undefined) testRecord.workload = workload;
-    if (tolerance !== undefined) testRecord.tolerance = tolerance;
-    if (calculatedResult !== undefined) testRecord.calculatedResult = calculatedResult;
+    if (workloadUnit !== undefined) testRecord.workloadUnit = workloadUnit;
+    if (maxLeakageResult !== undefined) testRecord.maxLeakageResult = maxLeakageResult;
+    if (maxRadiationLeakage !== undefined) testRecord.maxRadiationLeakage = maxRadiationLeakage;
+    if (toleranceValue !== undefined) testRecord.toleranceValue = toleranceValue;
+    if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+    if (toleranceTime !== undefined) testRecord.toleranceTime = toleranceTime;
+    if (notes !== undefined) testRecord.notes = notes;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -188,7 +199,7 @@ const update = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("TubeHousingLeakage Update Error:", error);
+    console.error("RadiationLeakagelevel Update Error:", error);
     return res.status(500).json({
       success: false,
       message: "Update failed",
@@ -199,7 +210,7 @@ const update = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by serviceId (convenience for frontend)
+// GET by serviceId
 const getByServiceId = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
 
@@ -208,7 +219,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await TubeHousingLeakage.findOne({ serviceId }).lean();
+    const testRecord = await RadiationLeakagelevel.findOne({ serviceId }).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });
@@ -234,3 +245,4 @@ const getByServiceId = asyncHandler(async (req, res) => {
 });
 
 export default { create, getById, update, getByServiceId };
+

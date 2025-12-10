@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Hand-held)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, xMax, xMin, col, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -50,6 +50,10 @@ const create = asyncHandler(async (req, res) => {
       if (table1 !== undefined) testRecord.table1 = table1;
       if (table2 !== undefined) testRecord.table2 = table2;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (xMax !== undefined) testRecord.xMax = xMax;
+      if (xMin !== undefined) testRecord.xMin = xMin;
+      if (col !== undefined) testRecord.col = col;
+      if (remarks !== undefined) testRecord.remarks = remarks;
     } else {
       // Create new
       testRecord = new LinearityOfTime({
@@ -58,6 +62,10 @@ const create = asyncHandler(async (req, res) => {
         table1: table1 || { fcd: "", kv: "", ma: "" },
         table2: table2 || [],
         tolerance: tolerance || "0.1",
+        xMax: xMax || "",
+        xMin: xMin || "",
+        col: col || "",
+        remarks: remarks || "",
       });
     }
 
@@ -126,7 +134,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, xMax, xMin, col, remarks } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -157,6 +165,10 @@ const update = asyncHandler(async (req, res) => {
     if (table1 !== undefined) testRecord.table1 = table1;
     if (table2 !== undefined) testRecord.table2 = table2;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (xMax !== undefined) testRecord.xMax = xMax;
+    if (xMin !== undefined) testRecord.xMin = xMin;
+    if (col !== undefined) testRecord.col = col;
+    if (remarks !== undefined) testRecord.remarks = remarks;
 
     await testRecord.save({ session });
     await session.commitTransaction();

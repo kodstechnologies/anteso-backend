@@ -21,6 +21,14 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
             {
                 appliedKvp: { type: String },
                 setTime: { type: String },
+                // New format: maStations array (supports dynamic number of stations)
+                maStations: [
+                    {
+                        kvp: { type: String },
+                        time: { type: String },
+                    },
+                ],
+                // Legacy format: maStation1 and maStation2 (for backward compatibility)
                 maStation1: {
                     kvp: { type: String },
                     time: { type: String },

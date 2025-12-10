@@ -19,7 +19,16 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
         // Dynamic test rows
         rows: [
             {
+                appliedKvp: { type: String },
                 setTime: { type: String },
+                // New format: maStations array (supports dynamic number of stations)
+                maStations: [
+                    {
+                        kvp: { type: String },
+                        time: { type: String },
+                    },
+                ],
+                // Legacy format: maStation1 and maStation2 (for backward compatibility)
                 maStation1: {
                     kvp: { type: String },
                     time: { type: String },
@@ -69,7 +78,7 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
 
 // Safe model registration for ESM + hot reload
 const AccuracyOfOperatingPotentialAndTime =
-    mongoose.models.AccuracyOfOperatingPotentialAndTime ||
+
     mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalIntra", accuracyOfOperatingPotentialAndTimeSchema);
 
 export default AccuracyOfOperatingPotentialAndTime;

@@ -348,6 +348,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageDentalIntra"
     },
+    RadiationLeakageTestDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageTestDentalIntra"
+    },
 
     //Dental Hand-held
     AccuracyOfOperatingPotentialAndTimeDentalHandHeld: {
@@ -365,6 +369,10 @@ const serviceReportSchema = new mongoose.Schema({
     TubeHousingLeakageDentalHandHeld: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageDentalHandHeld"
+    },
+    RadiationLeakageTestDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageTestDentalHandHeld"
     },
 
     //C-Arm
@@ -441,6 +449,10 @@ const serviceReportSchema = new mongoose.Schema({
 
         ref: "accuracyOfOperatingPotentialRadigraphyFixed"
     },
+    TotalFilterationRadiographyFixed: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationForRadiographyFixed"
+    },
     CentralBeamAlignmentRadiographyFixed: {
         type: mongoose.Schema.Types.ObjectId,
 
@@ -513,6 +525,10 @@ const serviceReportSchema = new mongoose.Schema({
     RadiationProtectionSurveyRadiographyMobileHT: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationProtectionSurveyRadiographyMobileHT"
+    },
+    TotalFilterationRadiographyMobileHT: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationRadiographyMobileHT"
     },
 
     //radiography portable

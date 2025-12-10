@@ -1,4 +1,4 @@
-// models/TotalFilterationForInventionalRadiology.js
+// models/testTables/RadiographyMobileHT/TotalFilteration.model.js
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
@@ -7,32 +7,35 @@ const TotalFilterationSchema = new Schema({
   serviceId: {
     type: Schema.Types.ObjectId,
     ref: 'Service',
+    required: true,
   },
 
   // Table 1: kVp Accuracy at Different mA Stations
   mAStations: {
     type: [String],
+    default: [],
   },
 
   measurements: [
     {
-      appliedKvp: { type: String,  },
-      measuredValues: [{ type: String, }], // Must have values
+      appliedKvp: { type: String },
+      measuredValues: [{ type: String }],
       averageKvp: { type: String },
-      remarks: { type: String }, // No enum — fully flexible
+      remarks: { type: String },
     },
   ],
 
   // Tolerance for kVp
   tolerance: {
-    sign: { type: String, },    // e.g., "±", "+", "-"
-    value: { type: String,  },   // e.g., "2.0"
+    sign: { type: String, default: "±" },
+    value: { type: String, default: "2.0" },
   },
 
   // Table 2: Total Filtration
   totalFiltration: {
-    measured: { type: String },  // mm Al
-    required: { type: String },  // mm Al
+    measured: { type: String },
+    required: { type: String },
+    appliedKV: { type: String },
   },
 
   reportId: {
@@ -60,9 +63,10 @@ TotalFilterationSchema.pre('save', function (next) {
 TotalFilterationSchema.index({ serviceId: 1 });
 TotalFilterationSchema.index({ reportId: 1 });
 
-const TotalFilterationForRadiographyFixed = model(
-  'TotalFilterationForRadiographyFixed',
+const TotalFilterationRadiographyMobileHT = model(
+  'TotalFilterationRadiographyMobileHT',
   TotalFilterationSchema
 );
 
-export default TotalFilterationForRadiographyFixed;
+export default TotalFilterationRadiographyMobileHT;
+

@@ -18,6 +18,7 @@ import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTi
 import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
 import "../../../models/testTables/DentalIntra/ReproducibilityOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalIntra/TubeHousingLeakage.model.js";
+import "../../../models/testTables/DentalIntra/RadiationLeakagelevel.model.js";
 // Import DentalHandHeld models to ensure they're registered with Mongoose
 import "../../../models/testTables/DentalHandHeld/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalHandHeld/LinearityOfTime.model.js";
@@ -33,6 +34,7 @@ import "../../../models/testTables/RadiographyFixed/LinearityOfMasLoadingStation
 import "../../../models/testTables/RadiographyFixed/OutputConsistency.model.js";
 import "../../../models/testTables/RadiographyFixed/RadiationLeakageLevel.model.js";
 import "../../../models/testTables/RadiographyFixed/RadiationProtectionSurvey.model.js";
+import "../../../models/testTables/RadiographyFixed/TotalFilteration.model.js";
 // Import RadiographyMobileHT models to ensure they're registered with Mongoose
 import "../../../models/testTables/RadiographyMobileHT/AccuracyOfIrradiationTime.model.js";
 import "../../../models/testTables/RadiographyMobileHT/AccuracyOfOperatingPotential.model.js";
@@ -43,6 +45,7 @@ import "../../../models/testTables/RadiographyMobileHT/LinearityOfMasLoadingStat
 import "../../../models/testTables/RadiographyMobileHT/OutputConsistency.model.js";
 import "../../../models/testTables/RadiographyMobileHT/RadiationLeakageLevel.model.js";
 import "../../../models/testTables/RadiographyMobileHT/RadiationProtectionSurvey.model.js";
+import "../../../models/testTables/RadiographyMobileHT/TotalFilteration.model.js";
 
 // Import RadiographyPortable models to ensure they're registered with Mongoose
 import "../../../models/testTables/RadiographyPortable/AccuracyOfIrradiationTime.model.js";
@@ -600,18 +603,33 @@ const saveReportHeader = async (req, res) => {
         }
 
         // FORMAT TOOLS
-        const formattedTools = toolsUsed?.map((tool) => ({
-            tool: tool.toolId || null,
-            SrNo: tool.SrNo,
-            nomenclature: tool.nomenclature,
-            make: tool.make,
-            model: tool.model,
-            range: tool.range,
-            calibrationCertificateNo: tool.calibrationCertificateNo,
-            calibrationValidTill: tool.calibrationValidTill,
-            certificate: tool.certificate,
-            uncertainity: tool.uncertainity,
-        })) || [];
+        const formattedTools = toolsUsed?.map((tool) => {
+            // Validate toolId is a valid ObjectId, otherwise set to null
+            let toolId = null;
+            if (tool.toolId) {
+                // Check if it's a valid ObjectId (24 character hex string)
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === 'string' && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                } else {
+                    // If it's not a valid ObjectId (e.g., it's a URL), set to null
+                    console.warn(`Invalid toolId format: ${tool.toolId}. Expected ObjectId, got ${typeof tool.toolId}`);
+                    toolId = null;
+                }
+            }
+            
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
 
         // FORMAT NOTES
         const formattedNotes = notes?.map((n) => ({
@@ -1105,7 +1123,8 @@ export const getReportHeaderDentalIntra = async (req, res) => {
             "AccuracyOfOperatingPotentialAndTimeDentalIntra",
             "LinearityOfTimeDentalIntra",
             "ReproducibilityOfRadiationOutputDentalIntra",
-            "TubeHousingLeakageDentalIntra"
+            "TubeHousingLeakageDentalIntra",
+            "RadiationLeakageTestDentalIntra"
         ];
 
         // Build the query
@@ -1176,6 +1195,9 @@ export const getReportHeaderDentalIntra = async (req, res) => {
 
                 TubeHousingLeakageDentalIntra:
                     report.TubeHousingLeakageDentalIntra || null,
+
+                RadiationLeakageTestDentalIntra:
+                    report.RadiationLeakageTestDentalIntra || null,
             },
         });
     } catch (error) {
@@ -1198,6 +1220,7 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
             .populate("LinearityOfTimeDentalHandHeld")
             .populate("ReproducibilityOfRadiationOutputDentalHandHeld")
             .populate("TubeHousingLeakageDentalHandHeld")
+            .populate("RadiationLeakageTestDentalHandHeld")
             .lean();
 
         if (!report) {
@@ -1249,6 +1272,7 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
                 LinearityOfTimeDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
                 ReproducibilityOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
                 TubeHousingLeakageDentalHandHeld: report.TubeHousingLeakageDentalHandHeld || null,
+                RadiationLeakageTestDentalHandHeld: report.RadiationLeakageTestDentalHandHeld || null,
             },
         });
     } catch (error) {
@@ -1267,6 +1291,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
             .populate("AccuracyOfIrradiationTimeRadiographyFixed")
             .populate("accuracyOfOperatingPotentialRadigraphyFixed")
+            .populate("TotalFilterationRadiographyFixed")
             .populate("CentralBeamAlignmentRadiographyFixed")
             .populate("CongruenceOfRadiationRadioGraphyFixed")
             .populate("EffectiveFocalSpotRadiographyFixed")
@@ -1323,6 +1348,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                 // ⭐ RADIOGRAPHY FIXED TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeRadiographyFixed: report.AccuracyOfIrradiationTimeRadiographyFixed || null,
                 accuracyOfOperatingPotentialRadigraphyFixed: report.accuracyOfOperatingPotentialRadigraphyFixed || null,
+                TotalFilterationRadiographyFixed: report.TotalFilterationRadiographyFixed || null,
                 CentralBeamAlignmentRadiographyFixed: report.CentralBeamAlignmentRadiographyFixed || null,
                 CongruenceOfRadiationRadioGraphyFixed: report.CongruenceOfRadiationRadioGraphyFixed || null,
                 EffectiveFocalSpotRadiographyFixed: report.EffectiveFocalSpotRadiographyFixed || null,
@@ -1355,6 +1381,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
             .populate("ConsistencyOfRadiationOutputRadiographyMobileHT")
             .populate("RadiationLeakageLevelRadiographyMobileHT")
             .populate("RadiationProtectionSurveyRadiographyMobileHT")
+            .populate("TotalFilterationRadiographyMobileHT")
             .lean();
 
         if (!report) {

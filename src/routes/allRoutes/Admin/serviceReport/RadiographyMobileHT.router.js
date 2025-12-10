@@ -9,6 +9,7 @@ import LinearityOfMasLoadingStationsController from "../../../../controllers/Adm
 import OutputConsistencyController from "../../../../controllers/Admin/serviceReport/RadiographyMobileHT/OutputConsistency.controller.js";
 import RadiationLeakageLevelController from "../../../../controllers/Admin/serviceReport/RadiographyMobileHT/RadiationLeakageLevel.controller.js";
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/RadiographyMobileHT/RadiationProtectionSurvey.controller.js";
+import TotalFilterationController from "../../../../controllers/Admin/serviceReport/RadiographyMobileHT/TotalFilteration.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 // Report Header
@@ -67,5 +68,11 @@ router.post('/radiation-protection-survey/:serviceId', RadiationProtectionSurvey
 router.get('/radiation-protection-survey-by-service/:serviceId', RadiationProtectionSurveyController.getByServiceId);
 router.put('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.update);
 router.get('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.getById);
+
+// Total Filtration
+router.post('/total-filtration/:serviceId', TotalFilterationController.create);
+router.get('/total-filtration-by-service/:serviceId', TotalFilterationController.getByServiceId);
+router.put('/total-filtration/:testId', TotalFilterationController.update);
+router.get('/total-filtration/:testId', TotalFilterationController.getById);
 
 export default router;

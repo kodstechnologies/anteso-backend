@@ -44,6 +44,9 @@ const tubeHousingLeakageSchema = new Schema(
       value: { type: String, required: true },        // e.g., "500"
       unit: { type: String, default: "mA·min/week" },
     },
+    
+    // === Workload Input for Max Leakage Calculation ===
+    workloadInput: { type: String, default: "" },     // Input value for max leakage calculation
 
     // === Tolerance ===
     tolerance: {

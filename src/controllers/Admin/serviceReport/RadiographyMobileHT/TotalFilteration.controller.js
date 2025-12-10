@@ -1,16 +1,16 @@
-// controllers/Admin/serviceReport/DentalIntra/LinearityOfTime.controller.js
+// controllers/Admin/serviceReport/RadiographyMobileHT/TotalFilteration.controller.js
 import mongoose from "mongoose";
-import LinearityOfTime from "../../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
+import TotalFilteration from "../../../../models/testTables/RadiographyMobileHT/TotalFilteration.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental (Intra Oral)";
+const MACHINE_TYPE = "Radiography (Mobile) with HT";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance, xMax, xMin, col, remarks } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -42,37 +42,31 @@ const create = asyncHandler(async (req, res) => {
       await serviceReport.save({ session });
     }
 
-    // Upsert Test Record (create or update)
-    let testRecord = await LinearityOfTime.findOne({ serviceId }).session(session);
+    // Upsert Test Record
+    let testRecord = await TotalFilteration.findOne({ serviceId }).session(session);
 
     if (testRecord) {
       // Update existing
-      if (table1 !== undefined) testRecord.table1 = table1;
-      if (table2 !== undefined) testRecord.table2 = table2;
+      if (mAStations !== undefined) testRecord.mAStations = mAStations;
+      if (measurements !== undefined) testRecord.measurements = measurements;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
-      if (xMax !== undefined) testRecord.xMax = xMax;
-      if (xMin !== undefined) testRecord.xMin = xMin;
-      if (col !== undefined) testRecord.col = col;
-      if (remarks !== undefined) testRecord.remarks = remarks;
+      if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
     } else {
       // Create new
-      testRecord = new LinearityOfTime({
+      testRecord = new TotalFilteration({
         serviceId,
-        serviceReportId: serviceReport._id,
-        table1: table1 || { fcd: "", kv: "", ma: "" },
-        table2: table2 || [],
-        tolerance: tolerance || "0.1",
-        xMax: xMax || "",
-        xMin: xMin || "",
-        col: col || "",
-        remarks: remarks || "",
+        reportId: serviceReport._id,
+        mAStations: mAStations || [],
+        measurements: measurements || [],
+        tolerance: tolerance || { sign: "±", value: "2.0" },
+        totalFiltration: totalFiltration || { measured: "", required: "", appliedKV: "" },
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.LinearityOfTimeDentalIntra = testRecord._id;
+    serviceReport.TotalFilterationRadiographyMobileHT = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
@@ -81,13 +75,13 @@ const create = asyncHandler(async (req, res) => {
       success: true,
       message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
       data: {
-        testId: testRecord._id.toString(),
+        _id: testRecord._id.toString(),
         serviceId: testRecord.serviceId.toString(),
       },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("LinearityOfTime Create Error:", error);
+    console.error("TotalFilteration Create Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to save test",
@@ -98,7 +92,7 @@ const create = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by testId (Mongo _id)
+// GET by testId
 const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
@@ -107,7 +101,7 @@ const getById = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await LinearityOfTime.findById(testId).lean();
+    const testRecord = await TotalFilteration.findById(testId).lean();
     if (!testRecord) {
       return res.status(404).json({ success: false, message: "Test record not found" });
     }
@@ -131,10 +125,10 @@ const getById = asyncHandler(async (req, res) => {
   }
 });
 
-// UPDATE by testId (Mongo _id) with transaction
+// UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance, xMax, xMin, col, remarks } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -145,7 +139,7 @@ const update = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const testRecord = await LinearityOfTime.findById(testId).session(session);
+    const testRecord = await TotalFilteration.findById(testId).session(session);
     if (!testRecord) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Test record not found" });
@@ -162,13 +156,10 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (table1 !== undefined) testRecord.table1 = table1;
-    if (table2 !== undefined) testRecord.table2 = table2;
+    if (mAStations !== undefined) testRecord.mAStations = mAStations;
+    if (measurements !== undefined) testRecord.measurements = measurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
-    if (xMax !== undefined) testRecord.xMax = xMax;
-    if (xMin !== undefined) testRecord.xMin = xMin;
-    if (col !== undefined) testRecord.col = col;
-    if (remarks !== undefined) testRecord.remarks = remarks;
+    if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -176,11 +167,11 @@ const update = asyncHandler(async (req, res) => {
     return res.json({
       success: true,
       message: "Updated successfully",
-      data: { testId: testRecord._id.toString() },
+      data: { _id: testRecord._id.toString() },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("LinearityOfTime Update Error:", error);
+    console.error("Update Error:", error);
     return res.status(500).json({
       success: false,
       message: "Update failed",
@@ -191,7 +182,7 @@ const update = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by serviceId (convenience for frontend)
+// GET by serviceId
 const getByServiceId = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
 
@@ -200,7 +191,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await LinearityOfTime.findOne({ serviceId }).lean();
+    const testRecord = await TotalFilteration.findOne({ serviceId }).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });
