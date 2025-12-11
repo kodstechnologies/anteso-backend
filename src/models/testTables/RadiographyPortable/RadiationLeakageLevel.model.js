@@ -29,6 +29,14 @@ const TubeHousingLeakageSchema = new mongoose.Schema(
         toleranceOperator: { type: String, trim: true }, // "less than or equal to", "greater than or equal to", "="
         toleranceTime: { type: String, trim: true },
 
+        // Max Leakage Results
+        maxLeakageTubeMR: { type: String, trim: true },      // Max Leakage from Tube in mR/h
+        maxLeakageTubeMGy: { type: String, trim: true },     // Max Leakage from Tube in mGy/h
+        maxLeakageCollimatorMR: { type: String, trim: true }, // Max Leakage from Collimator in mR/h
+        maxLeakageCollimatorMGy: { type: String, trim: true },// Max Leakage from Collimator in mGy/h
+        highestLeakageMR: { type: String, trim: true },      // Highest Leakage (Final Result) in mR/h
+        highestLeakageMGy: { type: String, trim: true },     // Highest Leakage (Final Result) in mGy/h
+
         // Final Result (optional - can be computed on frontend)
         remark: { type: String, trim: true }, // "Pass", "Fail", or empty
 
@@ -56,4 +64,4 @@ TubeHousingLeakageSchema.index({ reportId: 1 });
 TubeHousingLeakageSchema.index({ serviceId: 1, reportId: 1 });
 TubeHousingLeakageSchema.index({ isDeleted: 1 });
 
-export default   mongoose.model('RadiationLeakageLevelRadiographyPortable', TubeHousingLeakageSchema)
+export default mongoose.model('RadiationLeakageLevelRadiographyPortable', TubeHousingLeakageSchema)

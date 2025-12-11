@@ -9,7 +9,7 @@ const MACHINE_TYPE = "Radiography (Mobile)";
 
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark, maxLeakageTubeMR, maxLeakageTubeMGy, maxLeakageCollimatorMR, maxLeakageCollimatorMGy, highestLeakageMR, highestLeakageMGy } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -52,6 +52,13 @@ const create = asyncHandler(async (req, res) => {
       if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
       if (toleranceTime !== undefined) testRecord.toleranceTime = toleranceTime;
       if (remark !== undefined) testRecord.remark = remark;
+      // Max Leakage Results
+      if (maxLeakageTubeMR !== undefined) testRecord.maxLeakageTubeMR = maxLeakageTubeMR;
+      if (maxLeakageTubeMGy !== undefined) testRecord.maxLeakageTubeMGy = maxLeakageTubeMGy;
+      if (maxLeakageCollimatorMR !== undefined) testRecord.maxLeakageCollimatorMR = maxLeakageCollimatorMR;
+      if (maxLeakageCollimatorMGy !== undefined) testRecord.maxLeakageCollimatorMGy = maxLeakageCollimatorMGy;
+      if (highestLeakageMR !== undefined) testRecord.highestLeakageMR = highestLeakageMR;
+      if (highestLeakageMGy !== undefined) testRecord.highestLeakageMGy = highestLeakageMGy;
     } else {
       testRecord = new RadiationLeakageLevel({
         serviceId,
@@ -66,6 +73,13 @@ const create = asyncHandler(async (req, res) => {
         toleranceOperator: toleranceOperator || "",
         toleranceTime: toleranceTime || "",
         remark: remark || "",
+        // Max Leakage Results
+        maxLeakageTubeMR: maxLeakageTubeMR || "",
+        maxLeakageTubeMGy: maxLeakageTubeMGy || "",
+        maxLeakageCollimatorMR: maxLeakageCollimatorMR || "",
+        maxLeakageCollimatorMGy: maxLeakageCollimatorMGy || "",
+        highestLeakageMR: highestLeakageMR || "",
+        highestLeakageMGy: highestLeakageMGy || "",
       });
     }
 
@@ -115,7 +129,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark, maxLeakageTubeMR, maxLeakageTubeMGy, maxLeakageCollimatorMR, maxLeakageCollimatorMGy, highestLeakageMR, highestLeakageMGy } = req.body;
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
@@ -146,6 +160,13 @@ const update = asyncHandler(async (req, res) => {
     if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
     if (toleranceTime !== undefined) testRecord.toleranceTime = toleranceTime;
     if (remark !== undefined) testRecord.remark = remark;
+    // Max Leakage Results
+    if (maxLeakageTubeMR !== undefined) testRecord.maxLeakageTubeMR = maxLeakageTubeMR;
+    if (maxLeakageTubeMGy !== undefined) testRecord.maxLeakageTubeMGy = maxLeakageTubeMGy;
+    if (maxLeakageCollimatorMR !== undefined) testRecord.maxLeakageCollimatorMR = maxLeakageCollimatorMR;
+    if (maxLeakageCollimatorMGy !== undefined) testRecord.maxLeakageCollimatorMGy = maxLeakageCollimatorMGy;
+    if (highestLeakageMR !== undefined) testRecord.highestLeakageMR = highestLeakageMR;
+    if (highestLeakageMGy !== undefined) testRecord.highestLeakageMGy = highestLeakageMGy;
     await testRecord.save({ session });
     await session.commitTransaction();
     return res.json({ success: true, message: "Updated successfully", data: { _id: testRecord._id.toString() } });
