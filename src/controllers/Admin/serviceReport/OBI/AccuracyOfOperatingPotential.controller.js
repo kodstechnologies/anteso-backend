@@ -5,12 +5,12 @@ import ServiceReport from "../../../../models/serviceReports/serviceReport.model
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "On-Board Imaging (OBI)";
+const MACHINE_TYPE = "KV Imaging (OBI)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -47,17 +47,21 @@ const create = asyncHandler(async (req, res) => {
 
     if (testRecord) {
       // Update existing
-      if (table1 !== undefined) testRecord.table1 = table1;
-      if (table2 !== undefined) testRecord.table2 = table2;
-      if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      testRecord.mAStations = mAStations !== undefined ? mAStations : testRecord.mAStations;
+      testRecord.measurements = measurements !== undefined ? measurements : testRecord.measurements;
+      testRecord.tolerance = tolerance !== undefined ? tolerance : testRecord.tolerance;
+      testRecord.totalFiltration = totalFiltration !== undefined ? totalFiltration : testRecord.totalFiltration;
+      if (ffd !== undefined) testRecord.ffd = ffd;
     } else {
       // Create new
       testRecord = new AccuracyOfOperatingPotential({
         serviceId,
         serviceReportId: serviceReport._id,
-        table1: table1 || [],
-        table2: table2 || [],
-        tolerance: tolerance || { value: "", type: "percent", sign: "both" },
+        mAStations: mAStations || [],
+        measurements: measurements || [],
+        tolerance: tolerance || { sign: "±", value: "" },
+        totalFiltration: totalFiltration || { measured: "", required: "" },
+        ffd: ffd || "",
       });
     }
 
@@ -90,7 +94,7 @@ const create = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by testId
+// GET by testId (Mongo _id)
 const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
@@ -123,10 +127,10 @@ const getById = asyncHandler(async (req, res) => {
   }
 });
 
-// UPDATE by testId
+// UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, ffd } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -154,9 +158,11 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (table1 !== undefined) testRecord.table1 = table1;
-    if (table2 !== undefined) testRecord.table2 = table2;
+    if (mAStations !== undefined) testRecord.mAStations = mAStations;
+    if (measurements !== undefined) testRecord.measurements = measurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+    if (ffd !== undefined) testRecord.ffd = ffd;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -179,7 +185,7 @@ const update = asyncHandler(async (req, res) => {
   }
 });
 
-// GET by serviceId
+// GET by serviceId (convenience for frontend)
 const getByServiceId = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
 

@@ -18,7 +18,7 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
         fcd: {
             value: {
                 type: String,
-               
+
             }, // e.g. "100" cm
         },
         // Dynamic rows of kV/mAs + measurements
@@ -53,4 +53,7 @@ ReproducibilityOfOutputSchema.index({ serviceId: 1 });
 ReproducibilityOfOutputSchema.index({ reportId: 1 });
 ReproducibilityOfOutputSchema.index({ serviceId: 1, reportId: 1 });
 
-export default mongoose.model('ConsistencyOfRadiationOutputBMD', ReproducibilityOfOutputSchema);
+// Safe model registration
+const ConsistencyOfRadiationOutput = mongoose.model('ConsistencyOfRadiationOutputBMD', ReproducibilityOfOutputSchema);
+
+export default ConsistencyOfRadiationOutput;

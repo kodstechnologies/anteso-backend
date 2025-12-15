@@ -15,6 +15,9 @@ const OutputRowSchema = new mongoose.Schema({
 
 const ReproducibilityOfOutputSchema = new mongoose.Schema(
     {
+        // FFD (Focus to Film Distance) in cm
+        ffd: { type: String, trim: true },
+
         // Dynamic rows of kV/mAs + measurements
         outputRows: [OutputRowSchema],
 

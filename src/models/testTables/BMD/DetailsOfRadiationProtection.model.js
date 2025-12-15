@@ -62,5 +62,4 @@ RadiationProtectionIRSchema.index({ serviceId: 1 });
 RadiationProtectionIRSchema.index({ reportId: 1 });
 RadiationProtectionIRSchema.index({ serviceId: 1, reportId: 1 });
 
-export default
-  mongoose.model('RadiationProtectionBMD', RadiationProtectionIRSchema);
+export default mongoose.model('RadiationProtectionBMD', RadiationProtectionIRSchema);

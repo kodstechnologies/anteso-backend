@@ -13,9 +13,7 @@ const TestConditionsSchema = new Schema({
 // Measurement Row Schema
 const MeasurementRowSchema = new Schema({
   maApplied: { type: String, required: true, trim: true }, // mA Applied
-  radiationOutput1: { type: String, default: "" }, // Radiation Output (mGy) - measurement 1
-  radiationOutput2: { type: String, default: "" }, // Radiation Output (mGy) - measurement 2
-  radiationOutput3: { type: String, default: "" }, // Radiation Output (mGy) - measurement 3
+  radiationOutputs: { type: [String], default: [] }, // Dynamic array of measurements
   averageOutput: { type: String, default: "" }, // Average Output (mGy) - calculated
   mGyPerMAs: { type: String, default: "" }, // mGy / mAs (X) - calculated
 }, { _id: false });
@@ -38,6 +36,12 @@ const LinearityOfTimeSchema = new Schema({
 
   // Measurement Rows (Dynamic)
   measurementRows: [MeasurementRowSchema],
+
+  // Column headers for dynamic radiation output columns
+  measHeaders: {
+    type: [String],
+    default: [],
+  },
 
   // Summary Values (Calculated)
   xMax: { type: String, default: "" },

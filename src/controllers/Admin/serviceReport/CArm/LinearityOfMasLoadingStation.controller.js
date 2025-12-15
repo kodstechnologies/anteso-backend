@@ -1,6 +1,6 @@
-// controllers/Admin/serviceReport/FixedRadioFluro/LinearityOfmAsLoadingStations.controller.js
+// controllers/Admin/serviceReport/CArm/LinearityOfMasLoadingStation.controller.js
 import mongoose from "mongoose";
-import LinearityOfmAsLoadingFixedRadioFluoro from "../../../../models/testTables/FixedRadioFluro/LinearityOfmAsLoadingStations.model.js";
+import LinearityOfmAsLoadingCArm from "../../../../models/testTables/CArm/LinearityOfMasLoadingStation.model.js";
 import Service from "../../../../models/Services.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
@@ -41,7 +41,7 @@ const create = asyncHandler(async (req, res) => {
       await serviceReport.save({ session });
     }
 
-    const doc = await LinearityOfmAsLoadingFixedRadioFluoro.findOneAndUpdate(
+    const doc = await LinearityOfmAsLoadingCArm.findOneAndUpdate(
       { serviceId },
       {
         serviceId,
@@ -55,6 +55,8 @@ const create = asyncHandler(async (req, res) => {
       { upsert: true, new: true, setDefaultsOnInsert: true, session }
     );
 
+    // Link to ServiceReport so populate works in view report
+    serviceReport.LinearityOfmAsLoadingCArm = doc._id;
     await serviceReport.save({ session });
     await session.commitTransaction();
     session.endSession();
@@ -62,7 +64,7 @@ const create = asyncHandler(async (req, res) => {
     return res.status(201).json({
       success: true,
       data: doc,
-      message: "Linearity of mAs Loading (Fixed Radio Fluoro) saved successfully",
+      message: "Linearity of mAs Loading (C-Arm) saved successfully",
     });
   } catch (error) {
     await session.abortTransaction();
@@ -79,7 +81,7 @@ const getById = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Valid testId is required" });
   }
 
-  const test = await LinearityOfmAsLoadingFixedRadioFluoro.findById(testId).lean();
+    const test = await LinearityOfmAsLoadingCArm.findById(testId).lean();
 
   if (!test) {
     return res.status(404).json({ message: "Test data not found" });
@@ -100,7 +102,7 @@ const update = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Valid testId is required" });
   }
 
-  const updated = await LinearityOfmAsLoadingFixedRadioFluoro.findByIdAndUpdate(
+  const updated = await LinearityOfmAsLoadingCArm.findByIdAndUpdate(
     testId,
     {
       ...(testName !== undefined && { testName }),
@@ -112,6 +114,15 @@ const update = asyncHandler(async (req, res) => {
     },
     { new: true, runValidators: true }
   ).lean();
+
+  // Ensure ServiceReport points to this test (in case it was missing)
+  if (updated?.serviceId) {
+    const serviceReport = await ServiceReport.findOne({ serviceId: updated.serviceId });
+    if (serviceReport && (!serviceReport.LinearityOfmAsLoadingCArm || serviceReport.LinearityOfmAsLoadingCArm.toString() !== testId)) {
+      serviceReport.LinearityOfmAsLoadingCArm = testId;
+      await serviceReport.save();
+    }
+  }
 
   if (!updated) {
     return res.status(404).json({ message: "Test data not found" });
@@ -132,7 +143,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Valid serviceId is required" });
   }
 
-  const test = await LinearityOfmAsLoadingFixedRadioFluoro.findOne({ serviceId }).lean();
+  const test = await LinearityOfmAsLoadingCArm.findOne({ serviceId }).lean();
 
   if (!test) {
     return res.status(200).json({ success: true, data: null });

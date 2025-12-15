@@ -5,7 +5,7 @@ import ServiceReport from "../../../../models/serviceReports/serviceReport.model
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "On-Board Imaging (OBI)";
+const MACHINE_TYPE = "KV Imaging (OBI)";
 
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {

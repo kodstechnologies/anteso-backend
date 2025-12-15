@@ -67,8 +67,8 @@ const create = asyncHandler(async (req, res) => {
       { session }
     );
 
-    // Link back to ServiceReport
-    serviceReport.LinearityOfMaLoading = newTest[0]._id;
+    // Link back to ServiceReport (Must match schema field name)
+    serviceReport.LinearityOfMaLoadingBMD = newTest[0]._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();

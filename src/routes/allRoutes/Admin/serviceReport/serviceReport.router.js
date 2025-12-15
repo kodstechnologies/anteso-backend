@@ -17,7 +17,7 @@ import RadiographyMobile from "../serviceReport/RadiographyMobile.router.js"
 import OArm from "../serviceReport/OArm.router.js"
 import LeadApron from "../serviceReport/LeadApron.router.js"
 import OBI from "../serviceReport/OBI.router.js"
-const  router = Router();
+const router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
 router.put('/report-header/:serviceId', reportDetailController.saveReportHeader)
@@ -26,8 +26,8 @@ router.put('/report-header/:serviceId', reportDetailController.saveReportHeader)
 // router.get('/get-tools-for-technician-assigned/:serviceId',reportDetailController.)
 router.use('/ct-scan', CTScanRouter)
 router.use('/inventional-radiology', InventionalRadiology)
-router.use('/mammography',Mammography)
-router.use('/c-arm',CArm)
+router.use('/mammography', Mammography)
+router.use('/c-arm', CArm)
 router.use('/fixed-radio-fluro', FixedRadioFluro)
 router.use('/bmd', BMD)
 router.use('/dental-cone-beam-ct', DentalConeBeamCT)

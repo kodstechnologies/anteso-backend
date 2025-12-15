@@ -25,6 +25,7 @@ const create = asyncHandler(async (req, res) => {
 
         const newTest = await ReproducibilityOfOutputMmmography.create([{
             serviceId,
+            ffd: req.body.ffd || null,
             outputRows: outputRows || [],
             tolerance: tolerance || null,
         }], { session });

@@ -16,19 +16,21 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
             ref: "ServiceReport",
         },
 
+        // Dynamic mA Stations Labels
+        mAStations: [{ type: String }],
+
         // Dynamic test rows
         rows: [
             {
                 setTime: { type: String },
                 appliedkVp: { type: String },
-                maStation1: {
-                    kvp: { type: String },
-                    time: { type: String },
-                },
-                maStation2: {
-                    kvp: { type: String },
-                    time: { type: String },
-                },
+                // Array of measurements corresponding to mAStations
+                measuredValues: [
+                    {
+                        kvp: { type: String },
+                        time: { type: String },
+                    }
+                ],
                 avgKvp: { type: String },
                 avgTime: { type: String },
                 remark: { type: String },
@@ -70,7 +72,6 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
 
 // Safe model registration for ESM + hot reload
 const AccuracyOfOperatingPotentialAndTime =
-    mongoose.models.AccuracyOfOperatingPotentialAndTime ||
-    mongoose.model("AccuracyOfOperatingPotentialAndTimeBMD", accuracyOfOperatingPotentialAndTimeSchema);
+    mongoose.models.AccuracyOfOperatingPotentialAndTimeBMD || mongoose.model("AccuracyOfOperatingPotentialAndTimeBMD", accuracyOfOperatingPotentialAndTimeSchema);
 
 export default AccuracyOfOperatingPotentialAndTime;

@@ -616,7 +616,7 @@ const saveReportHeader = async (req, res) => {
                     toolId = null;
                 }
             }
-            
+
             return {
                 tool: toolId,
                 SrNo: tool.SrNo,
@@ -2212,7 +2212,6 @@ export const getReportHeaderMammography = async (req, res) => {
             "MaximumRadiationLevelMammography",
             "LinearityOfMasLoadingMammography"
         ];
-
         // Build the query
         let query = serviceReportModel
             .findOne({ serviceId })
@@ -2224,6 +2223,10 @@ export const getReportHeaderMammography = async (req, res) => {
         });
 
         const report = await query.lean();
+
+        if (!report) {
+            return res.status(200).json({ exists: false });
+        }
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
@@ -2285,4 +2288,4 @@ export const getReportHeaderMammography = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron,getReportHeaderForCTScan,getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }

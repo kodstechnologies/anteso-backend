@@ -1,7 +1,11 @@
 // controllers/OutputConsistencyForCArmController.js
 import OutputConsistencyForCArm from "../../../../models/testTables/CArm/OutputConsisitency.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "C-Arm";
 
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
@@ -37,6 +41,26 @@ const create = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+            });
+        }
+
+        // Get or create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
         const existingTest = await OutputConsistencyForCArm.findOne({ serviceId }).session(session);
         if (existingTest) {
             await session.abortTransaction();
@@ -49,7 +73,7 @@ const create = asyncHandler(async (req, res) => {
         const newTest = await OutputConsistencyForCArm.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: reportId || serviceReport._id,
                 parameters: {
                     ffd: parameters?.ffd?.toString().trim() || "100",
                     time: parameters?.time?.toString().trim() || "1.0",
@@ -70,6 +94,10 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        // Link to ServiceReport so view report can populate
+        serviceReport.OutputConsistencyForCArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -200,6 +228,15 @@ const update = asyncHandler(async (req, res) => {
             await session.abortTransaction();
             session.endSession();
             return res.status(404).json({ success: false, message: "Test not found" });
+        }
+
+        // Ensure ServiceReport link exists
+        if (updatedTest?.serviceId) {
+            const serviceReport = await ServiceReport.findOne({ serviceId: updatedTest.serviceId }).session(session);
+            if (serviceReport && (!serviceReport.OutputConsistencyForCArm || serviceReport.OutputConsistencyForCArm.toString() !== testId)) {
+                serviceReport.OutputConsistencyForCArm = testId;
+                await serviceReport.save({ session });
+            }
         }
 
         await session.commitTransaction();

@@ -1,48 +1,103 @@
-// models/RadiationProtectionInterventionalRadiology.js
+
 import mongoose from 'mongoose';
 
-const RadiationProtectionIRSchema = new mongoose.Schema(
-  {
-    // Survey Details
-    surveyDate: { type: String, trim: true },                    // ISO date string
-    surveyMeterModel: { type: String, trim: true },              // Model & S/N
-    calibrationCertificateValid: { type: String, trim: true },   // Yes/No/N/A
-
-    // Personal Protective Equipment
-    leadApronsAvailable: { type: String, trim: true },           // Yes/No + quantity
-    thyroidShieldsAvailable: { type: String, trim: true },
-    leadGlassesAvailable: { type: String, trim: true },
-
-    // Structural Shielding & Accessories
-    ceilingSuspendedShield: { type: String, trim: true },        // Available/Not Available
-    tableLeadCurtain: { type: String, trim: true },
-
-    // Dose Monitoring
-    doseAreaProductMeter: { type: String, trim: true },          // Yes/No
-    patientDoseMonitoring: { type: String, trim: true },         // Real-time system
-
-    // Foreign Keys
-    serviceId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Service',
-    },
-    reportId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ServiceReport',
-    },
-
-    // Soft delete
-    isDeleted: { type: Boolean, default: false },
+const LocationSchema = new mongoose.Schema({
+  location: {
+    type: String,
+    required: true,
+    trim: true,
   },
-  {
-    timestamps: true,
+  mRPerHr: {
+    type: String,
+    trim: true,
+  },
+  mRPerWeek: {
+    type: String,
+    trim: true
+  },
+  result: {
+    type: String,
+    trim: true,
+  },
+  calculatedResult: {
+    type: String,
+    trim: true
+  },
+  category: {
+    type: String,
+    trim: true
+  },
+
+});
+
+const RadiationProtectionSurveySchema = new mongoose.Schema({
+  // 1. Survey Details
+  surveyDate: {
+    type: Date,
+    required: true
+  },
+  hasValidCalibration: {
+    type: String,
+    required: true,
+    trim: true,
+    uppercase: true
+  },
+
+  // 2. Equipment Settings
+  appliedCurrent: { type: String, trim: true },
+  appliedVoltage: { type: String, trim: true },
+  exposureTime: { type: String, trim: true },
+  workload: { type: String, trim: true },
+
+  // 3. Dynamic table rows
+  locations: [LocationSchema],
+
+  // Optional metadata
+  hospitalName: { type: String, trim: true },
+  equipmentId: { type: String, trim: true },
+  roomNo: { type: String, trim: true },
+  manufacturer: { type: String, trim: true },
+  model: { type: String, trim: true },
+  surveyorName: { type: String, trim: true },
+  surveyorDesignation: { type: String, trim: true },
+  remarks: { type: String, trim: true },
+  serviceId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Service",
+
+  },
+
+  reportId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "ServiceReport",
+    index: true,
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-);
+});
 
-// Indexes
-RadiationProtectionIRSchema.index({ serviceId: 1 });
-RadiationProtectionIRSchema.index({ reportId: 1 });
-RadiationProtectionIRSchema.index({ serviceId: 1, reportId: 1 });
+RadiationProtectionSurveySchema.pre('findOneAndUpdate', function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
 
-export default mongoose.models.RadiationProtectionInterventionalRadiology ||
-  mongoose.model('RadiationProtectionInterventionalRadiology', RadiationProtectionIRSchema);
+RadiationProtectionSurveySchema.pre('updateOne', function (next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
+
+RadiationProtectionSurveySchema.pre('save', function (next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Use specific collection for IR
+export default mongoose.models.RadiationProtectionSurveyInventionalRadiology ||
+  mongoose.model("RadiationProtectionSurveyInventionalRadiology", RadiationProtectionSurveySchema);

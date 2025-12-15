@@ -1,7 +1,11 @@
 // controllers/HighContrastResolutionController.js
 import HighContrastResolution from "../../../../models/testTables/CArm/HighContrastResolution.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "C-Arm";
 
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
@@ -19,15 +23,27 @@ const create = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        // Prevent duplicate test for same serviceId
-        const existingTest = await HighContrastResolution.findOne({ serviceId }).session(session);
-        if (existingTest) {
+        // Validate service & machine
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).json({
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({
                 success: false,
-                message: "High Contrast Resolution test already exists for this machine",
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
             });
+        }
+
+        // Get or create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
         }
 
         // Auto compute remark: PASS if measured >= recommended (after applying tolerance logic if needed)
@@ -42,7 +58,7 @@ const create = asyncHandler(async (req, res) => {
         const newTest = await HighContrastResolution.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: reportId || serviceReport._id,
                 measuredLpPerMm: measuredLpPerMm?.toString().trim() || "",
                 recommendedStandard: recommendedStandard?.toString().trim() || "1.50",
                 tolerance: tolerance?.toString().trim() || "",
@@ -50,6 +66,10 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        // Link to ServiceReport
+        serviceReport.HighContrastResolutionCArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -162,6 +182,15 @@ const update = asyncHandler(async (req, res) => {
                 success: false,
                 message: "Test not found",
             });
+        }
+
+        // Ensure ServiceReport link exists
+        if (updatedTest?.serviceId) {
+            const serviceReport = await ServiceReport.findOne({ serviceId: updatedTest.serviceId }).session(session);
+            if (serviceReport && (!serviceReport.HighContrastResolutionCArm || serviceReport.HighContrastResolutionCArm.toString() !== testId)) {
+                serviceReport.HighContrastResolutionCArm = testId;
+                await serviceReport.save({ session });
+            }
         }
 
         await session.commitTransaction();

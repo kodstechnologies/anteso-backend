@@ -7,6 +7,7 @@ import LowContrastResolution from "../../../../controllers/Admin/serviceReport/C
 import ExposureRate from "../../../../controllers/Admin/serviceReport/CArm/ExposureRate.controller.js"
 import TubeHousing from "../../../../controllers/Admin/serviceReport/CArm/TubeHousingLeakage.controller.js"
 import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/CArm/AccuracyOfIrradiationTime.controller.js"
+import LinearityOfMasLoadingStationController from "../../../../controllers/Admin/serviceReport/CArm/LinearityOfMasLoadingStation.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)
@@ -23,6 +24,18 @@ router.post('/output-consistency/:serviceId', OutputConsistencyController.create
 router.get('/output-consistency-by-service/:serviceId', OutputConsistencyController.getByServiceId)
 router.put('/output-consistency/:testId', OutputConsistencyController.update)
 router.get('/output-consistency/:testId', OutputConsistencyController.getById)
+
+// Linearity of mAs Loading Stations
+router.post('/linearity-of-mas-loading-stations/:serviceId', LinearityOfMasLoadingStationController.create)
+router.get('/linearity-of-mas-loading-stations-by-service/:serviceId', LinearityOfMasLoadingStationController.getByServiceId)
+router.put('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingStationController.update)
+router.get('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingStationController.getById)
+
+// Linearity of mA Loading Stations (same controller/model)
+router.post('/linearity-of-ma-loading-stations/:serviceId', LinearityOfMasLoadingStationController.create)
+router.get('/linearity-of-ma-loading-stations-by-service/:serviceId', LinearityOfMasLoadingStationController.getByServiceId)
+router.put('/linearity-of-ma-loading-stations/:testId', LinearityOfMasLoadingStationController.update)
+router.get('/linearity-of-ma-loading-stations/:testId', LinearityOfMasLoadingStationController.getById)
 
 router.post('/high-contrast-resolution/:serviceId', HighContrastResolutionController.create)
 router.get('/high-contrast-resolution-by-service/:serviceId', HighContrastResolutionController.getByServiceId)

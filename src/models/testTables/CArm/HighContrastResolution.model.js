@@ -34,7 +34,7 @@ const HighContrastResolutionSchema = new mongoose.Schema(
     reportId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "ServiceReport",
-      required: true,
+      // required: true,
     },
 
     // Optional: soft delete support

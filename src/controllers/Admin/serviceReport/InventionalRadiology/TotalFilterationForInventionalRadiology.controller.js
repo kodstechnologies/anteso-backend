@@ -5,7 +5,7 @@ import ServiceReport from "../../../../models/testTables/InventionalRadiology/To
 import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
-const MACHINE_TYPE = "Cath Lab/Interventional Radiology";
+const MACHINE_TYPE = "Interventional Radiology";
 
 const create = asyncHandler(async (req, res) => {
     const { mAStations, measurements, tolerance, totalFiltration } = req.body;

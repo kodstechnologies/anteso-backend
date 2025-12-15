@@ -65,8 +65,6 @@ const tubeHousingLeakageSchema = new Schema(
 );
 
 // Prevent model overwrite in development
-const TubeHousingLeakage =
-
-  mongoose.model("TubeHousingLeakageBMD", tubeHousingLeakageSchema);
+const TubeHousingLeakage = mongoose.models.TubeHousingLeakageBMD || mongoose.model("TubeHousingLeakageBMD", tubeHousingLeakageSchema);
 
 export default TubeHousingLeakage;

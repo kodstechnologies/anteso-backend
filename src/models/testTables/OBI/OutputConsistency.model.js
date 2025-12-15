@@ -10,6 +10,7 @@ const OutputRowSchema = new mongoose.Schema({
     mas: { type: String, trim: true },          // mAs
     outputs: [OutputMeasurementSchema],         // Dynamic array of measurements
     avg: { type: String, trim: true },          // Average (X̄) – stored as string
+    cv: { type: String, trim: true },           // Coefficient of Variation (CV)
     remark: { type: String, trim: true },       // Pass/Fail or custom text
 });
 
@@ -18,7 +19,7 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
         ffd: {
             value: {
                 type: String,
-               
+
             }, // e.g. "100" cm
         },
         // Dynamic rows of kV/mAs + measurements

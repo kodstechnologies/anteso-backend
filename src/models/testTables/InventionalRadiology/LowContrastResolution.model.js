@@ -25,7 +25,6 @@ const LowContrastResolutionSchema = new mongoose.Schema({
     // Hidden remark: "PASS" or "FAIL" (computed on frontend, stored here)
     remark: {
         type: String,
-        enum: ["PASS", "FAIL", ""], // optional: restrict values even if no enum requested
         default: "",
     },
 
@@ -40,9 +39,10 @@ const LowContrastResolutionSchema = new mongoose.Schema({
     },
 
 }, {
-    timestamps: true, // adds createdAt & updatedAt
+    timestamps: true,
 });
 
-const LowContrastResolution = mongoose.model("LowContrastResolutionInventionalRadiology", LowContrastResolutionSchema);
+const LowContrastResolution = mongoose.models.LowContrastResolutionInventionalRadiology ||
+    mongoose.model("LowContrastResolutionInventionalRadiology", LowContrastResolutionSchema);
 
 export default LowContrastResolution;

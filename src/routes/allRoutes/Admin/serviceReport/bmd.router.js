@@ -6,6 +6,11 @@ import RadiationLeakageLevel from "../../../../controllers/Admin/serviceReport/B
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/BMD/RadiationProtectionSurvey.controller.js"
 import ReproducibilityOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/BMD/ReproducibilityOfRadiationOutput.controller.js";
 
+import bmdReportController from "../../../../controllers/Admin/serviceReport/BMD/bmdReport.controller.js";
+
+router.put('/report-header/:serviceId', bmdReportController.saveReportHeader)
+router.get('/report-header/:serviceId', bmdReportController.getReportHeader)
+
 router.post('/accuracy-of-operating-potential-and-time/:serviceId', AccuracyOfOperatingPotentailAndTimeController.create)
 router.get('/accuracy-of-operating-potential-and-time/:testId', AccuracyOfOperatingPotentailAndTimeController.getById)
 router.put('/accuracy-of-operating-potential-and-time/:testId', AccuracyOfOperatingPotentailAndTimeController.update)

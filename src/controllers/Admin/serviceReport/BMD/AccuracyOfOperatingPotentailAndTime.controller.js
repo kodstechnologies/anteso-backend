@@ -2,6 +2,7 @@
 
 import mongoose from "mongoose";
 import AccuracyOfOperatingPotentialAndTime from "../../../../models/testTables/BMD/AccuracyOfOperatingPotentialAndTime.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
@@ -12,6 +13,7 @@ const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
         rows,
+        mAStations,
         kvpToleranceSign,
         kvpToleranceValue,
         timeToleranceSign,
@@ -40,6 +42,7 @@ const create = asyncHandler(async (req, res) => {
         {
             serviceId,
             rows: rows || [],
+            mAStations: mAStations || [],
             kvpToleranceSign,
             kvpToleranceValue,
             timeToleranceSign,
@@ -53,6 +56,14 @@ const create = asyncHandler(async (req, res) => {
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
     );
+
+    // Link to ServiceReport, ensuring we use the correct BMD field
+    let serviceReport = await ServiceReport.findOne({ serviceId });
+    if (!serviceReport) {
+        serviceReport = new ServiceReport({ serviceId });
+    }
+    serviceReport.AccuracyOfOperatingPotentialAndTimeBMD = doc._id;
+    await serviceReport.save();
 
     return res.status(201).json({
         success: true,
@@ -86,6 +97,7 @@ const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
     const {
         rows,
+        mAStations,
         kvpToleranceSign,
         kvpToleranceValue,
         timeToleranceSign,
@@ -102,6 +114,7 @@ const update = asyncHandler(async (req, res) => {
         testId,
         {
             rows: rows || [],
+            mAStations: mAStations || [],
             kvpToleranceSign,
             kvpToleranceValue,
             timeToleranceSign,

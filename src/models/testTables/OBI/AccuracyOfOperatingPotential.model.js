@@ -1,51 +1,78 @@
+// models/testTables/OBI/AccuracyOfOperatingPotential.model.js
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
-const ToleranceSchema = new mongoose.Schema({
-    value: { type: String, },
-    type: { type: String, enum: ['percent', 'kvp'],  },
-    sign: { type: String, enum: ['plus', 'minus', 'both'], },
-});
-// Table 1 Row
-const Table1RowSchema = new Schema({
-    time: { type: String, default: '', trim: true },
-    sliceThickness: { type: String, default: '', trim: true },
-});
 
-// Table 2 Row
-const Table2RowSchema = new Schema({
-    setKV: { type: String, default: '', trim: true },
-    ma10: { type: String, default: '', trim: true },
-    ma100: { type: String, default: '', trim: true },
-    ma200: { type: String, default: '', trim: true },
-    avgKvp: { type: String, default: '', trim: true },
-    remarks: { type: String, default: '', trim: true },
-});
-
-// Main Schema
-const MeasurementOfOperatingPotentialSchema = new Schema(
-    {
-        table1: [Table1RowSchema],
-        table2: [Table2RowSchema],
-        tolerance: { type: ToleranceSchema, required: true },
-        serviceReportId: {
-            type: Schema.Types.ObjectId,
-            ref: 'ServiceReport',
-            required: false,
-        },
-        serviceId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Service",
-        },
+const AccuracyOfOperatingPotentialSchema = new Schema({
+    serviceReportId: {
+        type: Schema.Types.ObjectId,
+        ref: 'ServiceReport',
+        required: false,
     },
-    { timestamps: true }
-);
+    serviceId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Service",
+    },
 
-MeasurementOfOperatingPotentialSchema.index({ serviceReportId: 1 });
+    // Table 1: kVp Accuracy at Different mA Stations
+    mAStations: {
+        type: [String],
+    },
 
-const MeasurementOfOperatingPotential = model(
+    // Single FFD value for the test (cm)
+    ffd: {
+        type: String,
+    },
+
+    measurements: [
+        {
+            appliedKvp: { type: String, },
+            measuredValues: [{ type: String, }], // Must have values
+            averageKvp: { type: String },
+            remarks: { type: String }, // No enum — fully flexible
+        },
+    ],
+
+    // Tolerance for kVp
+    tolerance: {
+        sign: { type: String, },    // e.g., "±", "+", "-"
+        value: { type: String, },   // e.g., "2.0"
+    },
+
+    // Table 2: Total Filtration
+    totalFiltration: {
+        measured: { type: String },  // mm Al
+        required: { type: String },  // mm Al
+    },
+
+    reportId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ServiceReport",
+    },
+
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    },
+    updatedAt: {
+        type: Date,
+        default: Date.now,
+    },
+});
+
+// Auto-update updatedAt
+AccuracyOfOperatingPotentialSchema.pre('save', function (next) {
+    this.updatedAt = Date.now();
+    next();
+});
+
+// Indexes for performance
+AccuracyOfOperatingPotentialSchema.index({ serviceId: 1 });
+AccuracyOfOperatingPotentialSchema.index({ reportId: 1 });
+
+const AccuracyOfOperatingPotential = model(
     'accuracyOfOperatingPotentialOBI',
-    MeasurementOfOperatingPotentialSchema
+    AccuracyOfOperatingPotentialSchema
 );
 
-export default MeasurementOfOperatingPotential;
+export default AccuracyOfOperatingPotential;

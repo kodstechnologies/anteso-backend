@@ -1,6 +1,34 @@
 // models/DetailsOfRadiationProtectionMammography.js
 import mongoose from "mongoose";
 
+const LocationSchema = new mongoose.Schema({
+    location: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    mRPerHr: {
+        type: String,
+        trim: true,
+    },
+    mRPerWeek: {
+        type: String,
+        trim: true
+    },
+    result: {
+        type: String,
+        trim: true,
+    },
+    calculatedResult: {
+        type: String,
+        trim: true,
+    },
+    category: {
+        type: String,
+        trim: true
+    },
+});
+
 const detailsOfRadiationProtectionMammographySchema = new mongoose.Schema(
     {
         // Links to the Service (one per machine/service)
@@ -8,27 +36,44 @@ const detailsOfRadiationProtectionMammographySchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
             required: true,
-            index: true, // for fast lookup by serviceId
+            index: true,
         },
 
-        // Optional: link to ServiceReport if you want to attach it later
+        // Optional: link to ServiceReport
         reportId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "ServiceReport",
             index: true,
         },
 
-        // From your frontend
+        // Survey Details
         surveyDate: {
-            type: Date,        // Store as Date, not string (best practice)
+            type: Date,
             required: false,
         },
-
         hasValidCalibration: {
             type: String,
-           
             trim: true,
         },
+
+        // Equipment Settings
+        appliedCurrent: { type: String, trim: true },
+        appliedVoltage: { type: String, trim: true },
+        exposureTime: { type: String, trim: true },
+        workload: { type: String, trim: true },
+
+        // Dynamic location rows
+        locations: [LocationSchema],
+
+        // Optional metadata
+        hospitalName: { type: String, trim: true },
+        equipmentId: { type: String, trim: true },
+        roomNo: { type: String, trim: true },
+        manufacturer: { type: String, trim: true },
+        model: { type: String, trim: true },
+        surveyorName: { type: String, trim: true },
+        surveyorDesignation: { type: String, trim: true },
+        remarks: { type: String, trim: true },
 
         // Audit fields
         createdAt: {
@@ -41,10 +86,9 @@ const detailsOfRadiationProtectionMammographySchema = new mongoose.Schema(
         },
     },
     {
-        timestamps: true, 
+        timestamps: true,
     }
 );
-
 
 detailsOfRadiationProtectionMammographySchema.index(
     { serviceId: 1 },

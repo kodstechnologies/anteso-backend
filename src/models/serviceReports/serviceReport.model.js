@@ -718,6 +718,27 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageInventionalRadiology"
     },
+    // BMD
+    AccuracyOfOperatingPotentialAndTimeBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfOperatingPotentialAndTimeBMD"
+    },
+    ReproducibilityOfRadiationOutputBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ConsistencyOfRadiationOutputBMD"
+    },
+    LinearityOfMaLoadingBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMaLoadingBMD"
+    },
+    TubeHousingLeakageBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TubeHousingLeakageBMD"
+    },
+    RadiationProtectionSurveyBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionBMD"
+    },
 })
 export default mongoose.model(
     "ServiceReport",

@@ -1,7 +1,11 @@
 // controllers/ExposureRateController.js
 import ExposureRateTableTop from "../../../../models/testTables/CArm/ExposureRateTableTop.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "C-Arm";
 
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
@@ -25,21 +29,33 @@ const create = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        // Prevent duplicate test for same service
-        const existing = await ExposureRateTableTop.findOne({ serviceId }).session(session);
-        if (existing) {
+        // Validate service & machine type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).json({
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({
                 success: false,
-                message: "Exposure Rate test already exists for this machine",
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
             });
+        }
+
+        // Get or create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
         }
 
         const newTest = await ExposureRateTableTop.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: reportId || serviceReport._id,
                 rows: rows.map(row => ({
                     distance: row.distance?.toString().trim() || "",
                     appliedKv: row.appliedKv?.toString().trim() || "",
@@ -53,6 +69,10 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        // Link to ServiceReport for view-report population
+        serviceReport.ExposureRateTableTopCArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -168,6 +188,15 @@ const update = asyncHandler(async (req, res) => {
                 success: false,
                 message: "Test not found",
             });
+        }
+
+        // Ensure ServiceReport link exists
+        if (updatedTest?.serviceId) {
+            const serviceReport = await ServiceReport.findOne({ serviceId: updatedTest.serviceId }).session(session);
+            if (serviceReport && (!serviceReport.ExposureRateTableTopCArm || serviceReport.ExposureRateTableTopCArm.toString() !== testId)) {
+                serviceReport.ExposureRateTableTopCArm = testId;
+                await serviceReport.save({ session });
+            }
         }
 
         await session.commitTransaction();
