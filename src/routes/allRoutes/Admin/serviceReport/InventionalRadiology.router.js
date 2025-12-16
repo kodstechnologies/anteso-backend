@@ -36,7 +36,7 @@ router.post('/high-contrast-resolution/:serviceId', HighContrastResolutionContro
 router.get('/high-contrast-resolution/:serviceId', HighContrastResolutionController.getByServiceId)
 router.put('/high-contrast-resolution/:testId', HighContrastResolutionController.update)
 
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
 
 
 router.post('/central-beam-alignment/:serviceId', CentralBeamAlignmentController.create);

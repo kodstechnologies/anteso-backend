@@ -58,6 +58,6 @@ router.put('/tube-housing/:testId', TubeHousing.update)
 router.get('/tube-housing/:testId', TubeHousing.getById)
 
 // Report Header
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCArm);
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCArm);
 
 export default router

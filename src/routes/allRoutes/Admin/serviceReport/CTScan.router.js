@@ -74,6 +74,6 @@ router.get('/high-contrast-resolution/service/:serviceId', highContrastResolutio
 router.put('/high-contrast-resolution/:testId', highContrastResolutionForCTScanController.update)
 
 // Report Header
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderForCTScan);
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderForCTScan);
 
 export default router
