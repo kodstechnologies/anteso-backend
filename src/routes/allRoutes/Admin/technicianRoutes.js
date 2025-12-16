@@ -54,4 +54,7 @@ router.get('/attendance-summary/:empId', technicianController.getAttendanceSumma
 router.get('/attendence-status/:employeeId', technicianController.getAttendanceStatus)
 router.get('/get-payment-details/:employeeId', technicianController.getPaymentDetails)
 router.get('/get-advanced-amount/:employeeId', technicianController.getAdvanceAccountByTechnician)
+router.get('/all-active-engineers',technicianController.getActiveEngineers)
+router.get('/all-active-staffs',technicianController.getActiveStaffs)
+
 export default router

@@ -2020,6 +2020,51 @@ const getAdvanceAccountByTechnician = asyncHandler(async (req, res) => {
     });
 });
 
+export const getActiveEngineers = asyncHandler(async (req, res) => {
+    try {
+        const engineers = await Employee.find({
+            status: "active",
+            technicianType: "engineer"
+        })
+            .select("-password")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: engineers.length,
+            data: engineers
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch active engineers",
+            error: error.message
+        });
+    }
+});
+
+export const getActiveStaffs = asyncHandler(async (req, res) => {
+    try {
+        const staffs = await Employee.find({
+            status: "active",
+            technicianType: "office-staff"
+        })
+            .select("-password")
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: staffs.length,
+            data: staffs
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch active staffs",
+            error: error.message
+        });
+    }
+});
 
 
-export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails, getAdvanceAccountByTechnician };
+export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails, getAdvanceAccountByTechnician,getActiveEngineers,getActiveStaffs };

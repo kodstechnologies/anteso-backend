@@ -5,7 +5,7 @@ import LeadApronServiceReport from "../../../../models/serviceReports/leadApronS
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Lead Apron";
+const MACHINE_TYPE = "Lead Apron/Thyroid Shield/Gonad Shield";
 
 // Helper function to check if machine type is valid
 const isValidMachineType = (machineType) => {
