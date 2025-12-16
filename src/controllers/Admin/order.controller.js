@@ -657,6 +657,11 @@ const getMachineDetails = asyncHandler(async (req, res) => {
     }
 });
 
+
+
+
+
+
 //mobile
 // PATCH /api/orders/:orderId/services/:serviceId/worktypes
 //use this for mobile
@@ -2957,7 +2962,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
         // }
 
 
-        
+
         // 6. Update workTypeDetail status + PUSH TO HISTORY
         if (status && status !== workDetail.status) {
             const historyEntry = {
@@ -3513,23 +3518,404 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 //     }
 // });
 
-const completedStatusAndReport = asyncHandler(async (req, res) => {
+
+// const completedStatusAndReport = asyncHandler(async (req, res) => {
+//     try {
+//         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
+
+//         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
+//             return res.status(400).json({ message: "File is required for completed status" });
+//         }
+
+//         // Normalize reportType
+//         let normalizedReportType = reportType?.toLowerCase().trim();
+//         if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
+//             normalizedReportType = "qatest";
+//         } else {
+//             const eloraTypes = ["license for operation", "decommissioning", "decommissioning and recommissioning"];
+//             if (eloraTypes.includes(normalizedReportType)) {
+//                 normalizedReportType = "elora";
+//             }
+//         }
+
+//         const service = await Services.findById(serviceId);
+//         if (!service) return res.status(404).json({ message: "Service not found" });
+
+//         let updated = false;
+//         let newReportDoc = null;
+//         let reportFor = null;
+
+//         // Handle "paid" status
+//         if (status.toLowerCase() === "paid") {
+//             const order = await orderModel.findById(orderId);
+//             if (!order) return res.status(404).json({ message: "Order not found." });
+
+//             const leadOwner = await User.findOne({ _id: order.leadOwner }).lean();
+//             const isDealer = leadOwner?.role === "Dealer";
+
+//             if (!isDealer) {
+//                 const payment = await Payment.findOne({ orderId });
+//                 if (!payment || payment.paymentType !== "complete") {
+//                     return res.status(400).json({
+//                         message: "Cannot mark as paid. Payment is not complete.",
+//                     });
+//                 }
+//             }
+//         }
+
+//         // Loop through workTypeDetails
+//         service.workTypeDetails = await Promise.all(
+//             service.workTypeDetails.map(async (work) => {
+//                 if (work.workType?.toLowerCase() !== workType.toLowerCase()) return work;
+
+//                 let existingReport = null;
+//                 if (normalizedReportType === "qatest" && work.QAtest) {
+//                     existingReport = await QATest.findById(work.QAtest);
+//                 } else if (normalizedReportType === "elora" && work.elora) {
+//                     existingReport = await Elora.findById(work.elora);
+//                 }
+
+//                 // Upload file
+//                 let fileUrl = null;
+//                 if (req.file) {
+//                     try {
+//                         const uploaded = await uploadToS3(req.file);
+//                         fileUrl = uploaded.url;
+//                     } catch {
+//                         return res.status(500).json({ message: "Failed to upload file" });
+//                     }
+//                 }
+
+//                 // OLD STATUS (before change)
+//                 const oldStatus = work.status || "pending";
+
+//                 // APPLY NEW STATUS
+//                 if (normalizedReportType !== "elora") {
+//                     work.status = status;
+//                 }
+
+//                 // SET COMPLETED TIME
+//                 if (["completed", "generated"].includes(status.toLowerCase())) {
+//                     work.completedAt = new Date();
+//                 }
+
+//                 // ADD STATUS HISTORY ENTRY (This is the only new part)
+//                 const historyEntry = {
+//                     oldStatus,
+//                     newStatus: status.toLowerCase(),
+//                     updatedBy: staffId, // Current staff who made the change
+//                     updatedAt: new Date(),
+//                 };
+
+//                 // Initialize statusHistory if not exists
+//                 if (!work.statusHistory) {
+//                     work.statusHistory = [];
+//                 }
+//                 work.statusHistory.push(historyEntry);
+
+//                 // Handle QA Test
+//                 if (normalizedReportType === "qatest") {
+//                     if (existingReport) {
+//                         const updateData = { reportStatus: existingReport.reportStatus };
+//                         if (fileUrl) updateData.report = fileUrl;
+
+//                         if (existingReport.reportStatus === "rejected") {
+//                             updateData.reportStatus = "reuploaded";
+//                         } else if (status.toLowerCase() === "completed") {
+//                             updateData.reportStatus = "pending";
+//                         }
+
+//                         newReportDoc = await QATest.findByIdAndUpdate(
+//                             existingReport._id,
+//                             updateData,
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await QATest.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.QAtest = newReportDoc._id;
+//                     }
+
+//                     reportFor = "qatest";
+//                 }
+
+//                 // Handle Elora
+//                 else if (normalizedReportType === "elora") {
+//                     const updateData = fileUrl ? { report: fileUrl } : {};
+
+//                     if (existingReport) {
+//                         newReportDoc = await Elora.findByIdAndUpdate(
+//                             existingReport._id,
+//                             updateData,
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await Elora.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.elora = newReportDoc._id;
+//                     }
+
+//                     reportFor = "elora";
+//                 }
+
+//                 updated = true;
+//                 return work;
+//             })
+//         );
+
+//         if (!updated) {
+//             return res.status(404).json({
+//                 message: `WorkType '${workType}' not assigned in this service`,
+//             });
+//         }
+
+//         await service.save();
+
+//         // Order completion timestamp
+//         if (status.toLowerCase() === "completed") {
+//             const order = await orderModel.findById(orderId);
+//             if (order) {
+//                 order.completedAt = new Date();
+//                 await order.save();
+//             }
+//         }
+
+//         // Update order if paid
+//         if (status.toLowerCase() === "paid") {
+//             const order = await orderModel.findById(orderId);
+//             if (order) {
+//                 order.status = "paid";
+//                 await order.save();
+//             }
+//         }
+
+//         res.status(200).json({
+//             message: `Status for workType '${workType}' updated successfully`,
+//             linkedReport: newReportDoc || null,
+//             reportId: newReportDoc?._id || null,
+//             reportFor,
+//             service,
+//         });
+//     } catch (error) {
+//         console.error("Error in completedStatusAndReport:", error);
+//         res.status(500).json({ message: error.message || "Server error" });
+//     }
+// });
+
+
+// export const completedStatusAndReport = asyncHandler(async (req, res) => {
+//     try {
+//         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
+//         console.log("staff id", staffId, "order id", orderId, "service id", serviceId, "work type", workType, "status", status, "report type", reportType);
+//         // 🔒 File validation
+//         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
+//             return res.status(400).json({ message: "File is required for completed status" });
+//         }
+
+//         // 🔁 Normalize reportType
+//         let normalizedReportType = reportType?.toLowerCase().trim();
+//         if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
+//             normalizedReportType = "qatest";
+//         } else if (
+//             ["license for operation", "decommissioning", "decommissioning and recommissioning"]
+//                 .includes(normalizedReportType)
+//         ) {
+//             normalizedReportType = "elora";
+//         }
+
+//         const service = await Services.findById(serviceId);
+//         if (!service) return res.status(404).json({ message: "Service not found" });
+
+//         let updated = false;
+//         let newReportDoc = null;
+//         let reportFor = null;
+
+//         // 💰 Paid status validation
+//         if (status.toLowerCase() === "paid") {
+//             const order = await orderModel.findById(orderId);
+//             if (!order) return res.status(404).json({ message: "Order not found" });
+
+//             const leadOwner = await User.findById(order.leadOwner).lean();
+//             if (leadOwner?.role !== "Dealer") {
+//                 const payment = await Payment.findOne({ orderId });
+//                 if (!payment || payment.paymentType !== "complete") {
+//                     return res.status(400).json({
+//                         message: "Cannot mark as paid. Payment not completed",
+//                     });
+//                 }
+//             }
+//         }
+
+//         // 🔄 Process workTypeDetails
+//         service.workTypeDetails = await Promise.all(
+//             service.workTypeDetails.map(async (work) => {
+//                 if (work.workType?.toLowerCase() !== workType.toLowerCase()) return work;
+
+//                 let existingReport = null;
+
+//                 if (normalizedReportType === "qatest" && work.QAtest) {
+//                     existingReport = await QATest.findById(work.QAtest);
+//                 }
+//                 if (normalizedReportType === "elora" && work.elora) {
+//                     existingReport = await Elora.findById(work.elora);
+//                 }
+
+//                 // ☁ Upload file
+//                 let fileUrl = null;
+//                 if (req.file) {
+//                     const uploaded = await uploadToS3(req.file);
+//                     fileUrl = uploaded.url;
+//                 }
+
+//                 const oldStatus = work.status || "pending";
+
+//                 // ⏱ Status update
+//                 if (normalizedReportType !== "elora") {
+//                     work.status = status.toLowerCase();
+//                 }
+
+//                 if (["completed", "generated"].includes(status.toLowerCase())) {
+//                     work.completedAt = new Date();
+//                 }
+
+//                 // ✅ FIX: SYSTEM vs USER HISTORY
+//                 const isSystemUpdate = !staffId;
+//                 console.log("isSystemUpdate", isSystemUpdate);
+//                 const historyEntry = {
+//                     oldStatus,
+//                     newStatus: status.toLowerCase(),
+//                     updatedBy: isSystemUpdate
+//                         ? null
+//                         : new mongoose.Types.ObjectId(staffId),
+//                     updatedAt: new Date(),
+//                 };
+
+//                 if (!work.statusHistory) work.statusHistory = [];
+//                 work.statusHistory.push(historyEntry);
+
+//                 // 📄 QA TEST
+//                 if (normalizedReportType === "qatest") {
+//                     if (existingReport) {
+//                         const updateData = {};
+//                         if (fileUrl) updateData.report = fileUrl;
+
+//                         if (existingReport.reportStatus === "rejected") {
+//                             updateData.reportStatus = "reuploaded";
+//                         } else if (status.toLowerCase() === "completed") {
+//                             updateData.reportStatus = "pending";
+//                         }
+
+//                         newReportDoc = await QATest.findByIdAndUpdate(
+//                             existingReport._id,
+//                             updateData,
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await QATest.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.QAtest = newReportDoc._id;
+//                     }
+//                     reportFor = "qatest";
+//                 }
+
+//                 // 📄 ELORA
+//                 if (normalizedReportType === "elora") {
+//                     if (existingReport) {
+//                         newReportDoc = await Elora.findByIdAndUpdate(
+//                             existingReport._id,
+//                             fileUrl ? { report: fileUrl } : {},
+//                             { new: true }
+//                         );
+//                     } else if (fileUrl) {
+//                         newReportDoc = await Elora.create({
+//                             officeStaff: staffId,
+//                             report: fileUrl,
+//                             reportStatus: "pending",
+//                         });
+//                         work.elora = newReportDoc._id;
+//                     }
+//                     reportFor = "elora";
+//                 }
+
+//                 updated = true;
+//                 return work;
+//             })
+//         );
+
+//         if (!updated) {
+//             return res.status(404).json({
+//                 message: `WorkType '${workType}' not found in this service`,
+//             });
+//         }
+
+//         await service.save();
+
+//         // 🕒 Order completion timestamp
+//         if (status.toLowerCase() === "completed") {
+//             await orderModel.findByIdAndUpdate(orderId, {
+//                 completedAt: new Date(),
+//             });
+//         }
+
+//         // 💰 Paid update
+//         if (status.toLowerCase() === "paid") {
+//             await orderModel.findByIdAndUpdate(orderId, { status: "paid" });
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             message: `Status '${status}' updated successfully`,
+//             reportFor,
+//             reportId: newReportDoc?._id || null,
+//             linkedReport: newReportDoc || null,
+//             service,
+//         });
+//     } catch (error) {
+//         console.error("completedStatusAndReport error:", error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || "Internal server error",
+//         });
+//     }
+// });
+
+
+export const completedStatusAndReport = asyncHandler(async (req, res) => {
     try {
         const { staffId, orderId, serviceId, workType, status, reportType } = req.params;
 
+        console.log(
+            "staffId:", staffId,
+            "orderId:", orderId,
+            "serviceId:", serviceId,
+            "workType:", workType,
+            "status:", status,
+            "reportType:", reportType
+        );
+
+        // 🔒 File validation
         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
-            return res.status(400).json({ message: "File is required for completed status" });
+            return res.status(400).json({ message: "File is required" });
         }
 
-        // Normalize reportType
+        // 🔁 Normalize reportType
         let normalizedReportType = reportType?.toLowerCase().trim();
         if (["qa test", "qatest", "quality assurance test"].includes(normalizedReportType)) {
             normalizedReportType = "qatest";
-        } else {
-            const eloraTypes = ["license for operation", "decommissioning", "decommissioning and recommissioning"];
-            if (eloraTypes.includes(normalizedReportType)) {
-                normalizedReportType = "elora";
-            }
+        } else if (
+            ["license for operation", "decommissioning", "decommissioning and recommissioning"]
+                .includes(normalizedReportType)
+        ) {
+            normalizedReportType = "elora";
         }
 
         const service = await Services.findById(serviceId);
@@ -3539,83 +3925,91 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
         let newReportDoc = null;
         let reportFor = null;
 
-        // Handle "paid" status
+        // 💰 Paid validation
         if (status.toLowerCase() === "paid") {
             const order = await orderModel.findById(orderId);
-            if (!order) return res.status(404).json({ message: "Order not found." });
+            if (!order) return res.status(404).json({ message: "Order not found" });
 
-            const leadOwner = await User.findOne({ _id: order.leadOwner }).lean();
-            const isDealer = leadOwner?.role === "Dealer";
-
-            if (!isDealer) {
+            const leadOwner = await User.findById(order.leadOwner).lean();
+            if (leadOwner?.role !== "Dealer") {
                 const payment = await Payment.findOne({ orderId });
                 if (!payment || payment.paymentType !== "complete") {
                     return res.status(400).json({
-                        message: "Cannot mark as paid. Payment is not complete.",
+                        message: "Payment not completed",
                     });
                 }
             }
         }
 
-        // Loop through workTypeDetails
+        // 🔄 Update workTypeDetails
         service.workTypeDetails = await Promise.all(
             service.workTypeDetails.map(async (work) => {
                 if (work.workType?.toLowerCase() !== workType.toLowerCase()) return work;
 
                 let existingReport = null;
+
                 if (normalizedReportType === "qatest" && work.QAtest) {
                     existingReport = await QATest.findById(work.QAtest);
-                } else if (normalizedReportType === "elora" && work.elora) {
+                }
+                if (normalizedReportType === "elora" && work.elora) {
                     existingReport = await Elora.findById(work.elora);
                 }
 
-                // Upload file
+                // ☁ Upload file
                 let fileUrl = null;
                 if (req.file) {
-                    try {
-                        const uploaded = await uploadToS3(req.file);
-                        fileUrl = uploaded.url;
-                    } catch {
-                        return res.status(500).json({ message: "Failed to upload file" });
-                    }
+                    const uploaded = await uploadToS3(req.file);
+                    fileUrl = uploaded.url;
                 }
 
-                // OLD STATUS (before change)
                 const oldStatus = work.status || "pending";
+                const newStatus = status.toLowerCase();
 
-                // APPLY NEW STATUS
+                // ✅ Update status
                 if (normalizedReportType !== "elora") {
-                    work.status = status;
+                    work.status = newStatus;
                 }
 
-                // SET COMPLETED TIME
-                if (["completed", "generated"].includes(status.toLowerCase())) {
+                if (["completed", "generated"].includes(newStatus)) {
                     work.completedAt = new Date();
                 }
 
-                // ADD STATUS HISTORY ENTRY (This is the only new part)
-                const historyEntry = {
-                    oldStatus,
-                    newStatus: status.toLowerCase(),
-                    updatedBy: staffId, // Current staff who made the change
-                    updatedAt: new Date(),
-                };
+                // 🔥 BUILD updatedBy OBJECT (MATCHES SCHEMA)
+                let updatedBy = null;
 
-                // Initialize statusHistory if not exists
-                if (!work.statusHistory) {
-                    work.statusHistory = [];
+                if (staffId) {
+                    const staff = await User.findById(staffId)
+                        .select("name role")
+                        .lean();
+
+                    if (staff) {
+                        updatedBy = {
+                            _id: staff._id.toString(), // STRING (schema expects string)
+                            name: staff.name,
+                            role: staff.role
+                        };
+                    }
                 }
-                work.statusHistory.push(historyEntry);
 
-                // Handle QA Test
+                // 🧾 STATUS HISTORY
+                if (!work.statusHistory) work.statusHistory = [];
+
+                work.statusHistory.push({
+                    oldStatus,
+                    newStatus,
+                    updatedBy, // ✅ OBJECT, not ObjectId
+                    updatedAt: new Date()
+                });
+
+                // 📄 QA TEST
                 if (normalizedReportType === "qatest") {
                     if (existingReport) {
-                        const updateData = { reportStatus: existingReport.reportStatus };
+                        const updateData = {};
                         if (fileUrl) updateData.report = fileUrl;
 
                         if (existingReport.reportStatus === "rejected") {
                             updateData.reportStatus = "reuploaded";
-                        } else if (status.toLowerCase() === "completed") {
+                        } else if (newStatus === "completed") {
                             updateData.reportStatus = "pending";
                         }
 
@@ -3632,18 +4026,15 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                         });
                         work.QAtest = newReportDoc._id;
                     }
-
                     reportFor = "qatest";
                 }
 
-                // Handle Elora
-                else if (normalizedReportType === "elora") {
-                    const updateData = fileUrl ? { report: fileUrl } : {};
-
+                // 📄 ELORA
+                if (normalizedReportType === "elora") {
                     if (existingReport) {
                         newReportDoc = await Elora.findByIdAndUpdate(
                             existingReport._id,
-                            updateData,
+                            fileUrl ? { report: fileUrl } : {},
                             { new: true }
                         );
                     } else if (fileUrl) {
@@ -3654,7 +4045,6 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
                         });
                         work.elora = newReportDoc._id;
                     }
-
                     reportFor = "elora";
                 }
 
@@ -3665,43 +4055,43 @@ const completedStatusAndReport = asyncHandler(async (req, res) => {
 
         if (!updated) {
             return res.status(404).json({
-                message: `WorkType '${workType}' not assigned in this service`,
+                message: `WorkType '${workType}' not found in this service`,
             });
         }
 
         await service.save();
 
-        // Order completion timestamp
+        // 🕒 Order completion
         if (status.toLowerCase() === "completed") {
-            const order = await orderModel.findById(orderId);
-            if (order) {
-                order.completedAt = new Date();
-                await order.save();
-            }
+            await orderModel.findByIdAndUpdate(orderId, {
+                completedAt: new Date(),
+            });
         }
 
-        // Update order if paid
+        // 💰 Paid update
         if (status.toLowerCase() === "paid") {
-            const order = await orderModel.findById(orderId);
-            if (order) {
-                order.status = "paid";
-                await order.save();
-            }
+            await orderModel.findByIdAndUpdate(orderId, {
+                status: "paid",
+            });
         }
 
-        res.status(200).json({
-            message: `Status for workType '${workType}' updated successfully`,
-            linkedReport: newReportDoc || null,
-            reportId: newReportDoc?._id || null,
+        return res.status(200).json({
+            success: true,
+            message: `Status '${status}' updated successfully`,
             reportFor,
+            reportId: newReportDoc?._id || null,
+            linkedReport: newReportDoc || null,
             service,
         });
+
     } catch (error) {
-        console.error("Error in completedStatusAndReport:", error);
-        res.status(500).json({ message: error.message || "Server error" });
+        console.error("completedStatusAndReport error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Server error",
+        });
     }
 });
-
 
 const getRawDetailsByTechnician = asyncHandler(async (req, res) => {
     try {
