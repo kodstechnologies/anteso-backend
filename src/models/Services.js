@@ -59,6 +59,7 @@ const workTypeDetailSchema = new mongoose.Schema({
     //     type: String
     // }
     isSubmitted: { type: Boolean, default: false },
+    qatestSubmittedAt: { type: Date },
     assignedAt: Date,
     completedAt: { type: Date }
 }, { _id: false });

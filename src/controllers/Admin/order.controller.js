@@ -454,6 +454,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
                     {
                         path: "workTypeDetails.QAtest",
                         model: "QATest",
+                        select: "reportULRNumber qaTestReportNumber reportStatus qatestSubmittedAt officeStaff", // ✅ Include qatestSubmittedAt
                         populate: {
                             path: "officeStaff",
                             model: "Employee",
@@ -1128,7 +1129,8 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
     }
 
     // Update isSubmitted
-    workTypeDetail.isSubmitted = Boolean(isSubmitted);
+    // workTypeDetail.isSubmitted = Boolean(isSubmitted);
+    
 
     // ✅ Mark attendance if isSubmitted = true
     if (workTypeDetail.isSubmitted) {
@@ -1184,17 +1186,25 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
 
 
     let qaTest;
+    // ✅ Capture qatestSubmittedAt when isSubmitted is true
+    const qatestSubmittedAt = isSubmitted ? new Date() : null;
+
     if (workTypeDetail.QAtest) {
         qaTest = await QATest.findById(workTypeDetail.QAtest);
         if (qaTest) {
             qaTest.reportULRNumber = reportULRNumber;
             qaTest.qaTestReportNumber = qaTestReportNumber;
+            // ✅ Set qatestSubmittedAt if isSubmitted is true and not already set
+            if (isSubmitted && !qaTest.qatestSubmittedAt) {
+                qaTest.qatestSubmittedAt = qatestSubmittedAt;
+            }
             await qaTest.save();
         } else {
             qaTest = new QATest({
                 officeStaff: technicianId,
                 reportULRNumber,
                 qaTestReportNumber,
+                qatestSubmittedAt: qatestSubmittedAt,
             });
             await qaTest.save();
             workTypeDetail.QAtest = qaTest._id;
@@ -1204,6 +1214,7 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
             officeStaff: technicianId,
             reportULRNumber,
             qaTestReportNumber,
+            qatestSubmittedAt: qatestSubmittedAt,
         });
         await qaTest.save();
         workTypeDetail.QAtest = qaTest._id;
