@@ -192,11 +192,11 @@ const updateById = asyncHandler(async (req, res) => {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
     }
 
-    const { name, phone, email } = value;
+    const { name, phone, email, address } = value;
 
     const updatedClient = await User.findByIdAndUpdate(
         id,
-        { name, phone, email },
+        { name, phone, email, address },
         { new: true, runValidators: true }
     );
 
@@ -206,7 +206,8 @@ const updateById = asyncHandler(async (req, res) => {
     const responseData = {
         name: updatedClient.name,
         email: updatedClient.email,
-        phone: updatedClient.phone
+        phone: updatedClient.phone,
+        address: updatedClient.address
     };
 
     return res.status(200).json(new ApiResponse(200, responseData, 'Client updated successfully'));

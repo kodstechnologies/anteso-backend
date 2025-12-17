@@ -9,6 +9,11 @@ import BMD from "../serviceReport/bmd.router.js"
 import DentalConeBeamCT from "../serviceReport/DentalConeBeamCT.router.js"
 import OPG from "../serviceReport/OPG.router.js"
 import DentalIntra from "../serviceReport/DentalIntra.router.js"
+import RadiographyFixed from "../serviceReport/RadiographyFixed.router.js"
+import RadiographyMobile from "../serviceReport/RadiographyMobile.router.js"
+import RadiographyMobileHT from "../serviceReport/RadiographyMobileHT.router.js"
+import RadiographyPortable from "../serviceReport/RadiographyPortable.router.js"
+
 const router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
@@ -25,5 +30,9 @@ router.use('/bmd', BMD)
 router.use('/dental-cone-beam-ct', DentalConeBeamCT)
 router.use('/opg', OPG)
 router.use('/dental-intra', DentalIntra)
+router.use('/radiography-fixed', RadiographyFixed)
+router.use('/radiography-mobile', RadiographyMobile)
+router.use('/radiography-mobile-ht', RadiographyMobileHT)
+router.use('/radiography-portable', RadiographyPortable)
 
 export default router;

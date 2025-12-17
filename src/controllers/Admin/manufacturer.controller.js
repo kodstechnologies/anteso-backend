@@ -299,7 +299,7 @@ const deleteManufacturer = async (req, res) => {
 const getAllManufacturers = async (req, res) => {
     try {
         // Fetch all manufacturers
-        const manufacturers = await Manufacturer.find();
+        const manufacturers = await Manufacturer.find().sort({ createdAt: -1 });;
 
         if (!manufacturers || manufacturers.length === 0) {
             return res.status(404).json({

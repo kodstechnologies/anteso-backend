@@ -11,7 +11,7 @@ import RadiationLeakageLevelController from "../../../../controllers/Admin/servi
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 // Report Header
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyPortable);
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyPortable);
 
 // Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);

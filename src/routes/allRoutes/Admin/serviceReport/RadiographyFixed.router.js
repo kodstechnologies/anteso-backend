@@ -13,7 +13,7 @@ import RadiationProtectionSurveyController from "../../../../controllers/Admin/s
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 // Report Header
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyFixed);
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyFixed);
 
 // Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);

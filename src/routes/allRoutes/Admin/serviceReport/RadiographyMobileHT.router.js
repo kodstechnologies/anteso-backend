@@ -13,7 +13,7 @@ import TotalFilterationController from "../../../../controllers/Admin/serviceRep
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 // Report Header
-router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyMobileHT);
+// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyMobileHT);
 
 // Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);

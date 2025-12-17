@@ -669,7 +669,16 @@ const getById = asyncHandler(async (req, res) => {
 const getAllEmployees = asyncHandler(async (req, res) => {
     try {
         const employees = await Technician.find()
-            .sort({ createdAt: -1 })
+            // .sort({ createdAt: -1 })
+            // .populate({
+            //     path: "tools.toolId",
+            //     select: "nomenclature manufacturer model"
+            // });
+            .sort({
+                status: 1,
+                createdAt: -1
+            })
+            .select("-password")
             .populate({
                 path: "tools.toolId",
                 select: "nomenclature manufacturer model"
@@ -2067,4 +2076,37 @@ export const getActiveStaffs = asyncHandler(async (req, res) => {
 });
 
 
-export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails, getAdvanceAccountByTechnician,getActiveEngineers,getActiveStaffs };
+export const getAllActiveEmployees = asyncHandler(async (req, res) => {
+    try {
+        const { technicianType } = req.query;
+        // technicianType can be: "engineer" | "office-staff"
+
+        const filter = {
+            status: "active",
+        };
+
+        // Optional filter
+        if (technicianType) {
+            filter.technicianType = technicianType;
+        }
+
+        const employees = await Employee.find(filter)
+            .select("-password") // 🔒 exclude password
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: employees.length,
+            data: employees,
+        });
+
+    } catch (error) {
+        console.error("getAllActiveEmployees error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch active employees",
+        });
+    }
+});
+
+export default { add, getById, getAll, getAllEmployees, updateById, deleteById, getUnassignedTools, assignedToolByTechnicianId, getAllOfficeStaff, createTripByTechnicianId, updateTripByTechnicianIdAndTripId, getAllTripsByTechnician, addTripExpense, getTripsWithExpensesByTechnician, getTransactionLogs, getTripExpenseByTechnicianTripExpenseId, getTripByTechnicianAndTrip, getAttendanceSummary, getAttendanceStatus, getPaymentDetails, getAdvanceAccountByTechnician, getActiveEngineers, getActiveStaffs, getAllActiveEmployees };

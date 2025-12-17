@@ -13,9 +13,9 @@ const clientSchema = new Schema({
     gstNo: {
         type: String,
     },
-    address:{
-        type:String
-        
+    address: {
+        type: String
+
     },
     hospitals: [
         {
