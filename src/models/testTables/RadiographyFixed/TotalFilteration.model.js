@@ -33,6 +33,15 @@ const TotalFilterationSchema = new Schema({
   totalFiltration: {
     measured: { type: String },  // mm Al
     required: { type: String },  // mm Al
+    atKvp: { type: String },     // kVp value
+  },
+  // Tolerance for Total Filtration
+  filtrationTolerance: {
+    forKvGreaterThan70: { type: String, default: "1.5" },      // mm Al for kV > threshold1
+    forKvBetween70And100: { type: String, default: "2.0" },    // mm Al for threshold1 ≤ kV ≤ threshold2
+    forKvGreaterThan100: { type: String, default: "2.5" },     // mm Al for kV > threshold2
+    kvThreshold1: { type: String, default: "70" },             // First kV threshold
+    kvThreshold2: { type: String, default: "100" },            // Second kV threshold
   },
 
   reportId: {

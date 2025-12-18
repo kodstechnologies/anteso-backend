@@ -174,6 +174,26 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'HighContrastResolutionForCTScan'
     },
+    LinearityOfMasLoadingCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LinearityOfMasLoadingCTScan'
+    },
+    AlignmentOfTableGantryCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'AlignmentOfTableGantryCTScan'
+    },
+    TablePositionCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'TablePositionCTScan'
+    },
+    GantryTiltCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'GantryTiltCTScan'
+    },
+    RadiationProtectionSurveyCTScan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'RadiationProtectionSurveyCTScan'
+    },
     TotalFilterationForCTScan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'TotalFilterationForCTScan'

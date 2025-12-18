@@ -11,6 +11,11 @@ import radiationLeakageLevelFromXRayTubeHouseController from "../../../../contro
 import measureMaxRadiationLevelControler from "../../../../controllers/Admin/serviceReport/CTScan/measureMaxRadiationLevel.controler.js";
 import lowContrastResolutionForCTScanController from "../../../../controllers/Admin/serviceReport/CTScan/lowContrastResolutionForCTScan.controller.js";
 import highContrastResolutionForCTScanController from "../../../../controllers/Admin/serviceReport/CTScan/highContrastResolutionForCTScan.controller.js";
+import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/CTScan/RadiationProtectionSurvey.controller.js";
+import LinearityOfMasLoadingController from "../../../../controllers/Admin/serviceReport/CTScan/LinearityOfMasLoading.controller.js";
+import AlignmentOfTableGantryController from "../../../../controllers/Admin/serviceReport/CTScan/AlignmentOfTableGantry.controller.js";
+import TablePositionController from "../../../../controllers/Admin/serviceReport/CTScan/TablePosition.controller.js";
+import GantryTiltController from "../../../../controllers/Admin/serviceReport/CTScan/GantryTilt.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 
@@ -73,7 +78,36 @@ router.get('/high-contrast-resolution/:testId', highContrastResolutionForCTScanC
 router.get('/high-contrast-resolution/service/:serviceId', highContrastResolutionForCTScanController.getByServiceId)
 router.put('/high-contrast-resolution/:testId', highContrastResolutionForCTScanController.update)
 
-// Report Header
-// router.get('/report-header/:serviceId', reportDetailController.getReportHeaderForCTScan);
+// Radiation Protection Survey
+router.post('/radiation-protection-survey/:serviceId', RadiationProtectionSurveyController.create)
+router.get('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.getById)
+router.put('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.update)
+router.get('/radiation-protection-survey-by-serviceId/:serviceId', RadiationProtectionSurveyController.getByServiceId)
 
+// Linearity of mAs Loading
+router.post('/linearity-of-mas-loading/:serviceId', LinearityOfMasLoadingController.create)
+router.get('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.getById)
+router.put('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.update)
+router.get('/linearity-of-mas-loading-by-serviceId/:serviceId', LinearityOfMasLoadingController.getByServiceId)
+
+// Alignment of Table/Gantry
+router.post('/alignment-of-table-gantry/:serviceId', AlignmentOfTableGantryController.create)
+router.get('/alignment-of-table-gantry/:testId', AlignmentOfTableGantryController.getById)
+router.put('/alignment-of-table-gantry/:testId', AlignmentOfTableGantryController.update)
+router.get('/alignment-of-table-gantry-by-serviceId/:serviceId', AlignmentOfTableGantryController.getByServiceId)
+
+// Table Position
+router.post('/table-position/:serviceId', TablePositionController.create)
+router.get('/table-position/:testId', TablePositionController.getById)
+router.put('/table-position/:testId', TablePositionController.update)
+router.get('/table-position-by-serviceId/:serviceId', TablePositionController.getByServiceId)
+
+// Gantry Tilt
+router.post('/gantry-tilt/:serviceId', GantryTiltController.create)
+router.get('/gantry-tilt/:testId', GantryTiltController.getById)
+router.put('/gantry-tilt/:testId', GantryTiltController.update)
+router.get('/gantry-tilt-by-serviceId/:serviceId', GantryTiltController.getByServiceId)
+
+// Report Header
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderForCTScan);
 export default router

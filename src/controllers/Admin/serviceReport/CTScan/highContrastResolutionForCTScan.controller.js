@@ -5,7 +5,7 @@ import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-    const { table1, table2, tolerance } = req.body;
+    const { operatingParams, result, tolerance, table1, table2 } = req.body; // table1, table2 for backward compatibility
     const { serviceId } = req.params;
 
     if (!serviceId) {
@@ -42,12 +42,44 @@ const create = asyncHandler(async (req, res) => {
         let testRecord = await HighContrastResolutionForCTScan.findOne({ serviceId }).session(session);
 
         const updateData = {
-            table1: Array.isArray(table1) ? table1 : [],
-            table2: Array.isArray(table2) ? table2 : [],
-            tolerance: tolerance?.toString().trim() || "",
             serviceId,
             serviceReportId: serviceReport._id,
         };
+
+        // Handle new format (operatingParams, result, tolerance)
+        if (operatingParams && typeof operatingParams === 'object') {
+            updateData.operatingParams = {
+                kvp: operatingParams.kvp?.toString().trim() || '120',
+                mas: operatingParams.mas?.toString().trim() || '200',
+                sliceThickness: operatingParams.sliceThickness?.toString().trim() || '5.0',
+                ww: operatingParams.ww?.toString().trim() || '400',
+            };
+        }
+
+        if (result && typeof result === 'object') {
+            updateData.result = {
+                observedSize: result.observedSize?.toString().trim() || '1.0',
+                contrastDifference: result.contrastDifference?.toString().trim() || '10',
+            };
+        }
+
+        if (tolerance && typeof tolerance === 'object') {
+            updateData.tolerance = {
+                contrastDifference: tolerance.contrastDifference?.toString().trim() || '10',
+                size: tolerance.size?.toString().trim() || '1.6',
+                lpCm: tolerance.lpCm?.toString().trim() || '3.12',
+                expectedSize: tolerance.expectedSize?.toString().trim() || '0.8',
+                expectedLpCm: tolerance.expectedLpCm?.toString().trim() || '6.25',
+            };
+        }
+
+        // Handle legacy format for backward compatibility
+        if (Array.isArray(table1)) {
+            updateData.table1 = table1;
+        }
+        if (Array.isArray(table2)) {
+            updateData.table2 = table2;
+        }
 
         if (testRecord) {
             Object.assign(testRecord, updateData);
@@ -84,7 +116,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { table1, table2, tolerance } = req.body;
+    const { operatingParams, result, tolerance, table1, table2 } = req.body; // table1, table2 for backward compatibility
     const { testId } = req.params;
 
     if (!testId) {
@@ -112,10 +144,40 @@ const update = asyncHandler(async (req, res) => {
             });
         }
 
-        // Update only provided fields
-        if (Array.isArray(table1)) testRecord.table1 = table1;
-        if (Array.isArray(table2)) testRecord.table2 = table2;
-        if (tolerance !== undefined) testRecord.tolerance = tolerance?.toString().trim() || "";
+        // Update only provided fields - new format
+        if (operatingParams && typeof operatingParams === 'object') {
+            testRecord.operatingParams = {
+                kvp: operatingParams.kvp?.toString().trim() || testRecord.operatingParams?.kvp || '120',
+                mas: operatingParams.mas?.toString().trim() || testRecord.operatingParams?.mas || '200',
+                sliceThickness: operatingParams.sliceThickness?.toString().trim() || testRecord.operatingParams?.sliceThickness || '5.0',
+                ww: operatingParams.ww?.toString().trim() || testRecord.operatingParams?.ww || '400',
+            };
+        }
+
+        if (result && typeof result === 'object') {
+            testRecord.result = {
+                observedSize: result.observedSize?.toString().trim() || testRecord.result?.observedSize || '1.0',
+                contrastDifference: result.contrastDifference?.toString().trim() || testRecord.result?.contrastDifference || '10',
+            };
+        }
+
+        if (tolerance && typeof tolerance === 'object') {
+            testRecord.tolerance = {
+                contrastDifference: tolerance.contrastDifference?.toString().trim() || testRecord.tolerance?.contrastDifference || '10',
+                size: tolerance.size?.toString().trim() || testRecord.tolerance?.size || '1.6',
+                lpCm: tolerance.lpCm?.toString().trim() || testRecord.tolerance?.lpCm || '3.12',
+                expectedSize: tolerance.expectedSize?.toString().trim() || testRecord.tolerance?.expectedSize || '0.8',
+                expectedLpCm: tolerance.expectedLpCm?.toString().trim() || testRecord.tolerance?.expectedLpCm || '6.25',
+            };
+        }
+
+        // Update legacy format for backward compatibility
+        if (Array.isArray(table1)) {
+            testRecord.table1 = table1;
+        }
+        if (Array.isArray(table2)) {
+            testRecord.table2 = table2;
+        }
 
         await testRecord.save({ session });
         await session.commitTransaction();

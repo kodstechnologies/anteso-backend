@@ -1,27 +1,26 @@
-// controllers/Admin/serviceReport/RadiographyFixed/TotalFilteration.controller.js
+// controllers/Admin/serviceReport/CTScan/LinearityOfMasLoading.controller.js
 import mongoose from "mongoose";
-import TotalFilteration from "../../../../models/testTables/RadiographyFixed/TotalFilteration.model.js";
+import LinearityOfMasLoading from "../../../../models/testTables/CTScan/LinearityOfMasLoading.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Radiography (Fixed)";
+const MACHINE_TYPE = "Computed Tomography";
 
-// CREATE or UPDATE (Upsert) by serviceId with transaction
+// CREATE or UPDATE with Transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
+  const { table1, table2, tolerance } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
-    return res.status(400).json({ success: false, message: "Valid serviceId is required" });
+    return res.status(400).json({ message: "Valid serviceId is required" });
   }
 
-  let session = null;
-  try {
-    session = await mongoose.startSession();
-    session.startTransaction();
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    // Validate Service & Machine Type
+  try {
+    // Validate machine type
     const service = await Service.findById(serviceId).session(session);
     if (!service) {
       await session.abortTransaction();
@@ -31,65 +30,57 @@ const create = asyncHandler(async (req, res) => {
       await session.abortTransaction();
       return res.status(403).json({
         success: false,
-        message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+        message: `This test is only allowed for ${MACHINE_TYPE}. Current: ${service.machineType}`,
       });
     }
 
-    // Get or Create ServiceReport
+    // Check existing - update if exists, create if not
+    const existing = await LinearityOfMasLoading.findOne({ serviceId }).session(session);
+
+    // Get or create ServiceReport
     let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
     if (!serviceReport) {
       serviceReport = new ServiceReport({ serviceId });
       await serviceReport.save({ session });
     }
 
-    // Upsert Test Record
-    let testRecord = await TotalFilteration.findOne({ serviceId }).session(session);
-
-    if (testRecord) {
+    let testRecord;
+    if (existing) {
       // Update existing
-      if (mAStations !== undefined) testRecord.mAStations = mAStations;
-      if (measurements !== undefined) testRecord.measurements = measurements;
-      if (tolerance !== undefined) testRecord.tolerance = tolerance;
-      if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
-      if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
+      existing.table1 = table1 !== undefined ? table1 : existing.table1;
+      existing.table2 = table2 !== undefined ? table2 : existing.table2;
+      existing.tolerance = tolerance !== undefined ? tolerance : existing.tolerance;
+      testRecord = existing;
     } else {
       // Create new
-      testRecord = new TotalFilteration({
+      testRecord = new LinearityOfMasLoading({
         serviceId,
-        reportId: serviceReport._id,
-        mAStations: mAStations || [],
-        measurements: measurements || [],
-        tolerance: tolerance || { sign: "±", value: "2.0" },
-        totalFiltration: totalFiltration || { measured: "", required: "", atKvp: "" },
-        filtrationTolerance: filtrationTolerance || {
-          forKvGreaterThan70: "1.5",
-          forKvBetween70And100: "2.0",
-          forKvGreaterThan100: "2.5",
-          kvThreshold1: "70",
-          kvThreshold2: "100",
-        },
+        serviceReportId: serviceReport._id,
+        table1: table1 || { fcd: "", kv: "", time: "" },
+        table2: table2 || [],
+        tolerance: tolerance || "0.1",
       });
     }
 
     await testRecord.save({ session });
 
     // Link back to ServiceReport
-    serviceReport.TotalFilterationRadiographyFixed = testRecord._id;
+    serviceReport.LinearityOfMasLoadingCTScan = testRecord._id;
     await serviceReport.save({ session });
 
     await session.commitTransaction();
 
     return res.json({
       success: true,
-      message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
+      message: existing ? "Test updated successfully" : "Test created successfully",
       data: {
-        _id: testRecord._id.toString(),
+        testId: testRecord._id.toString(),
         serviceId: testRecord.serviceId.toString(),
       },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("TotalFilteration Create Error:", error);
+    console.error("LinearityOfMasLoading Create Error:", error);
     return res.status(500).json({
       success: false,
       message: "Failed to save test",
@@ -105,41 +96,28 @@ const getById = asyncHandler(async (req, res) => {
   const { testId } = req.params;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
-    return res.status(400).json({ success: false, message: "Valid testId is required" });
+    return res.status(400).json({ message: "Valid testId is required" });
   }
 
-  try {
-    const testRecord = await TotalFilteration.findById(testId).lean();
-    if (!testRecord) {
-      return res.status(404).json({ success: false, message: "Test record not found" });
-    }
+  const test = await LinearityOfMasLoading.findById(testId).lean();
 
-    const service = await Service.findById(testRecord.serviceId).lean();
-    if (service && service.machineType !== MACHINE_TYPE) {
-      return res.status(403).json({
-        success: false,
-        message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
-      });
-    }
-
-    return res.json({ success: true, data: testRecord });
-  } catch (error) {
-    console.error("getById Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch test",
-      error: error.message,
-    });
+  if (!test) {
+    return res.status(404).json({ message: "Test data not found" });
   }
+
+  return res.status(200).json({
+    success: true,
+    data: test,
+  });
 });
 
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
+  const { table1, table2, tolerance } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
-    return res.status(400).json({ success: false, message: "Valid testId is required" });
+    return res.status(400).json({ message: "Valid testId is required" });
   }
 
   let session = null;
@@ -147,7 +125,7 @@ const update = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    const testRecord = await TotalFilteration.findById(testId).session(session);
+    const testRecord = await LinearityOfMasLoading.findById(testId).session(session);
     if (!testRecord) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Test record not found" });
@@ -164,11 +142,9 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (mAStations !== undefined) testRecord.mAStations = mAStations;
-    if (measurements !== undefined) testRecord.measurements = measurements;
+    if (table1 !== undefined) testRecord.table1 = table1;
+    if (table2 !== undefined) testRecord.table2 = table2;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
-    if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
-    if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -176,11 +152,11 @@ const update = asyncHandler(async (req, res) => {
     return res.json({
       success: true,
       message: "Updated successfully",
-      data: { _id: testRecord._id.toString() },
+      data: { testId: testRecord._id.toString() },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
-    console.error("Update Error:", error);
+    console.error("LinearityOfMasLoading Update Error:", error);
     return res.status(500).json({
       success: false,
       message: "Update failed",
@@ -200,7 +176,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await TotalFilteration.findOne({ serviceId }).lean();
+    const testRecord = await LinearityOfMasLoading.findOne({ serviceId }).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });

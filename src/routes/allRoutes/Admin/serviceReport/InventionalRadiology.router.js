@@ -12,6 +12,8 @@ import EffectiveFocalSpotController from "../../../../controllers/Admin/serviceR
 import ConsistencyOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/ConsistencyOfRadiationOutput.controller.js";
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/RadiationProtectionSurvey.controller.js";
 
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
+
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTime.create)
 router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.getById)
 router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.update)

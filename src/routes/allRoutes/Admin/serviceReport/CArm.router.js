@@ -10,6 +10,9 @@ import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/s
 import LinearityOfMasLoadingStationController from "../../../../controllers/Admin/serviceReport/CArm/LinearityOfMasLoadingStation.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCArm);
+
+
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)
 router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTimeController.getByServiceId)
 router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.update)

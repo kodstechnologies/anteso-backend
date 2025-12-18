@@ -11,6 +11,8 @@ import EquipmentSetting from "../../../../controllers/Admin/serviceReport/Mammog
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js"
 
 // router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
+router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
+
 
 router.post('/total-filteration/:serviceId', TotalFilteration.create)
 router.get('/total-filteration-by-serviceId/:serviceId', TotalFilteration.getByServiceId)

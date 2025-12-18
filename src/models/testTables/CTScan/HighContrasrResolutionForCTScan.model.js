@@ -1,27 +1,56 @@
-// models/HighContrastResolutionForCTScan.mjs
+// models/HighContrastResolutionForCTScan.model.js
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
-// Table 1 Row
-const ParamRowSchema = new Schema({
-  parameter: { type: String, default: '', trim: true },
-  value: { type: String, default: '', trim: true },
-});
+// Operating Parameters Schema
+const OperatingParamsSchema = new Schema({
+  kvp: { type: String, trim: true, default: '120' },
+  mas: { type: String, trim: true, default: '200' },
+  sliceThickness: { type: String, trim: true, default: '5.0' },
+  ww: { type: String, trim: true, default: '400' },
+}, { _id: false });
 
-// Table 2 Row
-const ResultRowSchema = new Schema({
-  size: { type: String, default: '', trim: true },
-  value: { type: String, default: '', trim: true },
-  unit: { type: String, default: '', trim: true },
-});
+// Result Schema
+const ResultSchema = new Schema({
+  observedSize: { type: String, trim: true, default: '1.0' },
+  contrastDifference: { type: String, trim: true, default: '10' },
+}, { _id: false });
+
+// Tolerance Schema
+const ToleranceSchema = new Schema({
+  contrastDifference: { type: String, trim: true, default: '10' },
+  size: { type: String, trim: true, default: '1.6' },
+  lpCm: { type: String, trim: true, default: '3.12' },
+  expectedSize: { type: String, trim: true, default: '0.8' },
+  expectedLpCm: { type: String, trim: true, default: '6.25' },
+}, { _id: false });
 
 // Main Schema
 const HighContrastResolutionForCTScanSchema = new Schema(
   {
-    table1: [ParamRowSchema],
-    table2: [ResultRowSchema],
-    tolerance: { type: String, default: '', trim: true },
+    operatingParams: {
+      type: OperatingParamsSchema,
+      default: () => ({}),
+    },
+    result: {
+      type: ResultSchema,
+      default: () => ({}),
+    },
+    tolerance: {
+      type: ToleranceSchema,
+      default: () => ({}),
+    },
+    // Legacy fields for backward compatibility (optional)
+    table1: [{ 
+      parameter: { type: String, default: '', trim: true },
+      value: { type: String, default: '', trim: true },
+    }],
+    table2: [{
+      size: { type: String, default: '', trim: true },
+      value: { type: String, default: '', trim: true },
+      unit: { type: String, default: '', trim: true },
+    }],
     serviceId: {
       type: Schema.Types.ObjectId,
       ref: 'Service',
