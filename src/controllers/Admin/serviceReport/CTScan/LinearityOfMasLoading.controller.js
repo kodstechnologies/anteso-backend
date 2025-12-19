@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Computed Tomography";
 // CREATE or UPDATE with Transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, tubeId } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -35,7 +35,9 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // Check existing - update if exists, create if not
-    const existing = await LinearityOfMasLoading.findOne({ serviceId }).session(session);
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const tubeIdValue = tubeId || null;
+    const existing = await LinearityOfMasLoading.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     // Get or create ServiceReport
     let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
@@ -50,6 +52,7 @@ const create = asyncHandler(async (req, res) => {
       existing.table1 = table1 !== undefined ? table1 : existing.table1;
       existing.table2 = table2 !== undefined ? table2 : existing.table2;
       existing.tolerance = tolerance !== undefined ? tolerance : existing.tolerance;
+      if (tubeId !== undefined) existing.tubeId = tubeIdValue;
       testRecord = existing;
     } else {
       // Create new
@@ -59,6 +62,7 @@ const create = asyncHandler(async (req, res) => {
         table1: table1 || { fcd: "", kv: "", time: "" },
         table2: table2 || [],
         tolerance: tolerance || "0.1",
+        tubeId: tubeIdValue,
       });
     }
 

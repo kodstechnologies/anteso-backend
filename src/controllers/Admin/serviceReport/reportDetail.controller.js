@@ -13,6 +13,12 @@ import Tools from "../../../models/tools.model.js";
 import { asyncHandler } from "../../../utils/AsyncHandler.js";
 import TotalFilterationForCTScan from "../../../models/testTables/CTScan/TotalFilterationForCTScan.js";
 import RadiationLeakageLeveFromXRayTube from "../../../models/testTables/CTScan/radiationLeakageLevelFromXRayTubeHouse.model.js";
+import MeasureMaxRadiationLevel from "../../../models/testTables/CTScan/MeasureMaxRadiationLevel.model.js";
+import OutputConsistency from "../../../models/testTables/CTScan/outputConsistency.model.js";
+import LowContrastResolutionForCTScan from "../../../models/testTables/CTScan/LowContrastResolutionForCTScan.model.js";
+import HighContrastResolutionForCTScan from "../../../models/testTables/CTScan/HighContrasrResolutionForCTScan.model.js";
+import LinearityOfMasLoadingCTScan from "../../../models/testTables/CTScan/LinearityOfMasLoading.model.js";
+import RadiationProtectionSurveyCTScan from "../../../models/testTables/CTScan/RadiationProtectionSurvey.model.js";
 // import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
 import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
@@ -105,6 +111,17 @@ import "../../../models/testTables/Mammography/DetailsOfRadiationProtectionMammo
 import "../../../models/testTables/Mammography/EquipmentSetting.model.js";
 import "../../../models/testTables/Mammography/MaxRadiationLevel.model.js";
 import "../../../models/testTables/Mammography/LinearityOfMasLoading.model.js";
+// Import InventionalRadiology models to ensure they're registered with Mongoose
+import "../../../models/testTables/InventionalRadiology/CentralBeamAlignment.model.js";
+import "../../../models/testTables/InventionalRadiology/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/InventionalRadiology/accuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/InventionalRadiology/TotalFilterationForInventionalRadiology.model.js";
+import "../../../models/testTables/InventionalRadiology/ConsistencyOfRadiationOutput.model.js";
+import "../../../models/testTables/InventionalRadiology/LowContrastResolution.model.js";
+import "../../../models/testTables/InventionalRadiology/HighContrastResolution.model.js";
+import "../../../models/testTables/InventionalRadiology/ExposureRateTableTop.model.js";
+import "../../../models/testTables/InventionalRadiology/tubeHousingLeakage.model.js";
+import "../../../models/testTables/InventionalRadiology/RadiationProtectionSurvey.model.js";
 import mongoose from "mongoose";
 
 
@@ -1704,23 +1721,66 @@ export const getReportHeaderCArm = async (req, res) => {
 
 export const getReportHeaderInventionalRadiology = async (req, res) => {
     const { serviceId } = req.params;
+    const { tubeId } = req.query; // Get tubeId from query parameter (optional): 'frontal', 'lateral', 'null', or undefined
 
     try {
-        // Build query - populate each field individually
+        // Parse tubeId - handle 'frontal', 'lateral', 'null', or undefined
+        // For single tube: tubeId should be 'null' or undefined (defaults to null)
+        // For double tube: tubeId should be 'frontal' or 'lateral'
+        let tubeIdValue = null;
+        if (tubeId !== undefined && tubeId !== null) {
+            if (tubeId === 'null' || tubeId === '') {
+                tubeIdValue = null; // Single tube
+            } else if (tubeId === 'frontal' || tubeId === 'lateral') {
+                tubeIdValue = tubeId; // Tube Frontal or Tube Lateral
+            } else {
+                // Invalid tubeId value, default to null (single tube)
+                tubeIdValue = null;
+            }
+        }
+
+        // Build query - populate tools and tests that don't support tubeId (common tests)
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
-            .populate("AccuracyOfIrradiationTimeInventionalRadiology")
-            .populate("TotalFilterationForInventionalRadiology")
-            .populate("ExposureRateTableTopInventionalRadiology")
-            .populate("HighContrastResolutionInventionalRadiology")
-            .populate("LowContrastResolutionInventionalRadiology")
-            .populate("TubeHousingLeakageInventionalRadiology")
             .lean();
 
         if (!report) {
             return res.status(200).json({ exists: false });
         }
+
+        // Query tests with tubeId support directly (using existing imports)
+        // Build query based on tubeId: { serviceId, tubeId: 'frontal' | 'lateral' | null }
+        const query = { serviceId, tubeId: tubeIdValue };
+
+        // Query all tests with tubeId support in parallel (using mongoose.model to get registered models)
+        const [
+            centralBeamAlignment,
+            effectiveFocalSpot,
+            accuracyOfIrradiationTime,
+            totalFilteration,
+            consistencyOfRadiationOutput,
+            lowContrastResolution,
+            highContrastResolution,
+            exposureRateTableTop,
+            tubeHousingLeakage,
+        ] = await Promise.all([
+            mongoose.model("CentralBeamAlignmentInventionalRadiology").findOne(query).lean(),
+            mongoose.model("EffectiveFocalSpotInventionalRadiology").findOne(query).lean(),
+            mongoose.model("AccuracyOfIrradiationTimeInventionalRadiology").findOne(query).lean(),
+            mongoose.model("TotalFilterationForInventionalRadiology").findOne(query).lean(),
+            mongoose.model("ConsistencyOfRadiationOutputInventionalRadiology").findOne(query).lean(),
+            mongoose.model("LowContrastResolutionInventionalRadiology").findOne(query).lean(),
+            mongoose.model("HighContrastResolutionInventionalRadiology").findOne(query).lean(),
+            mongoose.model("ExposureRateTableTopInventionalRadiology").findOne(query).lean(),
+            mongoose.model("TubeHousingLeakageInventionalRadiology").findOne(query).lean(),
+        ]);
+
+        // Query common tests (Radiation Protection Survey - always with tubeId: null)
+        const radiationProtectionSurvey = await mongoose.model("RadiationProtectionSurveyInventionalRadiology").findOne({ 
+            serviceId, 
+            tubeId: null 
+        }).lean();
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
@@ -1764,13 +1824,19 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
 
                 notes: report.notes || [],
 
-                // ⭐ INTERVENTIONAL RADIOLOGY TEST RESULTS (POPULATED)
-                AccuracyOfIrradiationTimeInventionalRadiology: report.AccuracyOfIrradiationTimeInventionalRadiology || null,
-                TotalFilterationForInventionalRadiology: report.TotalFilterationForInventionalRadiology || null,
-                ExposureRateTableTopInventionalRadiology: report.ExposureRateTableTopInventionalRadiology || null,
-                HighContrastResolutionInventionalRadiology: report.HighContrastResolutionInventionalRadiology || null,
-                LowContrastResolutionInventionalRadiology: report.LowContrastResolutionInventionalRadiology || null,
-                TubeHousingLeakageInventionalRadiology: report.TubeHousingLeakageInventionalRadiology || null,
+                // ⭐ INTERVENTIONAL RADIOLOGY TEST RESULTS
+                // Tests with tubeId support (queried directly)
+                CentralBeamAlignmentInventionalRadiology: centralBeamAlignment || null,
+                EffectiveFocalSpotInventionalRadiology: effectiveFocalSpot || null,
+                AccuracyOfIrradiationTimeInventionalRadiology: accuracyOfIrradiationTime || null,
+                TotalFilterationForInventionalRadiology: totalFilteration || null,
+                ConsistencyOfRadiationOutputInventionalRadiology: consistencyOfRadiationOutput || null,
+                LowContrastResolutionInventionalRadiology: lowContrastResolution || null,
+                HighContrastResolutionInventionalRadiology: highContrastResolution || null,
+                ExposureRateTableTopInventionalRadiology: exposureRateTableTop || null,
+                TubeHousingLeakageInventionalRadiology: tubeHousingLeakage || null,
+                // Common tests (no tubeId support - always tubeId: null)
+                RadiationProtectionSurveyInventionalRadiology: radiationProtectionSurvey || null,
             },
         });
     } catch (error) {
@@ -2027,28 +2093,71 @@ export const getReportHeaderOArm = async (req, res) => {
 
 export const getReportHeaderForCTScan = async (req, res) => {
     const { serviceId } = req.params;
+    const { tubeId } = req.query; // Get tubeId from query parameter (optional): 'A', 'B', 'null', or undefined
 
     try {
-        // Build query - populate each CT Scan test field individually
+        // Parse tubeId - handle 'A', 'B', 'null', or undefined
+        // For single tube: tubeId should be 'null' or undefined (defaults to null)
+        // For double tube: tubeId should be 'A' or 'B'
+        let tubeIdValue = null;
+        if (tubeId !== undefined && tubeId !== null) {
+            if (tubeId === 'null' || tubeId === '') {
+                tubeIdValue = null; // Single tube
+            } else if (tubeId === 'A' || tubeId === 'B') {
+                tubeIdValue = tubeId; // Tube A or Tube B
+            } else {
+                // Invalid tubeId value, default to null (single tube)
+                tubeIdValue = null;
+            }
+        }
+
+        // Build query - populate tools and tests that don't support tubeId
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
-            .populate("RadiationProfileWidthForCTScan")
-            .populate("MeasurementOfOperatingPotential")
-            .populate("TimerAccuracy")
-            .populate("MeasurementOfMaLinearity")
-            .populate("MeasurementOfCTDI")
-            .populate("TotalFilterationForCTScan")
-            .populate("RadiationLeakageLevel")
-            .populate("MeasureMaxRadiationLevel")
-            .populate("OutputConsistency")
-            .populate("lowContrastResolutionForCTScan")
-            .populate("HighContrastResolutionForCTScan")
+            .populate("GantryTiltCTScan")
+            .populate("TablePositionCTScan")
+            .populate("AlignmentOfTableGantryCTScan")
             .lean();
 
         if (!report) {
             return res.status(200).json({ exists: false });
         }
+
+        // Query tests with tubeId support directly (using existing imports)
+        // Build query based on tubeId: { serviceId, tubeId: 'A' | 'B' | null }
+        const query = { serviceId, tubeId: tubeIdValue };
+
+        // Query all tests with tubeId support in parallel
+        const [
+            radiationProfileWidth,
+            measurementOfOperatingPotential,
+            timerAccuracy,
+            measurementOfMaLinearity,
+            measurementOfCTDI,
+            totalFilteration,
+            radiationLeakageLevel,
+            measureMaxRadiationLevel,
+            outputConsistency,
+            lowContrastResolution,
+            highContrastResolution,
+            linearityOfMasLoading,
+            radiationProtectionSurvey,
+        ] = await Promise.all([
+            RadiationProfileWidth.findOne(query).lean(),
+            MeasurementOfOperatingPotential.findOne(query).lean(),
+            TimerAccuracy.findOne(query).lean(),
+            MeasurementOfMaLinearity.findOne(query).lean(),
+            MeasurementOfCTDI.findOne(query).lean(),
+            TotalFilterationForCTScan.findOne(query).lean(),
+            RadiationLeakageLeveFromXRayTube.findOne(query).lean(),
+            MeasureMaxRadiationLevel.findOne(query).lean(),
+            OutputConsistency.findOne(query).lean(),
+            LowContrastResolutionForCTScan.findOne(query).lean(),
+            HighContrastResolutionForCTScan.findOne(query).lean(),
+            LinearityOfMasLoadingCTScan.findOne(query).lean(),
+            RadiationProtectionSurveyCTScan.findOne(query).lean(),
+        ]);
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
@@ -2090,18 +2199,25 @@ export const getReportHeaderForCTScan = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
-                // ⭐ CT SCAN (COMPUTED TOMOGRAPHY) TEST RESULTS (POPULATED)
-                RadiationProfileWidthForCTScan: report.RadiationProfileWidthForCTScan || null,
-                MeasurementOfOperatingPotential: report.MeasurementOfOperatingPotential || null,
-                TimerAccuracy: report.TimerAccuracy || null,
-                MeasurementOfMaLinearity: report.MeasurementOfMaLinearity || null,
-                MeasurementOfCTDI: report.MeasurementOfCTDI || null,
-                TotalFilterationForCTScan: report.TotalFilterationForCTScan || null,
-                RadiationLeakageLevel: report.RadiationLeakageLevel || null,
-                MeasureMaxRadiationLevel: report.MeasureMaxRadiationLevel || null,
-                OutputConsistency: report.OutputConsistency || null,
-                lowContrastResolutionForCTScan: report.lowContrastResolutionForCTScan || null,
-                HighContrastResolutionForCTScan: report.HighContrastResolutionForCTScan || null,
+                // ⭐ CT SCAN (COMPUTED TOMOGRAPHY) TEST RESULTS
+                // Tests with tubeId support (queried directly)
+                RadiationProfileWidthForCTScan: radiationProfileWidth || null,
+                MeasurementOfOperatingPotential: measurementOfOperatingPotential || null,
+                TimerAccuracy: timerAccuracy || null,
+                MeasurementOfMaLinearity: measurementOfMaLinearity || null,
+                MeasurementOfCTDI: measurementOfCTDI || null,
+                TotalFilterationForCTScan: totalFilteration || null,
+                RadiationLeakageLevel: radiationLeakageLevel || null,
+                MeasureMaxRadiationLevel: measureMaxRadiationLevel || null,
+                OutputConsistency: outputConsistency || null,
+                lowContrastResolutionForCTScan: lowContrastResolution || null,
+                HighContrastResolutionForCTScan: highContrastResolution || null,
+                LinearityOfMasLoadingCTScan: linearityOfMasLoading || null,
+                RadiationProtectionSurveyCTScan: radiationProtectionSurvey || null,
+                // Tests without tubeId support (from ServiceReport populated reference)
+                GantryTiltCTScan: report.GantryTiltCTScan || null,
+                TablePositionCTScan: report.TablePositionCTScan || null,
+                AlignmentOfTableGantryCTScan: report.AlignmentOfTableGantryCTScan || null,
             },
         });
     } catch (error) {

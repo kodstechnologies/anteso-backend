@@ -25,6 +25,14 @@ const MaxRadiationLevelSchema = new mongoose.Schema(
             ref: 'ServiceReport',
         },
 
+        // Tube ID for double tube support (frontal/lateral)
+        tubeId: {
+            type: String,
+            enum: [null, 'frontal', 'lateral'],
+            default: null,
+            required: false,
+        },
+
         // Soft delete
         isDeleted: { type: Boolean, default: false },
     },
@@ -37,6 +45,7 @@ const MaxRadiationLevelSchema = new mongoose.Schema(
 MaxRadiationLevelSchema.index({ serviceId: 1 });
 MaxRadiationLevelSchema.index({ reportId: 1 });
 MaxRadiationLevelSchema.index({ serviceId: 1, reportId: 1 });
+MaxRadiationLevelSchema.index({ serviceId: 1, tubeId: 1 });
 
 export default mongoose.models.MaxRadiationLevel ||
     mongoose.model('MaxRadiationLevelInventionalRadiology', MaxRadiationLevelSchema);

@@ -6,7 +6,7 @@ import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-    const { table1, table2 } = req.body;
+    const { table1, table2, tubeId } = req.body;
     const { serviceId } = req.params; // Get from URL params
 
     // === Validate ===
@@ -46,7 +46,9 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Save Test Data
-        let testRecord = await RadiationProfileWidthForCTScan.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await RadiationProfileWidthForCTScan.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         if (testRecord) {
             testRecord.table1 = table1;
@@ -57,6 +59,7 @@ const create = asyncHandler(async (req, res) => {
                 table2,
                 serviceId,
                 serviceReportId: serviceReport._id,
+                tubeId: tubeIdValue,
             });
         }
         await testRecord.save({ session });
@@ -89,7 +92,7 @@ const create = asyncHandler(async (req, res) => {
     }
 });
 const update = asyncHandler(async (req, res) => {
-    const { table1, table2 } = req.body;
+    const { table1, table2, tubeId } = req.body;
     const { testId } = req.params; // Use testId from URL
 
     // === Validate ===
@@ -129,6 +132,7 @@ const update = asyncHandler(async (req, res) => {
         // 3. Update data
         testRecord.table1 = table1;
         testRecord.table2 = table2;
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
         await testRecord.save({ session });
 
         // Commit
@@ -192,22 +196,28 @@ const getById = asyncHandler(async (req, res) => {
     }
 });
 
-// controllers/radiationProfileWidthController.js
-
 const getByServiceId = asyncHandler(async (req, res) => {
-    const { serviceId} = req.params;
-    console.log("🚀 ~ :", serviceId)
+    const { serviceId } = req.params;
+    const { tubeId } = req.query; // Get tubeId from query parameter (optional)
 
     if (!serviceId) {
-        return res.status(400).json({
-            success: false,
-            message: "serviceId is required",
-        });
+        return res.status(400).json({ success: false, message: "serviceId is required in URL" });
     }
 
     try {
-        // Find the ONE document that belongs to this serviceId
-        const testRecord = await RadiationProfileWidthForCTScan.findOne({ serviceId }).lean();
+        // Parse tubeId - convert string 'null' to actual null, otherwise use the value
+        const tubeIdValue = tubeId !== undefined ? (tubeId === 'null' ? null : tubeId) : null;
+
+        // Build query
+        const query = { serviceId };
+        if (tubeIdValue !== null && tubeIdValue !== undefined) {
+            query.tubeId = tubeIdValue;
+        } else {
+            // For single tube, query where tubeId is null
+            query.tubeId = null;
+        }
+
+        const testRecord = await RadiationProfileWidthForCTScan.findOne(query).lean();
 
         if (!testRecord) {
             // No test created yet → perfectly normal for first-time users
@@ -240,6 +250,4 @@ const getByServiceId = asyncHandler(async (req, res) => {
     }
 });
 
-
-
-export default { create, update, getById,getByServiceId};
+export default { create, update, getById, getByServiceId };

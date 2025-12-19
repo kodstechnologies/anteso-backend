@@ -40,6 +40,12 @@ const MeasureMaxRadiationLevelSchema = new Schema({
     required: true,
     index: true, // Recommended for lookup
   },
+  tubeId: {
+    type: String,
+    enum: [null, 'A', 'B'],
+    default: null,
+    required: false,
+  },
   readings: [LocationReadingSchema],
   maxWorkerMRPerWeek: { type: String },
   maxPublicMRPerWeek: { type: String },

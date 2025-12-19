@@ -42,6 +42,14 @@ const CentralBeamAlignmentSchema = new Schema(
             type: String, // PASS / FAIL / PENDING
         },
 
+        // Tube ID for double tube support (frontal/lateral)
+        tubeId: {
+            type: String,
+            enum: [null, 'frontal', 'lateral'],
+            default: null,
+            required: false,
+        },
+
         createdAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
     },
@@ -50,6 +58,6 @@ const CentralBeamAlignmentSchema = new Schema(
     }
 );
 
-CentralBeamAlignmentSchema.index({ serviceId: 1 }, { unique: true });
+CentralBeamAlignmentSchema.index({ serviceId: 1, tubeId: 1 }, { unique: true });
 
 export default mongoose.model("CentralBeamAlignmentInventionalRadiology", CentralBeamAlignmentSchema);

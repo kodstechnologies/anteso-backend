@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 const MACHINE_TYPE = "Interventional Radiology";
 
 const create = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+    const { mAStations, measurements, tolerance, totalFiltration, tubeId } = req.body;
     const { serviceId } = req.params;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -43,7 +43,9 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Save Test Data (Upsert)
-        let testRecord = await TotalFilterationForInventionalRadiology.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await TotalFilterationForInventionalRadiology.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         if (testRecord) {
             // Update existing
@@ -51,6 +53,7 @@ const create = asyncHandler(async (req, res) => {
             testRecord.measurements = measurements ?? testRecord.measurements;
             testRecord.tolerance = tolerance ?? testRecord.tolerance;
             testRecord.totalFiltration = totalFiltration ?? testRecord.totalFiltration;
+            testRecord.tubeId = tubeIdValue;
             testRecord.updatedAt = Date.now();
         } else {
             // Create new
@@ -60,6 +63,7 @@ const create = asyncHandler(async (req, res) => {
                 measurements,
                 tolerance,
                 totalFiltration,
+                tubeId: tubeIdValue,
                 reportId: serviceReport._id,
             });
         }
@@ -94,7 +98,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+    const { mAStations, measurements, tolerance, totalFiltration, tubeId } = req.body;
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -133,6 +137,7 @@ const update = asyncHandler(async (req, res) => {
         if (measurements !== undefined) testRecord.measurements = measurements;
         if (tolerance !== undefined) testRecord.tolerance = tolerance;
         if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
         testRecord.updatedAt = Date.now();
 
         await testRecord.save({ session });
@@ -198,4 +203,51 @@ const getById = asyncHandler(async (req, res) => {
     }
 });
 
-export default { create, update, getById };
+const getByServiceId = asyncHandler(async (req, res) => {
+    const { serviceId } = req.params;
+    const { tubeId } = req.query;
+
+    if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+        return res.status(400).json({ success: false, message: "Valid serviceId is required in URL" });
+    }
+
+    try {
+        // Build query with optional tubeId from query parameter
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        
+        const testRecord = await TotalFilterationForInventionalRadiology.findOne(query).lean().exec();
+
+        if (!testRecord) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+            });
+        }
+
+        // Optional: Validate machine type
+        const service = await Service.findById(serviceId).lean();
+        if (service && service.machineType !== MACHINE_TYPE) {
+            return res.status(403).json({
+                success: false,
+                message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,
+        });
+    } catch (error) {
+        console.error("Get TotalFilteration By ServiceId Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch test record",
+            error: error.message,
+        });
+    }
+});
+
+export default { create, update, getById, getByServiceId };

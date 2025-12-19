@@ -54,6 +54,7 @@ const TubeHousingLeakageSchema = new mongoose.Schema(
 TubeHousingLeakageSchema.index({ serviceId: 1 });
 TubeHousingLeakageSchema.index({ reportId: 1 });
 TubeHousingLeakageSchema.index({ serviceId: 1, reportId: 1 });
+TubeHousingLeakageSchema.index({ serviceId: 1, tubeId: 1 });
 TubeHousingLeakageSchema.index({ isDeleted: 1 });
 
 export default mongoose.models.TubeHousingLeakage ||

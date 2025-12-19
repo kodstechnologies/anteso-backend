@@ -25,11 +25,18 @@ const TotalFilterationForCTScanSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
     },
+    tubeId: {
+      type: String,
+      enum: [null, 'A', 'B'],
+      default: null,
+      required: false,
+    },
   },
   { timestamps: true }
 );
 
 TotalFilterationForCTScanSchema.index({ serviceReportId: 1 });
+TotalFilterationForCTScanSchema.index({ serviceId: 1, tubeId: 1 });
 
 const TotalFilterationForCTScan = model(
   'TotalFilterationForCTScan',

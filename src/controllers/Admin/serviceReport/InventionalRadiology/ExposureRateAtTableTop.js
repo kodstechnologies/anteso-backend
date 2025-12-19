@@ -37,10 +37,14 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Check if test already exists
-        let testRecord = await ExposureRateTableTop.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const { tubeId } = req.body;
+        const tubeIdValue = tubeId || null;
+        let testRecord = await ExposureRateTableTop.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         const payload = {
             serviceId,
+            tubeId: tubeIdValue,
             reportId: serviceReport._id,
             rows: rows.map(row => ({
                 distance: row.distance?.trim() || "",
@@ -121,7 +125,7 @@ const getById = asyncHandler(async (req, res) => {
 
 // ====================== UPDATE BY TEST ID ======================
 const update = asyncHandler(async (req, res) => {
-    const { rows, nonAecTolerance, aecTolerance, minFocusDistance } = req.body;
+    const { rows, nonAecTolerance, aecTolerance, minFocusDistance, tubeId } = req.body;
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -161,6 +165,7 @@ const update = asyncHandler(async (req, res) => {
         testRecord.nonAecTolerance = nonAecTolerance?.trim() || "";
         testRecord.aecTolerance = aecTolerance?.trim() || "";
         testRecord.minFocusDistance = minFocusDistance?.trim() || "";
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
         await testRecord.save({ session });
         await session.commitTransaction();
@@ -183,4 +188,43 @@ const update = asyncHandler(async (req, res) => {
     }
 });
 
-export default { create, getById, update };
+// ====================== GET BY SERVICE ID ======================
+const getByServiceId = asyncHandler(async (req, res) => {
+    const { serviceId } = req.params;
+    const { tubeId } = req.query;
+
+    if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+        return res.status(400).json({ success: false, message: "Valid serviceId is required" });
+    }
+
+    try {
+        // Build query with optional tubeId from query parameter
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        
+        const testRecord = await ExposureRateTableTop.findOne(query).lean();
+
+        if (!testRecord) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,
+        });
+    } catch (error) {
+        console.error("GetByServiceId Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch test record",
+            error: error.message,
+        });
+    }
+});
+
+export default { create, getById, update, getByServiceId };

@@ -53,6 +53,12 @@ const RadiationProfileWidthSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
         },
+        tubeId: {
+            type: String,
+            enum: [null, 'A', 'B'],
+            default: null,
+            required: false,
+        },
     },
     {
         timestamps: true, // createdAt, updatedAt
@@ -61,6 +67,7 @@ const RadiationProfileWidthSchema = new Schema(
 
 // Index for performance
 RadiationProfileWidthSchema.index({ serviceReportId: 1 });
+RadiationProfileWidthSchema.index({ serviceId: 1, tubeId: 1 });
 
 // Export model
 const RadiationProfileWidth = model('RadiationProfileWidthForCTScan', RadiationProfileWidthSchema);

@@ -73,6 +73,12 @@ const RadiationProtectionSurveySchema = new mongoose.Schema({
     ref: "ServiceReport",
     index: true,
   },
+  tubeId: {
+    type: String,
+    enum: [null, 'A', 'B'],
+    default: null,
+    required: false,
+  },
   // Timestamps
   createdAt: {
     type: Date,
@@ -102,6 +108,7 @@ RadiationProtectionSurveySchema.pre('save', function (next) {
 
 // Indexes for performance
 RadiationProtectionSurveySchema.index({ serviceId: 1 });
+RadiationProtectionSurveySchema.index({ serviceId: 1, tubeId: 1 });
 
 export default mongoose.models.RadiationProtectionSurveyCTScan ||
   mongoose.model("RadiationProtectionSurveyCTScan", RadiationProtectionSurveySchema);

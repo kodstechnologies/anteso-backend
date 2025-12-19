@@ -43,7 +43,10 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // Upsert Test Record (create or update)
-    let testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).session(session);
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const { tubeId } = req.body;
+    const tubeIdValue = tubeId || null;
+    let testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     if (testRecord) {
       // Update existing
@@ -54,6 +57,7 @@ const create = asyncHandler(async (req, res) => {
       // Create new
       testRecord = new AccuracyOfIrradiationTime({
         serviceId,
+        tubeId: tubeIdValue,
         testConditions: testConditions || { fcd: "", kv: "", ma: "" },
         irradiationTimes: irradiationTimes || [],
         tolerance: tolerance || { operator: "<=", value: "" },
@@ -109,7 +113,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testConditions, irradiationTimes, tolerance } = req.body;
+  const { testConditions, irradiationTimes, tolerance, tubeId } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -140,6 +144,7 @@ const update = asyncHandler(async (req, res) => {
     if (testConditions !== undefined) testRecord.testConditions = testConditions;
     if (irradiationTimes !== undefined) testRecord.irradiationTimes = irradiationTimes;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -171,7 +176,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await AccuracyOfIrradiationTime.findOne({ serviceId }).lean();
+    // Build query with optional tubeId from query parameter
+    const { tubeId } = req.query;
+    const query = { serviceId };
+    if (tubeId !== undefined) {
+      query.tubeId = tubeId === 'null' ? null : tubeId;
+    }
+    const testRecord = await AccuracyOfIrradiationTime.findOne(query).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });

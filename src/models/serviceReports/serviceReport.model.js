@@ -718,6 +718,35 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "AccuracyOfIrradiationTimeInventionalRadiology"
     },
+    CentralBeamAlignmentInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"CentralBeamAlignmentInventionalRadiology"
+    },
+    ConsistencyOfRadiationOutputInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"ConsistencyOfRadiationOutputInventionalRadiology"
+    },
+
+    EffectiveFocalSpotInventionalRadiology:{    
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"EffectiveFocalSpotInventionalRadiology"    
+    },
+    ExposureRateTableTopInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"ExposureRateTableTopInventionalRadiology"
+    },
+    MaxRadiationLevelInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"MaxRadiationLevelInventionalRadiology"
+    },
+    RadiationProtectionSurveyInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"RadiationProtectionSurveyInventionalRadiology"
+    },
+    TubeHousingLeakageInventionalRadiology:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref:"TubeHousingLeakageInventionalRadiology"
+    },
     TotalFilterationForInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TotalFilterationForInventionalRadiology"

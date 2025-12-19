@@ -38,9 +38,20 @@ const LowContrastResolutionSchema = new mongoose.Schema({
         ref: "ServiceReport",
     },
 
+    // Tube ID for double tube support (frontal/lateral)
+    tubeId: {
+        type: String,
+        enum: [null, 'frontal', 'lateral'],
+        default: null,
+        required: false,
+    },
+
 }, {
     timestamps: true,
 });
+
+// Indexes
+LowContrastResolutionSchema.index({ serviceId: 1, tubeId: 1 });
 
 const LowContrastResolution = mongoose.models.LowContrastResolutionInventionalRadiology ||
     mongoose.model("LowContrastResolutionInventionalRadiology", LowContrastResolutionSchema);

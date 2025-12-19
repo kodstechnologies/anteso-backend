@@ -50,11 +50,17 @@ const lowContrastResolutionSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "ServiceReport",
     },
+    tubeId: {
+      type: String,
+      enum: [null, 'A', 'B'],
+      default: null,
+      required: false,
+    },
   },
   { timestamps: true }
 );
 
-lowContrastResolutionSchema.index({ serviceId: 1 }, { unique: true });
+lowContrastResolutionSchema.index({ serviceId: 1, tubeId: 1 }, { unique: true });
 
 export default mongoose.model(
   "LowContrastResolutionForCTScan",

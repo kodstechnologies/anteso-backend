@@ -6,7 +6,7 @@ import serviceReportModel from "../../../../models/serviceReports/serviceReport.
 import MeasurementOfCTDI from "../../../../models/testTables/CTScan/measurementOfCTDI.model.js";
 
 const create = asyncHandler(async (req, res) => {
-    const { table1, table2, tolerance } = req.body;
+    const { table1, table2, tolerance, tubeId } = req.body;
     const { serviceId } = req.params;
 
     // === Validate Input ===
@@ -44,7 +44,9 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Save Test Data
-        let testRecord = await MeasurementOfCTDI.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await MeasurementOfCTDI.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         const payload = {
             table1,
@@ -61,6 +63,7 @@ const create = asyncHandler(async (req, res) => {
             },
             serviceId,
             serviceReportId: serviceReport._id,
+            tubeId: tubeIdValue,
         };
 
         if (testRecord) {
@@ -131,7 +134,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { table1, table2, tolerance } = req.body;
+    const { table1, table2, tolerance, tubeId } = req.body;
     const { testId } = req.params;
     console.log("🚀 ~ testId:", testId)
 
@@ -200,13 +203,19 @@ const update = asyncHandler(async (req, res) => {
 
 const getByServiceId = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
+    const { tubeId } = req.query; // Get tubeId from query parameter (optional)
 
     if (!serviceId) {
         return res.status(400).json({ success: false, message: "serviceId is required" });
     }
 
     try {
-        const testRecord = await MeasurementOfCTDI.findOne({ serviceId }).lean().exec();
+        // Build query with optional tubeId
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        const testRecord = await MeasurementOfCTDI.findOne(query).lean().exec();
 
         if (!testRecord) {
             return res.status(200).json({

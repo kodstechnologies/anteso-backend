@@ -31,6 +31,14 @@ const exposureRateTableTopSchema = new mongoose.Schema({
     aecTolerance: { type: String }, // Exposure rate with AEC mode (cGy/Min)
     minFocusDistance: { type: String }, // Minimum focus to tabletop distance (cm)
 
+    // Tube ID for double tube support (frontal/lateral)
+    tubeId: {
+        type: String,
+        enum: [null, 'frontal', 'lateral'],
+        default: null,
+        required: false,
+    },
+
     createdAt: {
         type: Date,
         default: Date.now,
@@ -50,6 +58,7 @@ exposureRateTableTopSchema.pre('save', function (next) {
 // Indexes for performance
 exposureRateTableTopSchema.index({ serviceId: 1 });
 exposureRateTableTopSchema.index({ reportId: 1 });
+exposureRateTableTopSchema.index({ serviceId: 1, tubeId: 1 });
 
 export default mongoose.models.ExposureRateTableTopInventionalRadiology ||
     mongoose.model("ExposureRateTableTopInventionalRadiology", exposureRateTableTopSchema);

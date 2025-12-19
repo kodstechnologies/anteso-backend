@@ -103,7 +103,7 @@ import serviceReportModel from "../../../../models/serviceReports/serviceReport.
 
 // ====================== CREATE ======================
 const create = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, tubeId } = req.body;
   const { serviceId } = req.params;
 
   if (!serviceId) return res.status(400).json({ success: false, message: "serviceId required" });
@@ -128,8 +128,10 @@ const create = asyncHandler(async (req, res) => {
       await serviceReport.save({ session });
     }
 
-    let testRecord = await TimerAccuracy.findOne({ serviceId }).session(session);
-    const payload = { table1, table2, tolerance: tolerance?.toString() || "", serviceId, serviceReportId: serviceReport._id };
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const tubeIdValue = tubeId || null;
+    let testRecord = await TimerAccuracy.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
+    const payload = { table1, table2, tolerance: tolerance?.toString() || "", serviceId, serviceReportId: serviceReport._id, tubeId: tubeIdValue };
 
     if (testRecord) {
       Object.assign(testRecord, payload);
@@ -193,7 +195,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE BY TEST ID
 // ======================
 const update = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -258,7 +260,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await TimerAccuracy.findOne({ serviceId }).lean().exec();
+    // Build query with optional tubeId from query parameter
+    const { tubeId } = req.query;
+    const query = { serviceId };
+    if (tubeId !== undefined) {
+      query.tubeId = tubeId === 'null' ? null : tubeId;
+    }
+    const testRecord = await TimerAccuracy.findOne(query).lean().exec();
 
     if (!testRecord) {
       return res.status(200).json({

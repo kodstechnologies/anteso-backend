@@ -47,6 +47,14 @@ const ConsistencyOfRadiationOutputSchema = new mongoose.Schema(
             ref: 'ServiceReport',
         },
 
+        // Tube ID for double tube support (frontal/lateral)
+        tubeId: {
+            type: String,
+            enum: [null, 'frontal', 'lateral'],
+            default: null,
+            required: false,
+        },
+
         // Soft delete
         isDeleted: { type: Boolean, default: false },
     },
@@ -59,6 +67,7 @@ const ConsistencyOfRadiationOutputSchema = new mongoose.Schema(
 ConsistencyOfRadiationOutputSchema.index({ serviceId: 1 });
 ConsistencyOfRadiationOutputSchema.index({ reportId: 1 });
 ConsistencyOfRadiationOutputSchema.index({ serviceId: 1, reportId: 1 });
+ConsistencyOfRadiationOutputSchema.index({ serviceId: 1, tubeId: 1 });
 
 const ConsistencyOfRadiationOutput = mongoose.models.ConsistencyOfRadiationOutputInventionalRadiology ||
     mongoose.model('ConsistencyOfRadiationOutputInventionalRadiology', ConsistencyOfRadiationOutputSchema);

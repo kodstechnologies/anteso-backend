@@ -36,6 +36,14 @@ const HighContrastResolutionSchema = new mongoose.Schema(
       ref: "ServiceReport",
     },
 
+    // Tube ID for double tube support (frontal/lateral)
+    tubeId: {
+      type: String,
+      enum: [null, 'frontal', 'lateral'],
+      default: null,
+      required: false,
+    },
+
     isDeleted: {
       type: Boolean,
       default: false,
@@ -49,6 +57,7 @@ const HighContrastResolutionSchema = new mongoose.Schema(
 HighContrastResolutionSchema.index({ reportId: 1 });
 HighContrastResolutionSchema.index({ serviceId: 1, reportId: 1 });
 HighContrastResolutionSchema.index({ reportId: 1, isDeleted: 1 });
+HighContrastResolutionSchema.index({ serviceId: 1, tubeId: 1 });
 
 const HighContrastResolution = mongoose.models.HighContrastResolutionInventionalRadiology ||
   mongoose.model("HighContrastResolutionInventionalRadiology", HighContrastResolutionSchema);

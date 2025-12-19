@@ -121,5 +121,6 @@ exposureRateTableTopSchema.pre('save', function (next) {
 // Indexes for performance
 exposureRateTableTopSchema.index({ serviceId: 1 });
 exposureRateTableTopSchema.index({ reportId: 1 });
+exposureRateTableTopSchema.index({ serviceId: 1, tubeId: 1 });
 
 export default mongoose.model("ExposureRateTableTopInventionalRadiology", exposureRateTableTopSchema);

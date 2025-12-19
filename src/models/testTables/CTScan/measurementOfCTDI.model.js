@@ -49,11 +49,18 @@ const MeasurementOfCTDISchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
     },
+    tubeId: {
+      type: String,
+      enum: [null, 'A', 'B'],
+      default: null,
+      required: false,
+    },
   },
   { timestamps: true }
 );
 
 MeasurementOfCTDISchema.index({ serviceReportId: 1 });
+MeasurementOfCTDISchema.index({ serviceId: 1, tubeId: 1 });
 
 const MeasurementOfCTDI = model('MeasurementOfCTDI', MeasurementOfCTDISchema);
 

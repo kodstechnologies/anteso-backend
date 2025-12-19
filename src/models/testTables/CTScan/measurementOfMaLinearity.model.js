@@ -36,11 +36,18 @@ const MeasurementOfMaLinearitySchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
         },
+        tubeId: {
+            type: String,
+            enum: [null, 'A', 'B'],
+            default: null,
+            required: false,
+        },
     },
     { timestamps: true }
 );
 
 MeasurementOfMaLinearitySchema.index({ serviceReportId: 1 });
+MeasurementOfMaLinearitySchema.index({ serviceId: 1, tubeId: 1 });
 
 const MeasurementOfMaLinearity = model('MeasurementOfMaLinearity', MeasurementOfMaLinearitySchema);
 

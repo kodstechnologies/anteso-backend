@@ -31,6 +31,14 @@ const AccuracyOfIrradiationTimeSchema = new Schema({
     value: { type: String, default: "" }, // stored as string to match frontend
   },
 
+  // Tube ID for double tube support (frontal/lateral)
+  tubeId: {
+    type: String,
+    enum: [null, 'frontal', 'lateral'],
+    default: null,
+    required: false,
+  },
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -40,6 +48,9 @@ AccuracyOfIrradiationTimeSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes
+AccuracyOfIrradiationTimeSchema.index({ serviceId: 1, tubeId: 1 });
 
 const AccuracyOfIrradiationTime = model(
   'AccuracyOfIrradiationTimeInventionalRadiology',

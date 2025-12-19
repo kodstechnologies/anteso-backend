@@ -92,6 +92,12 @@ const LinearityOfMasLoadingSchema = new Schema(
       unique: true,
       sparse: true, // Allows null/undefined while keeping uniqueness for saved tests
     },
+    tubeId: {
+      type: String,
+      enum: [null, 'A', 'B'],
+      default: null,
+      required: false,
+    },
   },
   {
     timestamps: true, // createdAt, updatedAt
@@ -102,6 +108,7 @@ const LinearityOfMasLoadingSchema = new Schema(
 // Indexes for performance
 LinearityOfMasLoadingSchema.index({ serviceId: 1, testId: 1 });
 LinearityOfMasLoadingSchema.index({ serviceReportId: 1 });
+LinearityOfMasLoadingSchema.index({ serviceId: 1, tubeId: 1 });
 
 // Prevent model recompilation in development (Next.js hot reload)
 const LinearityOfMasLoading =

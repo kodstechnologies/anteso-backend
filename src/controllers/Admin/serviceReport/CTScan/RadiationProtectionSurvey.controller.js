@@ -51,7 +51,9 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // Check existing - update if exists, create if not
-    const existing = await RadiationProtectionSurvey.findOne({ serviceId }).session(session);
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const tubeIdValue = tubeId || null;
+    const existing = await RadiationProtectionSurvey.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     // Get or create ServiceReport
     let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
@@ -78,6 +80,7 @@ const create = asyncHandler(async (req, res) => {
       if (surveyorName !== undefined) existing.surveyorName = surveyorName;
       if (surveyorDesignation !== undefined) existing.surveyorDesignation = surveyorDesignation;
       if (remarks !== undefined) existing.remarks = remarks;
+      if (tubeId !== undefined) existing.tubeId = tubeIdValue;
       testRecord = existing;
     } else {
       // Create new
@@ -99,6 +102,7 @@ const create = asyncHandler(async (req, res) => {
         surveyorName: surveyorName || "",
         surveyorDesignation: surveyorDesignation || "",
         remarks: remarks || "",
+        tubeId: tubeIdValue,
       });
     }
 
@@ -244,7 +248,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await RadiationProtectionSurvey.findOne({ serviceId }).lean();
+    // Build query with optional tubeId from query parameter
+    const { tubeId } = req.query;
+    const query = { serviceId };
+    if (tubeId !== undefined) {
+      query.tubeId = tubeId === 'null' ? null : tubeId;
+    }
+    const testRecord = await RadiationProtectionSurvey.findOne(query).lean();
 
     if (!testRecord) {
       return res.json({ success: true, data: null });

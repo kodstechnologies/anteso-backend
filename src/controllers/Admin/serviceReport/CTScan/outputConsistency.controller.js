@@ -191,7 +191,7 @@ import OutputConsistency from "../../../../models/testTables/CTScan/outputConsis
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, measurementHeaders, tolerance } = req.body;
+  const { parameters, outputRows, measurementHeaders, tolerance, tubeId } = req.body;
   const { serviceId } = req.params;
 
   // === Validate Input ===
@@ -232,6 +232,8 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // 3. Prepare payload
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const tubeIdValue = tubeId || null;
     const payload = {
       parameters,
       outputRows,
@@ -239,10 +241,11 @@ const create = asyncHandler(async (req, res) => {
       tolerance: tolerance?.toString().trim() || "",
       serviceId,
       reportId: serviceReport._id,
+      tubeId: tubeIdValue,
     };
 
     // 4. Find existing or create new test record (upsert style)
-    let testRecord = await OutputConsistency.findOne({ serviceId }).session(session);
+    let testRecord = await OutputConsistency.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     if (testRecord) {
       Object.assign(testRecord, payload);
@@ -307,7 +310,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, measurementHeaders, tolerance } = req.body;
+  const { parameters, outputRows, measurementHeaders, tolerance, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -346,6 +349,7 @@ const update = asyncHandler(async (req, res) => {
     testRecord.outputRows = outputRows;
     testRecord.measurementHeaders = measurementHeaders;
     testRecord.tolerance = tolerance?.toString().trim() || "";
+    if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -376,7 +380,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await OutputConsistency.findOne({ serviceId }).lean().exec();
+    // Build query with optional tubeId from query parameter
+    const { tubeId } = req.query;
+    const query = { serviceId };
+    if (tubeId !== undefined) {
+      query.tubeId = tubeId === 'null' ? null : tubeId;
+    }
+    const testRecord = await OutputConsistency.findOne(query).lean().exec();
 
     if (!testRecord) {
       return res.status(200).json({

@@ -1,113 +1,244 @@
-import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import mongoose from "mongoose";
+import Services from "../../../../models/Services.js";
+import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+import serviceReportModel from "../../../../models/serviceReports/serviceReport.model.js";
 import CentralBeamAlignment from "../../../../models/testTables/InventionalRadiology/CentralBeamAlignment.model.js";
 
 const MACHINE_TYPE = "Interventional Radiology";
 
-// Create or Update (Upsert)
-export const create = async (req, res) => {
+const create = asyncHandler(async (req, res) => {
+    const { techniqueFactors, observedTilt, tolerance, finalResult, tubeId } = req.body;
+    const { serviceId } = req.params;
+
+    // === Validate Input ===
+    if (!serviceId) {
+        return res.status(400).json({ success: false, message: "serviceId is required in URL" });
+    }
+
+    let session = null;
     try {
-        const { serviceId } = req.params;
-console.log("serviceId", serviceId);
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-        let serviceReport = await ServiceReport.findOne({
-            serviceId,
-            machineType: MACHINE_TYPE,
-        });
+        // 1. Validate Service + Machine Type
+        const service = await Services.findById(serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
 
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: "${service.machineType}"`,
+            });
+        }
+
+        // 2. Get or Create ServiceReport
+        let serviceReport = await serviceReportModel.findOne({ serviceId }).session(session);
         if (!serviceReport) {
-            return res.status(404).json({
-                success: false,
-                message: "Service Report not found for this Service ID",
-            });
+            serviceReport = new serviceReportModel({ serviceId });
+            await serviceReport.save({ session });
         }
 
-        const testData = await CentralBeamAlignment.findOneAndUpdate(
-            { serviceId },
-            {
-                ...req.body,
-                serviceId,
-                reportId: serviceReport._id,
+        // 3. Save or Update Test Data
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await CentralBeamAlignment.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
+
+        const payload = {
+            techniqueFactors: techniqueFactors || { fcd: null, kv: null, mas: null },
+            observedTilt: observedTilt || { operator: "", value: null, remark: "" },
+            tolerance: tolerance || { operator: "", value: null },
+            finalResult: finalResult || "",
+            serviceId,
+            reportId: serviceReport._id,
+            tubeId: tubeIdValue,
+        };
+
+        if (testRecord) {
+            Object.assign(testRecord, payload);
+        } else {
+            testRecord = new CentralBeamAlignment(payload);
+        }
+        await testRecord.save({ session });
+
+        // 4. Link to ServiceReport
+        serviceReport.CentralBeamAlignmentInventionalRadiology = testRecord._id;
+        await serviceReport.save({ session });
+
+        await session.commitTransaction();
+
+        return res.json({
+            success: true,
+            message: testRecord.isNew ? "Created" : "Updated",
+            data: {
+                testId: testRecord._id,
+                serviceReportId: serviceReport._id,
             },
-            { new: true, upsert: true, setDefaultsOnInsert: true }
-        );
-
-        await ServiceReport.findOneAndUpdate(
-            { serviceId, machineType: MACHINE_TYPE },
-            { CentralBeamAlignmentInventionalRadiology: testData._id }
-        );
-
-        return res.status(200).json({
-            success: true,
-            data: testData,
-            message: "Central Beam Alignment saved successfully",
         });
-
     } catch (error) {
-        console.error("Error saving Central Beam Alignment:", error);
+        if (session) {
+            try {
+                await session.abortTransaction();
+            } catch (abortError) {
+                console.error("Transaction abort failed:", abortError);
+            }
+        }
+        console.error("CentralBeamAlignment Create Error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Operation failed",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
+    }
+});
+
+// ======================
+// GET BY TEST ID
+// ======================
+const getById = asyncHandler(async (req, res) => {
+    const { testId } = req.params;
+
+    if (!testId) {
+        return res.status(400).json({ success: false, message: "testId is required" });
+    }
+
+    try {
+        const testRecord = await CentralBeamAlignment.findById(testId)
+            .lean()
+            .exec();
+
+        if (!testRecord) {
+            return res.status(404).json({ success: false, message: "Test record not found" });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,
+        });
+    } catch (error) {
+        console.error("GetById Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch",
+            error: error.message,
         });
     }
-};
+});
 
-// Get By Service ID
-export const getByServiceId = async (req, res) => {
+// ======================
+// UPDATE BY TEST ID
+// ======================
+const update = asyncHandler(async (req, res) => {
+    const { techniqueFactors, observedTilt, tolerance, finalResult, tubeId } = req.body;
+    const { testId } = req.params;
+
+    if (!testId) {
+        return res.status(400).json({ success: false, message: "testId is required in URL" });
+    }
+
+    let session = null;
     try {
-        const { serviceId } = req.params;
-        const testData = await CentralBeamAlignment.findOne({ serviceId });
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-        if (!testData) {
-            return res.status(404).json({
+        const testRecord = await CentralBeamAlignment.findById(testId).session(session);
+        if (!testRecord) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Test record not found" });
+        }
+
+        // Validate machine type
+        const service = await Services.findById(testRecord.serviceId).session(session);
+        if (!service || service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
                 success: false,
-                message: "Data not found",
+                message: `This test can only be updated for ${MACHINE_TYPE}`,
             });
         }
 
-        return res.status(200).json({
-            success: true,
-            data: testData,
-        });
+        // Update fields
+        if (techniqueFactors !== undefined) testRecord.techniqueFactors = techniqueFactors;
+        if (observedTilt !== undefined) testRecord.observedTilt = observedTilt;
+        if (tolerance !== undefined) testRecord.tolerance = tolerance;
+        if (finalResult !== undefined) testRecord.finalResult = finalResult;
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
+        await testRecord.save({ session });
+        await session.commitTransaction();
+
+        return res.json({
+            success: true,
+            message: "Updated successfully",
+            data: { testId: testRecord._id },
+        });
     } catch (error) {
+        if (session) {
+            try {
+                await session.abortTransaction();
+            } catch (abortError) {
+                console.error("Abort failed:", abortError);
+            }
+        }
+        console.error("Update Error:", error);
         return res.status(500).json({
             success: false,
-            message: error.message,
+            message: "Update failed",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
+    }
+});
+
+const getByServiceId = asyncHandler(async (req, res) => {
+    const { serviceId } = req.params;
+
+    if (!serviceId) {
+        return res.status(400).json({ success: false, message: "serviceId is required" });
+    }
+
+    try {
+        // Build query with optional tubeId from query parameter
+        const { tubeId } = req.query;
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        const testRecord = await CentralBeamAlignment.findOne(query).lean().exec();
+
+        if (!testRecord) {
+            return res.status(200).json({
+                success: true,
+                data: null,
+            });
+        }
+
+        const service = await Services.findById(serviceId).lean();
+        if (service && service.machineType !== MACHINE_TYPE) {
+            return res.status(403).json({
+                success: false,
+                message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+            });
+        }
+
+        return res.json({
+            success: true,
+            data: testRecord,
+        });
+    } catch (error) {
+        console.error("getByServiceId Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch test record",
+            error: error.message,
         });
     }
-};
+});
 
-// Get By ID
-export const getById = async (req, res) => {
-    try {
-        const { testId } = req.params;
-        const testData = await CentralBeamAlignment.findById(testId);
-        if (!testData) return res.status(404).json({ success: false, message: "Not Found" });
-        return res.status(200).json({ success: true, data: testData });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-// Update
-export const update = async (req, res) => {
-    try {
-        const { testId } = req.params;
-        const testData = await CentralBeamAlignment.findByIdAndUpdate(
-            testId,
-            req.body,
-            { new: true }
-        );
-        if (!testData) return res.status(404).json({ success: false, message: "Not Found" });
-        return res.status(200).json({ success: true, data: testData, message: "Updated Successfully" });
-    } catch (error) {
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-export default {
-    create,
-    getByServiceId,
-    getById,
-    update
-};
+export default { create, getById, update, getByServiceId };

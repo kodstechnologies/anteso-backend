@@ -12,7 +12,7 @@ import { asyncHandler } from '../../../../utils/AsyncHandler.js';
  */
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { readings, maxWorkerMRPerWeek, maxPublicMRPerWeek } = req.body;
+    const { readings, maxWorkerMRPerWeek, maxPublicMRPerWeek, tubeId } = req.body;
 
     // === Validate Input ===
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -57,7 +57,9 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Save Test Data (Upsert)
-        let testRecord = await MeasureMaxRadiationLevel.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await MeasureMaxRadiationLevel.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         const payload = {
             serviceId,
@@ -65,6 +67,7 @@ const create = asyncHandler(async (req, res) => {
             maxWorkerMRPerWeek: maxWorkerMRPerWeek?.toString().trim(),
             maxPublicMRPerWeek: maxPublicMRPerWeek?.toString().trim(),
             reportId: serviceReport._id,
+            tubeId: tubeIdValue,
         };
 
         if (testRecord) {
@@ -141,7 +144,7 @@ const getById = asyncHandler(async (req, res) => {
  */
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const { readings, maxWorkerMRPerWeek, maxPublicMRPerWeek } = req.body;
+    const { readings, maxWorkerMRPerWeek, maxPublicMRPerWeek, tubeId } = req.body;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ success: false, message: 'Valid testId is required' });
@@ -176,6 +179,7 @@ const update = asyncHandler(async (req, res) => {
         if (readings !== undefined) testRecord.readings = readings;
         if (maxWorkerMRPerWeek !== undefined) testRecord.maxWorkerMRPerWeek = maxWorkerMRPerWeek?.toString().trim();
         if (maxPublicMRPerWeek !== undefined) testRecord.maxPublicMRPerWeek = maxPublicMRPerWeek?.toString().trim();
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
         await testRecord.save({ session });
         await session.commitTransaction();
@@ -206,7 +210,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
     }
 
     try {
-        const testRecord = await MeasureMaxRadiationLevel.findOne({ serviceId }).lean().exec();
+        // Build query with optional tubeId from query parameter
+        const { tubeId } = req.query;
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        const testRecord = await MeasureMaxRadiationLevel.findOne(query).lean().exec();
 
         if (!testRecord) {
             return res.status(200).json({

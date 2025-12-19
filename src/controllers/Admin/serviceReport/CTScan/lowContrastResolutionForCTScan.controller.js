@@ -5,7 +5,7 @@ import Service from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-    const { acquisitionParams, result, tolerances } = req.body;
+    const { acquisitionParams, result, tolerances, tubeId } = req.body;
     const { serviceId } = req.params;
 
     if (!serviceId) {
@@ -39,7 +39,9 @@ const create = asyncHandler(async (req, res) => {
         }
 
         // 3. Create or Update Test Record
-        let testRecord = await LowContrastResolutionForCTScan.findOne({ serviceId }).session(session);
+        // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+        const tubeIdValue = tubeId || null;
+        let testRecord = await LowContrastResolutionForCTScan.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
         const updateData = {
             acquisitionParams: acquisitionParams || {},
@@ -47,6 +49,7 @@ const create = asyncHandler(async (req, res) => {
             tolerances: Array.isArray(tolerances) ? tolerances : undefined,
             serviceId,
             reportId: serviceReport._id,
+            tubeId: tubeIdValue,
         };
 
         if (testRecord) {
@@ -84,7 +87,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { acquisitionParams, result, tolerances } = req.body;
+    const { acquisitionParams, result, tolerances, tubeId } = req.body;
     const { testId } = req.params;
 
     if (!testId) {
@@ -116,6 +119,7 @@ const update = asyncHandler(async (req, res) => {
         if (acquisitionParams) testRecord.acquisitionParams = acquisitionParams;
         if (result) testRecord.result = result;
         if (Array.isArray(tolerances)) testRecord.tolerances = tolerances;
+        if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
         await testRecord.save({ session });
         await session.commitTransaction();
@@ -185,7 +189,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
     }
 
     try {
-        const testRecord = await LowContrastResolutionForCTScan.findOne({ serviceId }).lean().exec();
+        // Build query with optional tubeId from query parameter
+        const { tubeId } = req.query;
+        const query = { serviceId };
+        if (tubeId !== undefined) {
+            query.tubeId = tubeId === 'null' ? null : tubeId;
+        }
+        const testRecord = await LowContrastResolutionForCTScan.findOne(query).lean().exec();
 
         if (!testRecord) {
             return res.status(200).json({

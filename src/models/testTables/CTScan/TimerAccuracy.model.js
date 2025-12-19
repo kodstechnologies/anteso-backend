@@ -33,11 +33,18 @@ const TimerAccuracySchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
         },
+        tubeId: {
+            type: String,
+            enum: [null, 'A', 'B'],
+            default: null,
+            required: false,
+        },
     },
     { timestamps: true }
 );
 
 TimerAccuracySchema.index({ serviceReportId: 1 });
+TimerAccuracySchema.index({ serviceId: 1, tubeId: 1 });
 
 const TimerAccuracy = model('TimerAccuracy', TimerAccuracySchema);
 

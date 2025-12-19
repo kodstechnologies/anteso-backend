@@ -40,6 +40,12 @@ const RadiationLeakageTestSchema = new Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
         },
+        tubeId: {
+            type: String,
+            enum: [null, 'A', 'B'],
+            default: null,
+            required: false,
+        },
         // === Workload ===
         workload: { type: String, required: true }, // e.g., "500"
         workloadUnit: { type: String, default: 'mA·min/week' },
@@ -76,5 +82,6 @@ const RadiationLeakageTestSchema = new Schema(
 
 // Optional: Index for performance
 RadiationLeakageTestSchema.index({ serviceId: 1, performedAt: -1 });
+RadiationLeakageTestSchema.index({ serviceId: 1, tubeId: 1 });
 
 export default model('RadiationLeakageTest', RadiationLeakageTestSchema);

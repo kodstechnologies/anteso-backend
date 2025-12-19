@@ -33,10 +33,17 @@ const OutputConsistencySchema = new Schema(
             type: Schema.Types.ObjectId,
             ref: "ServiceReport",
         },
+        tubeId: {
+            type: String,
+            enum: [null, 'A', 'B'],
+            default: null,
+            required: false,
+        },
     },
     { timestamps: true }
 );
 
 OutputConsistencySchema.index({ serviceId: 1 });
+OutputConsistencySchema.index({ serviceId: 1, tubeId: 1 });
 
 export default mongoose.model("OutputConsistency", OutputConsistencySchema);

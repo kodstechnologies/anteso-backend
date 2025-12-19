@@ -61,12 +61,19 @@ const HighContrastResolutionForCTScanSchema = new Schema(
       ref: 'ServiceReport',
       required: false,
     },
+    tubeId: {
+      type: String,
+      enum: [null, 'A', 'B'],
+      default: null,
+      required: false,
+    },
   },
   { timestamps: true }
 );
 
 HighContrastResolutionForCTScanSchema.index({ serviceId: 1 });
 HighContrastResolutionForCTScanSchema.index({ serviceReportId: 1 });
+HighContrastResolutionForCTScanSchema.index({ serviceId: 1, tubeId: 1 });
 
 const HighContrastResolutionForCTScan = model(
   'HighContrastResolutionForCTScan',

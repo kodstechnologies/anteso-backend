@@ -40,6 +40,14 @@ const TotalFilterationSchema = new Schema({
     ref: "ServiceReport",
   },
 
+  // Tube ID for double tube support (frontal/lateral)
+  tubeId: {
+    type: String,
+    enum: [null, 'frontal', 'lateral'],
+    default: null,
+    required: false,
+  },
+
   createdAt: {
     type: Date,
     default: Date.now,
@@ -59,6 +67,7 @@ TotalFilterationSchema.pre('save', function (next) {
 // Indexes for performance
 TotalFilterationSchema.index({ serviceId: 1 });
 TotalFilterationSchema.index({ reportId: 1 });
+TotalFilterationSchema.index({ serviceId: 1, tubeId: 1 });
 
 const TotalFilterationForInventionalRadiology = model(
   'TotalFilterationForInventionalRadiology',

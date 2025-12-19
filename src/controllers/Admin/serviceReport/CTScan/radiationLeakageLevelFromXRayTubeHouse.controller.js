@@ -19,6 +19,7 @@ const create = asyncHandler(async (req, res) => {
     leakageMeasurements = [],
     tolerance = '',
     notes = '',
+    tubeId,
   } = req.body;
 
   // === Validate Input ===
@@ -65,7 +66,9 @@ const create = asyncHandler(async (req, res) => {
     }
 
     // 3️⃣ Save Test Data (Upsert)
-    let testRecord = await RadiationLeakageLevel.findOne({ serviceId }).session(session);
+    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
+    const tubeIdValue = tubeId || null;
+    let testRecord = await RadiationLeakageLevel.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     const payload = {
       workload,
@@ -76,6 +79,7 @@ const create = asyncHandler(async (req, res) => {
       notes,
       serviceId,
       reportId: serviceReport._id,
+      tubeId: tubeIdValue,
     };
 
     if (testRecord) {
@@ -164,6 +168,7 @@ const update = asyncHandler(async (req, res) => {
     leakageMeasurements,
     tolerance,
     notes,
+    tubeId,
   } = req.body;
 
   if (!testId) {
@@ -202,6 +207,7 @@ const update = asyncHandler(async (req, res) => {
     if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance?.toString().trim() || '';
     if (notes !== undefined) testRecord.notes = notes;
+    if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
     await testRecord.save({ session });
     await session.commitTransaction();
@@ -232,7 +238,13 @@ const getByServiceId = asyncHandler(async (req, res) => {
   }
 
   try {
-    const testRecord = await RadiationLeakageLevel.findOne({ serviceId }).lean().exec();
+    // Build query with optional tubeId from query parameter
+    const { tubeId } = req.query;
+    const query = { serviceId };
+    if (tubeId !== undefined) {
+      query.tubeId = tubeId === 'null' ? null : tubeId;
+    }
+    const testRecord = await RadiationLeakageLevel.findOne(query).lean().exec();
 
     if (!testRecord) {
       return res.status(200).json({

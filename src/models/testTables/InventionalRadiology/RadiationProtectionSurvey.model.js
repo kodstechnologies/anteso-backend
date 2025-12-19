@@ -73,6 +73,14 @@ const RadiationProtectionSurveySchema = new mongoose.Schema({
     index: true,
   },
 
+  // Tube ID for double tube support (frontal/lateral) - null for common tests
+  tubeId: {
+    type: String,
+    enum: [null, 'frontal', 'lateral'],
+    default: null,
+    required: false,
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
@@ -97,6 +105,9 @@ RadiationProtectionSurveySchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
+
+// Indexes
+RadiationProtectionSurveySchema.index({ serviceId: 1, tubeId: 1 });
 
 // Use specific collection for IR
 export default mongoose.models.RadiationProtectionSurveyInventionalRadiology ||

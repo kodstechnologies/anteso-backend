@@ -72,14 +72,22 @@ const EffectiveFocalSpotSchema = new Schema(
             type: String,
             required: true,
         },
+
+        // Tube ID for double tube support (frontal/lateral)
+        tubeId: {
+            type: String,
+            enum: [null, 'frontal', 'lateral'],
+            default: null,
+            required: false,
+        },
     },
     {
         timestamps: true,
     }
 );
 
-// One test per service
-EffectiveFocalSpotSchema.index({ serviceId: 1 }, { unique: true });
+// One test per service and tube
+EffectiveFocalSpotSchema.index({ serviceId: 1, tubeId: 1 }, { unique: true });
 
 export default mongoose.models.EffectiveFocalSpotInventionalRadiology ||
     mongoose.model("EffectiveFocalSpotInventionalRadiology", EffectiveFocalSpotSchema);
