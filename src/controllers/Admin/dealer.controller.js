@@ -159,9 +159,47 @@ export const createDealer = asyncHandler(async (req, res) => {
             .json(new ApiResponse(201, populatedDealer, "Dealer created successfully"));
     } catch (error) {
         console.error("❌ Dealer creation error:", error);
+        
+        // Check for MongoDB duplicate key error (E11000)
+        if (error.code === 11000 || error.name === 'MongoServerError') {
+            const duplicateKeyError = error.code === 11000 ? error : error.errorResponse || error;
+            const keyPattern = duplicateKeyError.keyPattern || {};
+            const keyValue = duplicateKeyError.keyValue || {};
+            
+            // Determine which field is duplicate
+            let duplicateField = '';
+            let duplicateValue = '';
+            
+            if (keyPattern.email) {
+                duplicateField = 'email';
+                duplicateValue = keyValue.email || '';
+            } else if (keyPattern.phone) {
+                duplicateField = 'phone';
+                duplicateValue = keyValue.phone || '';
+            } else {
+                // Fallback: try to extract from error message
+                const errorMsg = error.message || '';
+                if (errorMsg.includes('email')) {
+                    duplicateField = 'email';
+                } else if (errorMsg.includes('phone')) {
+                    duplicateField = 'phone';
+                }
+            }
+            
+            const fieldLabel = duplicateField === 'email' ? 'Email' : duplicateField === 'phone' ? 'Phone number' : 'Field';
+            const errorMessage = duplicateValue 
+                ? `${fieldLabel} "${duplicateValue}" already exists. Please use a different ${fieldLabel.toLowerCase()}.`
+                : `${fieldLabel} already exists. Please use a different ${fieldLabel.toLowerCase()}.`;
+            
+            return res
+                .status(200)
+                .json(new ApiResponse(400, null, errorMessage));
+        }
+        
+        // Generic error for other cases
         return res
             .status(200)
-            .json(new ApiResponse(500, null, "Failed to create dealer"));
+            .json(new ApiResponse(500, null, error.message || "Failed to create dealer"));
     }
 });
 
@@ -194,7 +232,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 const getAll = asyncHandler(async (req, res) => {
     try {
-        const dealers = await Dealer.find(); // fetch all dealers
+        const dealers = await Dealer.find()  .sort({ createdAt: -1 });; // fetch all dealers
 
         res.status(200).json({
             success: true,
