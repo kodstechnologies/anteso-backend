@@ -15,6 +15,7 @@ const create = asyncHandler(async (req, res) => {
         measurements,
         tolerance,
         totalFiltration,
+        filtrationTolerance,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -51,17 +52,19 @@ const create = asyncHandler(async (req, res) => {
         let testData;
         if (existing) {
             // Update existing record
+            const updateData = {
+                mAStations: mAStations || [],
+                measurements: measurements || [],
+                tolerance: tolerance || { sign: "±", value: "2.0" },
+                totalFiltration: totalFiltration || { measured: "", required: "", atKvp: "" },
+                updatedAt: Date.now(),
+            };
+            if (filtrationTolerance !== undefined) {
+                updateData.filtrationTolerance = filtrationTolerance;
+            }
             testData = await TotalFilterationForFixedRadioFluoro.findByIdAndUpdate(
                 existing._id,
-                {
-                    $set: {
-                        mAStations: mAStations || [],
-                        measurements: measurements || [],
-                        tolerance: tolerance || { sign: "", value: "" },
-                        totalFiltration: totalFiltration || { measured: "", required: "" },
-                        updatedAt: Date.now(),
-                    },
-                },
+                { $set: updateData },
                 { new: true, runValidators: true, session }
             );
 
@@ -84,8 +87,15 @@ const create = asyncHandler(async (req, res) => {
                     reportId: serviceReport._id,
                     mAStations: mAStations || [],
                     measurements: measurements || [],
-                    tolerance: tolerance || { sign: "", value: "" },
-                    totalFiltration: totalFiltration || { measured: "", required: "" },
+                    tolerance: tolerance || { sign: "±", value: "2.0" },
+                    totalFiltration: totalFiltration || { measured: "", required: "", atKvp: "" },
+                    filtrationTolerance: filtrationTolerance || {
+                        forKvGreaterThan70: "1.5",
+                        forKvBetween70And100: "2.0",
+                        forKvGreaterThan100: "2.5",
+                        kvThreshold1: "70",
+                        kvThreshold2: "100",
+                    },
                 }],
                 { session }
             );
@@ -155,28 +165,28 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE - With Transaction
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const updateData = req.body;
+    const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ message: "Valid testId is required" });
     }
 
-    // Prevent changing serviceId
-    delete updateData.serviceId;
-    delete updateData.createdAt;
-
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
+        const updateFields = {
+            updatedAt: Date.now(),
+        };
+        if (mAStations !== undefined) updateFields.mAStations = mAStations;
+        if (measurements !== undefined) updateFields.measurements = measurements;
+        if (tolerance !== undefined) updateFields.tolerance = tolerance;
+        if (totalFiltration !== undefined) updateFields.totalFiltration = totalFiltration;
+        if (filtrationTolerance !== undefined) updateFields.filtrationTolerance = filtrationTolerance;
+
         const updatedTest = await TotalFilterationForFixedRadioFluoro.findByIdAndUpdate(
             testId,
-            {
-                $set: {
-                    ...updateData,
-                    updatedAt: Date.now(),
-                },
-            },
+            { $set: updateFields },
             { new: true, runValidators: true, session }
         );
 

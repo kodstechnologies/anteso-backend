@@ -1,11 +1,33 @@
 // models/AccuracyOfOperatingPotential.js
 import mongoose from "mongoose";
 
+// Table 1 Row Schema
+const Table1RowSchema = new mongoose.Schema({
+    time: { type: String, default: '', trim: true },
+    sliceThickness: { type: String, default: '', trim: true },
+});
+
+// Table 2 Row Schema
+const Table2RowSchema = new mongoose.Schema({
+    setKV: { type: String, default: '', trim: true },
+    ma10: { type: String, default: '', trim: true },
+    ma100: { type: String, default: '', trim: true },
+    ma200: { type: String, default: '', trim: true },
+    avgKvp: { type: String, default: '', trim: true },
+    remarks: { type: String, default: '', trim: true },
+});
+
+// Tolerance Schema
+const ToleranceSchema = new mongoose.Schema({
+    value: { type: String },
+    type: { type: String, enum: ['percent', 'absolute'] },
+    sign: { type: String, enum: ['plus', 'minus', 'both'] },
+});
+
 const AccuracyOfOperatingPotentialSchema = new mongoose.Schema({
     serviceId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Service",
-
         index: true,
     },
     reportId: {
@@ -13,48 +35,14 @@ const AccuracyOfOperatingPotentialSchema = new mongoose.Schema({
         ref: 'ServiceReport',
     },
 
-    // Dynamic mA station headers (e.g., "50 mA", "100 mA", "200 mA")
-    mAStations: {
-        type: [String],
+    // Table 1: Time vs Slice Thickness (single row)
+    table1: [Table1RowSchema],
 
-    },
-
-    // Table measurements
-    measurements: [
-        {
-            appliedKvp: {
-                type: String,
-                trim: true,
-            },
-            measuredValues: {
-                type: [String], // Stores as string to preserve empty inputs
-
-            },
-            averageKvp: {
-                type: String,
-                default: "",
-            },
-            remarks: {
-                type: String,
-                enum: ["PASS", "FAIL", "-"],
-            },
-        },
-    ],
+    // Table 2: kV Measurement at Different mA
+    table2: [Table2RowSchema],
 
     // Tolerance settings
-    tolerance: {
-        sign: {
-            type: String,
-            enum: ["+", "-", "±"],
-
-
-        },
-        value: {
-            type: String, // Keep as string to match input field
-            required: true,
-
-        },
-    },
+    tolerance: { type: ToleranceSchema, required: true },
 
     // Metadata
     createdAt: {

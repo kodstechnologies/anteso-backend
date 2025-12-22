@@ -1,62 +1,55 @@
-// models/OutputConsistencyForCArm.js
-import mongoose from "mongoose";
+// models/ReproducibilityOfOutput.js
+import mongoose from 'mongoose';
 
-const outputRowSchema = new mongoose.Schema(
-  {
-    ffd: { type: String, trim: true },           // FFD per row
-    outputs: [{ type: String, trim: true }],     // measurement values
-    mean: { type: String, trim: true },
-    cov: { type: String, trim: true },
-  },
-  { _id: false }
+const OutputMeasurementSchema = new mongoose.Schema({
+    value: { type: String, trim: true },        // e.g. "1.25" mGy
+});
+
+const OutputRowSchema = new mongoose.Schema({
+    kv: { type: String, trim: true },           // Applied kV
+    mas: { type: String, trim: true },          // mAs
+    outputs: [OutputMeasurementSchema],         // Dynamic array of measurements
+    avg: { type: String, trim: true },          // Average (X̄) – stored as string
+    remark: { type: String, trim: true },       // Pass/Fail or custom text
+});
+
+const ReproducibilityOfOutputSchema = new mongoose.Schema(
+    {
+        ffd: {
+            value: {
+                type: String,
+            }, // e.g. "100" cm
+        },
+        // Dynamic rows of kV/mAs + measurements
+        outputRows: [OutputRowSchema],
+
+        // Tolerance (e.g. "5.0" %)
+        tolerance: {
+            operator: { type: String, trim: true, default: "<=" },
+            value: { type: String, trim: true }
+        },
+
+        // Foreign Keys
+        serviceId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Service',
+        },
+        reportId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'ServiceReport',
+        },
+
+        // Soft delete
+        isDeleted: { type: Boolean, default: false },
+    },
+    {
+        timestamps: true,
+    }
 );
 
-const outputConsistencySchema = new mongoose.Schema(
-  {
-    serviceId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Service",
-      required: true,
-      index: true,
-    },
-    reportId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "ServiceReport",
-      index: true,
-    },
+// Indexes for performance
+ReproducibilityOfOutputSchema.index({ serviceId: 1 });
+ReproducibilityOfOutputSchema.index({ reportId: 1 });
+ReproducibilityOfOutputSchema.index({ serviceId: 1, reportId: 1 });
 
-    // Single FFD for the entire test (top input)
-    ffd: {
-      type: String,
-      trim: true,
-    },
-
-    outputRows: {
-      type: [outputRowSchema],
-      default: [],
-    },
-
-    measurementHeaders: {
-      type: [String],
-      default: ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-    },
-
-    tolerance: {
-      type: String,
-      trim: true,
-    },
-
-    finalRemark: {
-      type: String,
-      trim: true,
-    },
-
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  },
-  { timestamps: true }
-);
-
-outputConsistencySchema.index({ serviceId: 1 }, { unique: true });
-
-export default mongoose.model("OutputConsistencyForFixedRadioFlouro", outputConsistencySchema);
+export default mongoose.model('OutputConsistencyForFixedRadioFlouro', ReproducibilityOfOutputSchema);

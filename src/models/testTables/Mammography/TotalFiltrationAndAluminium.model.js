@@ -29,6 +29,12 @@ const TotalFilterationAndAlluminiumSchema = new mongoose.Schema({
             mAs: { type: Number, default: null },
             alEquivalence: { type: Number, default: null }, // mm Al
             hvt: { type: Number, default: null },           // mm Al
+            remarks: { type: String, enum: ['Pass', 'Fail', ''], default: '', trim: true },
+            recommendedValue: {
+                minValue: { type: Number, default: null },
+                maxValue: { type: Number, default: null },
+                kvp: { type: Number, default: null },
+            },
         },
     ],
 
@@ -38,21 +44,6 @@ const TotalFilterationAndAlluminiumSchema = new mongoose.Schema({
         default: null,
     },
 
-    // Recommended HVL Tolerances (with operator)
-    hvlTolerances: {
-        at30: {
-            operator: { type: String, default: ">=" },
-            value: { type: Number, default: null },
-        },
-        at40: {
-            operator: { type: String, default: ">=" },
-            value: { type: Number, default: null },
-        },
-        at50: {
-            operator: { type: String, default: ">=" },
-            value: { type: Number, default: null },
-        },
-    },
 
     // Metadata
     createdAt: {

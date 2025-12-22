@@ -50,13 +50,9 @@ const create = asyncHandler(async (req, res) => {
 
         if (testRecord) {
             // Update existing
-            testRecord.table1 = table1 || testRecord.table1;
-            testRecord.table2 = table2 || testRecord.table2;
-            testRecord.tolerance = {
-                sign: tolerance.sign,
-                value: tolerance.value,
-                type: tolerance.type || testRecord.tolerance?.type,
-            };
+            if (table1 !== undefined) testRecord.table1 = table1;
+            if (table2 !== undefined) testRecord.table2 = table2;
+            if (tolerance !== undefined) testRecord.tolerance = tolerance;
         } else {
             // Create new
             testRecord = new AccuracyOfOperatingPotential({
@@ -64,11 +60,7 @@ const create = asyncHandler(async (req, res) => {
                 serviceReportId: serviceReport._id,
                 table1: table1 || [],
                 table2: table2 || [],
-                tolerance: {
-                    sign: tolerance.sign,
-                    value: tolerance.value,
-                    type: tolerance.type || 'kvp',
-                },
+                tolerance: tolerance || { value: "", type: "percent", sign: "both" },
             });
         }
 
@@ -133,13 +125,7 @@ const update = asyncHandler(async (req, res) => {
         // Update fields
         if (table1 !== undefined) testRecord.table1 = table1;
         if (table2 !== undefined) testRecord.table2 = table2;
-        if (tolerance) {
-            testRecord.tolerance = {
-                sign: tolerance.sign || testRecord.tolerance.sign,
-                value: tolerance.value || testRecord.tolerance.value,
-                type: tolerance.type || testRecord.tolerance?.type || 'kvp',
-            };
-        }
+        if (tolerance !== undefined) testRecord.tolerance = tolerance;
 
         await testRecord.save({ session });
         await session.commitTransaction();

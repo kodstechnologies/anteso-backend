@@ -5,22 +5,7 @@ import mongoose from 'mongoose';
 
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const {
-        distanceFromFocus,
-        kv,
-        ma,
-        time,
-        workload,
-        leakageLocations,
-        highestLeakageMR,
-        highestLeakageMGy,
-        finalRemark,
-        toleranceArea,
-        toleranceDimension,
-        toleranceDistance,
-        toleranceLimit,
-        toleranceTime,
-    } = req.body;
+    const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({
@@ -44,20 +29,16 @@ const create = asyncHandler(async (req, res) => {
 
     const newTest = await RadiationLeakageLevelMammography.create({
         serviceId,
-        distanceFromFocus,
-        kv,
-        ma,
-        time,
-        workload: workload || '500',
-        leakageLocations: leakageLocations || [],
-        highestLeakageMR,
-        highestLeakageMGy,
-        finalRemark,
-        toleranceArea: toleranceArea || '10',
-        toleranceDimension: toleranceDimension || '20',
-        toleranceDistance: toleranceDistance || '5',
-        toleranceLimit: toleranceLimit || '0.02',
+        fcd: fcd || '',
+        kv: kv || '',
+        ma: ma || '',
+        time: time || '',
+        workload: workload || '',
+        leakageMeasurements: leakageMeasurements || [],
+        toleranceValue: toleranceValue || '',
+        toleranceOperator: toleranceOperator || 'less than or equal to',
         toleranceTime: toleranceTime || '1',
+        remark: remark || '',
     });
 
     return res.status(201).json({

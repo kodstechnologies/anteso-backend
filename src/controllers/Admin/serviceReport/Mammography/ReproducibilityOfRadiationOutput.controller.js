@@ -3,6 +3,42 @@ import mongoose from "mongoose";
 import ReproducibilityOfOutputMmmography from "../../../../models/testTables/Mammography/ReproducibilityOfOutput.model.js"; // Adjust path if needed
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
+// Helper function to calculate CV and remark for a row
+const calculateCVAndRemark = (outputs, tolerance) => {
+    const nums = outputs
+        .filter((v) => v && v.trim() !== '')
+        .map((v) => parseFloat(v))
+        .filter((n) => !isNaN(n) && n > 0);
+
+    if (nums.length === 0) {
+        return { avg: '', cov: '', remark: '' };
+    }
+
+    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+    
+    let cov = 0;
+    if (nums.length > 1) {
+        const variance =
+            nums.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+            nums.length;
+        const stdDev = Math.sqrt(variance);
+        cov = mean > 0 ? stdDev / mean : 0; // CoV as decimal
+    }
+
+    // Tolerance is stored as percentage (e.g., "5.0" for 5%)
+    const tolValuePercent = parseFloat(tolerance) || 5.0;
+    const tolValueDecimal = tolValuePercent / 100; // Convert to decimal
+
+    // Compare CoV (decimal) with tolerance (decimal)
+    const passes = cov <= tolValueDecimal;
+
+    return {
+        avg: mean.toFixed(4),
+        cov: cov.toFixed(4),
+        remark: passes ? 'Pass' : 'Fail',
+    };
+};
+
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -23,11 +59,23 @@ const create = asyncHandler(async (req, res) => {
             return res.status(400).json({ success: false, message: "Reproducibility of Output test already exists for this service" });
         }
 
+        // Process outputRows to calculate avg, cov, and remark
+        const processedRows = (outputRows || []).map(row => {
+            const calc = calculateCVAndRemark(row.outputs || [], tolerance || '5.0');
+            return {
+                kv: row.kv || '',
+                mas: row.mas || '',
+                outputs: row.outputs || [],
+                avg: calc.avg,
+                cov: calc.cov,
+                remark: calc.remark,
+            };
+        });
+
         const newTest = await ReproducibilityOfOutputMmmography.create([{
             serviceId,
-            ffd: req.body.ffd || null,
-            outputRows: outputRows || [],
-            tolerance: tolerance || null,
+            outputRows: processedRows,
+            tolerance: tolerance || '5.0',
         }], { session });
 
         await session.commitTransaction();
@@ -94,7 +142,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE - By testId
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -103,6 +151,21 @@ const update = asyncHandler(async (req, res) => {
     // Prevent modifying serviceId
     delete updateData.serviceId;
     delete updateData.createdAt;
+
+    // Process outputRows to recalculate avg, cov, and remark if provided
+    if (updateData.outputRows && Array.isArray(updateData.outputRows)) {
+        updateData.outputRows = updateData.outputRows.map(row => {
+            const calc = calculateCVAndRemark(row.outputs || [], updateData.tolerance || '5.0');
+            return {
+                kv: row.kv || '',
+                mas: row.mas || '',
+                outputs: row.outputs || [],
+                avg: calc.avg,
+                cov: calc.cov,
+                remark: calc.remark,
+            };
+        });
+    }
 
     const session = await mongoose.startSession();
     session.startTransaction();

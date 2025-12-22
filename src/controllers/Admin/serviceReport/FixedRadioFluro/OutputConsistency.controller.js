@@ -10,11 +10,9 @@ const MACHINE_TYPE = "Radiography and Fluoroscopy";  // You can keep or change l
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
     const {
-        ffd,                    // Only this field now
+        ffd,
         outputRows,
-        measurementHeaders,
         tolerance,
-        finalRemark,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -38,13 +36,6 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
-        // Check existing
-        const existing = await OutputConsistencyModel.findOne({ serviceId }).session(session);
-        if (existing) {
-            await session.abortTransaction();
-            return res.status(400).json({ message: "Output Consistency data already exists for this service" });
-        }
-
         // Get or Create ServiceReport
         let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
         if (!serviceReport) {
@@ -52,21 +43,24 @@ const create = asyncHandler(async (req, res) => {
             await serviceReport.save({ session });
         }
 
-        const newTest = await OutputConsistencyModel.create(
-            [{
+        let testRecord = await OutputConsistencyModel.findOne({ serviceId }).session(session);
+
+        if (testRecord) {
+            if (ffd !== undefined) testRecord.ffd = ffd;
+            if (outputRows !== undefined) testRecord.outputRows = outputRows;
+            if (tolerance !== undefined) testRecord.tolerance = tolerance;
+        } else {
+            testRecord = new OutputConsistencyModel({
                 serviceId,
                 reportId: serviceReport._id,
-                ffd: ffd || "",                                   // Only ffd now
+                ffd: ffd || { value: "" },
                 outputRows: outputRows || [],
-                measurementHeaders: measurementHeaders || ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-                tolerance: tolerance || "",
-                finalRemark: finalRemark || "",
-            }],
-            { session }
-        );
+                tolerance: tolerance || { operator: "<=", value: "" },
+            });
+        }
 
-        // Link back to ServiceReport (adjust field name if needed in your ServiceReport schema)
-        serviceReport.OutputConsistencyModel = newTest[0]._id;
+        await testRecord.save({ session });
+        serviceReport.OutputConsistencyForFixedRadioFlouro = testRecord._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();
@@ -74,8 +68,8 @@ const create = asyncHandler(async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            message: "Output Consistency test created successfully",
-            data: newTest[0],
+            message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
+            data: { _id: testRecord._id.toString(), serviceId: testRecord.serviceId.toString() },
         });
     } catch (error) {
         await session.abortTransaction();
@@ -88,16 +82,16 @@ const getByServiceId = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
-        return res.status(400).json({ message: "Valid serviceId is required" });
+        return res.status(400).json({ success: false, message: "Valid serviceId is required" });
     }
 
     const testData = await OutputConsistencyModel.findOne({ serviceId }).lean();
 
     if (!testData) {
-        return res.status(404).json({ message: "No Output Consistency data found for this service" });
+        return res.json({ success: true, data: null });
     }
 
-    return res.status(200).json({
+    return res.json({
         success: true,
         data: testData,
     });
@@ -124,47 +118,41 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const updateData = req.body;
+    const { ffd, outputRows, tolerance } = req.body;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
-        return res.status(400).json({ message: "Valid testId is required" });
+        return res.status(400).json({ success: false, message: "Valid testId is required" });
     }
 
-    delete updateData.serviceId;
-    delete updateData.createdAt;
-
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
+    let session = null;
     try {
-        const updatedTest = await OutputConsistencyModel.findByIdAndUpdate(
-            testId,
-            {
-                $set: {
-                    ...updateData,
-                    updatedAt: Date.now(),
-                },
-            },
-            { new: true, runValidators: true, session }
-        );
-
-        if (!updatedTest) {
+        session = await mongoose.startSession();
+        session.startTransaction();
+        const testRecord = await OutputConsistencyModel.findById(testId).session(session);
+        if (!testRecord) {
             await session.abortTransaction();
-            return res.status(404).json({ message: "Output Consistency test not found" });
+            return res.status(404).json({ success: false, message: "Test record not found" });
         }
-
+        const service = await Service.findById(testRecord.serviceId).session(session);
+        if (service && service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,
+            });
+        }
+        if (ffd !== undefined) testRecord.ffd = ffd;
+        if (outputRows !== undefined) testRecord.outputRows = outputRows;
+        if (tolerance !== undefined) testRecord.tolerance = tolerance;
+        await testRecord.save({ session });
         await session.commitTransaction();
-        session.endSession();
-
-        return res.status(200).json({
-            success: true,
-            message: "Output Consistency test updated successfully",
-            data: updatedTest,
-        });
+        return res.json({ success: true, message: "Updated successfully", data: { _id: testRecord._id.toString() } });
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
+        if (session) await session.abortTransaction();
+        console.error("Update Error:", error);
+        return res.status(500).json({ success: false, message: "Update failed", error: error.message });
+    } finally {
+        if (session) session.endSession();
     }
 });
 

@@ -26,6 +26,7 @@ const create = asyncHandler(async (req, res) => {
     surveyorName,
     surveyorDesignation,
     remarks,
+    tubeId,
   } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {

@@ -43,24 +43,33 @@ const create = asyncHandler(async (req, res) => {
         });
     }
 
-    // Calculate remark based on tolerance
-    const remark = rows.every(row => {
+    // Calculate remark for each row and overall remark
+    const rowsWithRemarks = rows.map(row => {
         const { operator, value } = row.tolerance;
         const visible = row.visibleCount;
 
+        let passes = false;
         switch (operator) {
-            case '>': return visible > value;
-            case '>=': return visible >= value;
-            case '<': return visible < value;
-            case '<=': return visible <= value;
-            case '=': return visible === value;
-            default: return false;
+            case '>': passes = visible > value; break;
+            case '>=': passes = visible >= value; break;
+            case '<': passes = visible < value; break;
+            case '<=': passes = visible <= value; break;
+            case '=': passes = visible === value; break;
+            default: passes = false;
         }
-    }) ? 'Pass' : 'Fail';
+
+        return {
+            ...row,
+            remark: passes ? 'Pass' : 'Fail',
+        };
+    });
+
+    // Calculate overall remark
+    const remark = rowsWithRemarks.every(row => row.remark === 'Pass') ? 'Pass' : 'Fail';
 
     const newTest = await ImagingPhantomMammography.create({
         serviceId,
-        rows,
+        rows: rowsWithRemarks,
         remark,
     });
 
@@ -139,26 +148,35 @@ const update = asyncHandler(async (req, res) => {
         });
     }
 
-    // Recalculate remark
-    const remark = rows.every(row => {
+    // Recalculate remark for each row and overall remark
+    const rowsWithRemarks = rows.map(row => {
         const { operator, value } = row.tolerance;
         const visible = row.visibleCount;
 
+        let passes = false;
         switch (operator) {
-            case '>': return visible > value;
-            case '>=': return visible >= value;
-            case '<': return visible < value;
-            case '<=': return visible <= value;
-            case '=': return visible === value;
-            default: return false;
+            case '>': passes = visible > value; break;
+            case '>=': passes = visible >= value; break;
+            case '<': passes = visible < value; break;
+            case '<=': passes = visible <= value; break;
+            case '=': passes = visible === value; break;
+            default: passes = false;
         }
-    }) ? 'Pass' : 'Fail';
+
+        return {
+            ...row,
+            remark: passes ? 'Pass' : 'Fail',
+        };
+    });
+
+    // Calculate overall remark
+    const remark = rowsWithRemarks.every(row => row.remark === 'Pass') ? 'Pass' : 'Fail';
 
     const updatedTest = await ImagingPhantomMammography.findByIdAndUpdate(
         testId,
         {
             $set: {
-                rows,
+                rows: rowsWithRemarks,
                 remark,
                 updatedAt: Date.now(),
             },

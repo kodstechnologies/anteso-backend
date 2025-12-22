@@ -31,14 +31,13 @@ const MeasurementOfCTDISchema = new Schema(
     table1: [Table1RowSchema],
     table2: [Table2RowSchema],
     tolerance: {
-      expected: {
-        value: { type: String, default: '', trim: true },
-        quote: { type: String, default: '', trim: true },
+      sign: { 
+        type: String, 
+        enum: ['plus', 'minus', 'both'], 
+        default: 'both',
+        trim: true 
       },
-      maximum: {
-        value: { type: String, default: '', trim: true },
-        quote: { type: String, default: '', trim: true },
-      },
+      value: { type: String, default: '', trim: true },
     },
     serviceReportId: {
       type: Schema.Types.ObjectId,

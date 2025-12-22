@@ -3,11 +3,15 @@ import mongoose from 'mongoose';
 
 const LeakageMeasurementSchema = new mongoose.Schema({
     location: { type: String, trim: true }, // "Tube" or "Collimator"
-    left: { type: String, trim: true },
-    right: { type: String, trim: true },
-    front: { type: String, trim: true },
-    back: { type: String, trim: true },
-    top: { type: String, trim: true },
+    left: { type: Number, default: 0 },
+    right: { type: Number, default: 0 },
+    front: { type: Number, default: 0 },
+    back: { type: Number, default: 0 },
+    top: { type: Number, default: 0 },
+    max: { type: String, trim: true },
+    result: { type: String, trim: true },
+    unit: { type: String, trim: true },
+    mgy: { type: String, trim: true },
 });
 
 const TubeHousingLeakageSchema = new mongoose.Schema(

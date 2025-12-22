@@ -13,6 +13,7 @@ const ParameterSchema = new Schema({
 const MeasurementSchema = new Schema({
   actual: { type: String, default: '', trim: true },
   measured: { type: String, default: '', trim: true },
+  remark: { type: String, default: '', trim: true },
 });
 
 const GantryTiltSchema = new Schema(

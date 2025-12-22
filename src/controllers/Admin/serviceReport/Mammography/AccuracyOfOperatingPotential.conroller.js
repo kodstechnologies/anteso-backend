@@ -8,21 +8,15 @@ import mongoose from "mongoose";
 const MACHINE_TYPE = "Mammography"; // Change if needed: "Fluoroscopy", "C-Arm", etc.
 
 const create = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance } = req.body;
+    const { table1, table2, toleranceValue, toleranceType, toleranceSign } = req.body;
     const { serviceId } = req.params;
 
     // === Validation ===
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required in URL" });
     }
-    if (!Array.isArray(mAStations) || mAStations.length === 0) {
-        return res.status(400).json({ success: false, message: "mAStations array is required" });
-    }
-    if (!Array.isArray(measurements) || measurements.length === 0) {
-        return res.status(400).json({ success: false, message: "measurements array is required" });
-    }
-    if (!tolerance || !tolerance.sign || !tolerance.value) {
-        return res.status(400).json({ success: false, message: "tolerance (sign & value) is required" });
+    if (!toleranceValue || !toleranceType || !toleranceSign) {
+        return res.status(400).json({ success: false, message: "tolerance (value, type, sign) is required" });
     }
 
     let session = null;
@@ -56,32 +50,22 @@ const create = asyncHandler(async (req, res) => {
 
         if (testRecord) {
             // Update existing
-            testRecord.mAStations = mAStations;
-            testRecord.measurements = measurements.map(m => ({
-                appliedKvp: m.appliedKvp?.trim(),
-                measuredValues: m.measuredValues || [],
-                averageKvp: m.averageKvp || "",
-                remarks: m.remarks || "-",
-            }));
-            testRecord.tolerance = {
-                sign: tolerance.sign,
-                value: tolerance.value.trim(),
-            };
+            if (table1 !== undefined) testRecord.table1 = table1;
+            if (table2 !== undefined) testRecord.table2 = table2;
+            if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
+            if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
+            if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
         } else {
             // Create new
             testRecord = new AccuracyOfOperatingPotential({
                 serviceId,
                 reportId: serviceReport._id,
-                mAStations,
-                measurements: measurements.map(m => ({
-                    appliedKvp: m.appliedKvp?.trim(),
-                    measuredValues: m.measuredValues || [],
-                    averageKvp: m.averageKvp || "",
-                    remarks: m.remarks || "-",
-                })),
+                table1: table1 || [],
+                table2: table2 || [],
                 tolerance: {
-                    sign: tolerance.sign,
-                    value: tolerance.value.trim(),
+                    value: toleranceValue,
+                    type: toleranceType,
+                    sign: toleranceSign,
                 },
             });
         }
@@ -116,7 +100,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance } = req.body;
+    const { table1, table2, toleranceValue, toleranceType, toleranceSign } = req.body;
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -145,17 +129,11 @@ const update = asyncHandler(async (req, res) => {
         }
 
         // Update fields
-        testRecord.mAStations = mAStations || testRecord.mAStations;
-        testRecord.measurements = (measurements || []).map(m => ({
-            appliedKvp: m.appliedKvp?.trim(),
-            measuredValues: m.measuredValues || [],
-            averageKvp: m.averageKvp || "",
-            remarks: m.remarks || "-",
-        }));
-        testRecord.tolerance = {
-            sign: tolerance?.sign || testRecord.tolerance.sign,
-            value: tolerance?.value?.trim() || testRecord.tolerance.value,
-        };
+        if (table1 !== undefined) testRecord.table1 = table1;
+        if (table2 !== undefined) testRecord.table2 = table2;
+        if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
+        if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
+        if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
 
         await testRecord.save({ session });
         await session.commitTransaction();

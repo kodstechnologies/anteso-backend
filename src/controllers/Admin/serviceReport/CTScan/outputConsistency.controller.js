@@ -191,7 +191,7 @@ import OutputConsistency from "../../../../models/testTables/CTScan/outputConsis
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, measurementHeaders, tolerance, tubeId } = req.body;
+  const { parameters, outputRows, tolerance, tubeId } = req.body;
   const { serviceId } = req.params;
 
   // === Validate Input ===
@@ -201,8 +201,8 @@ const create = asyncHandler(async (req, res) => {
   if (!parameters || typeof parameters !== "object") {
     return res.status(400).json({ success: false, message: "parameters object is required" });
   }
-  if (!Array.isArray(outputRows) || !Array.isArray(measurementHeaders)) {
-    return res.status(400).json({ success: false, message: "outputRows and measurementHeaders must be arrays" });
+  if (!Array.isArray(outputRows)) {
+    return res.status(400).json({ success: false, message: "outputRows must be an array" });
   }
 
   let session = null;
@@ -237,8 +237,10 @@ const create = asyncHandler(async (req, res) => {
     const payload = {
       parameters,
       outputRows,
-      measurementHeaders,
-      tolerance: tolerance?.toString().trim() || "",
+      tolerance: {
+        operator: tolerance?.operator || '<=',
+        value: tolerance?.value?.toString().trim() || (typeof tolerance === 'string' ? tolerance.trim() : ""),
+      },
       serviceId,
       reportId: serviceReport._id,
       tubeId: tubeIdValue,
@@ -310,7 +312,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, measurementHeaders, tolerance, tubeId } = req.body;
+  const { parameters, outputRows, tolerance, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -319,8 +321,8 @@ const update = asyncHandler(async (req, res) => {
   if (!parameters || typeof parameters !== "object") {
     return res.status(400).json({ success: false, message: "parameters object is required" });
   }
-  if (!Array.isArray(outputRows) || !Array.isArray(measurementHeaders)) {
-    return res.status(400).json({ success: false, message: "outputRows and measurementHeaders must be arrays" });
+  if (!Array.isArray(outputRows)) {
+    return res.status(400).json({ success: false, message: "outputRows must be an array" });
   }
 
   let session = null;
@@ -347,8 +349,10 @@ const update = asyncHandler(async (req, res) => {
     // Update fields
     testRecord.parameters = parameters;
     testRecord.outputRows = outputRows;
-    testRecord.measurementHeaders = measurementHeaders;
-    testRecord.tolerance = tolerance?.toString().trim() || "";
+    testRecord.tolerance = {
+      operator: tolerance?.operator || '<=',
+      value: tolerance?.value?.toString().trim() || (typeof tolerance === 'string' ? tolerance.trim() : ""),
+    };
     if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 
     await testRecord.save({ session });

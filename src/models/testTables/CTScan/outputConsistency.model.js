@@ -15,14 +15,21 @@ const outputRowSchema = new Schema({
     outputs: [{ type: String, trim: true }],  // raw measurements
     mean: { type: String, trim: true },       // calculated mean
     cov: { type: String, trim: true },        // coefficient of variation
+    remark: { type: String, enum: ['Pass', 'Fail', ''], default: '' },  // per-row remark
 });
 
 const OutputConsistencySchema = new Schema(
     {
         parameters: parametersSchema,
         outputRows: [outputRowSchema],
-        measurementHeaders: [{ type: String, trim: true }],  // Meas 1, Meas 2...
-        tolerance: { type: String, trim: true, default: "" },
+        tolerance: {
+            operator: { 
+                type: String, 
+                enum: ['<=', '<', '>=', '>'], 
+                default: '<=' 
+            },
+            value: { type: String, trim: true, default: "" },
+        },
 
         serviceId: {
             type: Schema.Types.ObjectId,

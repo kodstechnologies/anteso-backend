@@ -52,14 +52,8 @@ const create = asyncHandler(async (req, res) => {
             table1,
             table2,
             tolerance: {
-                expected: {
-                    value: tolerance?.expected?.value?.trim() || "",
-                    quote: tolerance?.expected?.quote?.trim() || "",
-                },
-                maximum: {
-                    value: tolerance?.maximum?.value?.trim() || "",
-                    quote: tolerance?.maximum?.quote?.trim() || "",
-                },
+                sign: tolerance?.sign || 'both',
+                value: tolerance?.value?.trim() || "",
             },
             serviceId,
             serviceReportId: serviceReport._id,
@@ -170,14 +164,8 @@ const update = asyncHandler(async (req, res) => {
         testRecord.table1 = table1;
         testRecord.table2 = table2;
         testRecord.tolerance = {
-            expected: {
-                value: tolerance?.expected?.value?.trim() || "",
-                quote: tolerance?.expected?.quote?.trim() || "",
-            },
-            maximum: {
-                value: tolerance?.maximum?.value?.trim() || "",
-                quote: tolerance?.maximum?.quote?.trim() || "",
-            },
+            sign: tolerance?.sign || 'both',
+            value: tolerance?.value?.trim() || "",
         };
 
         await testRecord.save({ session });

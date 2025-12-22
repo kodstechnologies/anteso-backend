@@ -21,6 +21,11 @@ const AlignmentOfTableGantrySchema = new Schema(
       default: '2',
       trim: true,
     },
+    remark: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Service',

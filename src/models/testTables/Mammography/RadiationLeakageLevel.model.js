@@ -1,44 +1,40 @@
 // models/RadiationLeakageLevel.js
 import mongoose from 'mongoose';
 
-const MeasurementSchema = new mongoose.Schema({
-  direction: { type: String, trim: true }, // Left, Right, Front, Back, Top
-  value: { type: String, trim: true },     // Measured value in mR/h (stored as string)
-});
-
-const LeakageLocationSchema = new mongoose.Schema({
-  location: { type: String, trim: true },           // "Tube" or "Collimator"
-  measurements: [MeasurementSchema],                // 5 directions: Left, Right, Front, Back, Top
-  max: { type: String, trim: true },                // Max mR/h (frontend calculated)
-  resultMR: { type: String, trim: true },           // Final mR/h after workload correction
-  resultMGy: { type: String, trim: true },          // Final mGy/h
+const LeakageMeasurementSchema = new mongoose.Schema({
+    location: { type: String, trim: true },
+    left: { type: String, trim: true },
+    right: { type: String, trim: true },
+    front: { type: String, trim: true },
+    back: { type: String, trim: true },
+    top: { type: String, trim: true },
+    max: { type: String, trim: true },
+    result: { type: String, trim: true },
+    unit: { type: String, trim: true, default: 'mR/h' },
+    mgy: { type: String, trim: true },
 });
 
 const RadiationLeakageLevelSchema = new mongoose.Schema(
   {
     // Measurement Settings
-    distanceFromFocus: { type: String, trim: true },  // e.g. "100" cm
-    kv: { type: String, trim: true },                 // Applied kV
-    ma: { type: String, trim: true },                 // Applied mA
-    time: { type: String, trim: true },               // Exposure time (sec)
+    fcd: { type: String, trim: true },
+    kv: { type: String, trim: true },
+    ma: { type: String, trim: true },
+    time: { type: String, trim: true },
 
     // Workload
-    workload: { type: String, trim: true },           // mA·min/week, e.g. "500"
+    workload: { type: String, trim: true },
 
-    // Leakage Data (Tube + Collimator)
-    leakageLocations: [LeakageLocationSchema],
+    // Leakage Measurements (Tube + Collimator)
+    leakageMeasurements: [LeakageMeasurementSchema],
 
-    // Final Results
-    highestLeakageMR: { type: String, trim: true },   // Highest mR/h (after correction)
-    highestLeakageMGy: { type: String, trim: true },  // Highest mGy/h
-    finalRemark: { type: String, trim: true },        // "Pass" or "Fail"
+    // Tolerance
+    toleranceValue: { type: String, trim: true },
+    toleranceOperator: { type: String, trim: true }, // "less than or equal to", "greater than or equal to", "="
+    toleranceTime: { type: String, trim: true },
 
-    // AERB Tolerance Parameters (editable)
-    toleranceArea: { type: String, trim: true, default: "10" },        // cm²
-    toleranceDimension: { type: String, trim: true, default: "20" },   // cm
-    toleranceDistance: { type: String, trim: true, default: "5" },     // cm
-    toleranceLimit: { type: String, trim: true, default: "0.02" },     // mGy/h
-    toleranceTime: { type: String, trim: true, default: "1" },         // hour
+    // Final Result (optional - can be computed on frontend)
+    remark: { type: String, trim: true }, // "Pass", "Fail", or empty
 
     // Foreign Keys
     serviceId: {

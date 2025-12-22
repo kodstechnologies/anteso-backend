@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Computed Tomography";
 // CREATE or UPDATE with Transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { result, toleranceSign, toleranceValue } = req.body;
+  const { result, toleranceSign, toleranceValue, remark } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -50,6 +50,7 @@ const create = asyncHandler(async (req, res) => {
       existing.result = result !== undefined ? result : existing.result;
       existing.toleranceSign = toleranceSign !== undefined ? toleranceSign : existing.toleranceSign;
       existing.toleranceValue = toleranceValue !== undefined ? toleranceValue : existing.toleranceValue;
+      existing.remark = remark !== undefined ? remark : existing.remark;
       testRecord = existing;
     } else {
       // Create new
@@ -59,6 +60,7 @@ const create = asyncHandler(async (req, res) => {
         result: result || '',
         toleranceSign: toleranceSign || '±',
         toleranceValue: toleranceValue || '2',
+        remark: remark || '',
       });
     }
 
@@ -114,7 +116,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { result, toleranceSign, toleranceValue } = req.body;
+  const { result, toleranceSign, toleranceValue, remark } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -145,6 +147,7 @@ const update = asyncHandler(async (req, res) => {
     if (result !== undefined) testRecord.result = result;
     if (toleranceSign !== undefined) testRecord.toleranceSign = toleranceSign;
     if (toleranceValue !== undefined) testRecord.toleranceValue = toleranceValue;
+    if (remark !== undefined) testRecord.remark = remark;
 
     await testRecord.save({ session });
     await session.commitTransaction();

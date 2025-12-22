@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const { Schema, model } = mongoose;
 const ToleranceSchema = new mongoose.Schema({
     value: { type: String, },
-    type: { type: String, enum: ['percent', 'kvp'],  },
+    type: { type: String, enum: ['percent', 'kvp', 'absolute'],  },
     sign: { type: String, enum: ['plus', 'minus', 'both'], },
 });
 // Table 1 Row

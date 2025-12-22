@@ -37,14 +37,21 @@ const ImagingPhantomSchema = new mongoose.Schema({
                     min: 0,
                 },
             },
+            remark: {
+                type: String,
+                enum: ["Pass", "Fail", ""],
+                default: "",
+                trim: true,
+            },
         },
     ],
 
-    // Internal remark: "Pass" or "Fail" based on tolerance check (not shown in UI)
+    // Internal remark: "Pass" or "Fail" based on tolerance check
     remark: {
         type: String,
-        enum: ["Pass", "Fail"],
-        required: true,
+        enum: ["Pass", "Fail", ""],
+        default: "",
+        trim: true,
     },
 
     // Timestamps

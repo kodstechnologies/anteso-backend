@@ -11,7 +11,6 @@ const create = asyncHandler(async (req, res) => {
         addedFilterThickness,
         table,
         resultHVT28kVp,
-        hvlTolerances,
     } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -32,18 +31,27 @@ const create = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: "Total Filtration data already exists for this service" });
         }
 
+        // Process table to ensure recommendedValue structure is correct
+        const processedTable = (table || []).map((row) => ({
+            kvp: row.kvp || null,
+            mAs: row.mAs || null,
+            alEquivalence: row.alEquivalence || null,
+            hvt: row.hvt || null,
+            remarks: row.remarks || '',
+            recommendedValue: row.recommendedValue ? {
+                minValue: row.recommendedValue.minValue || null,
+                maxValue: row.recommendedValue.maxValue || null,
+                kvp: row.recommendedValue.kvp || null,
+            } : null,
+        }));
+
         const newTest = await TotalFilterationAndAlluminiumMammography.create(
             [{
                 serviceId,
                 targetWindow: targetWindow.trim(),
                 addedFilterThickness: addedFilterThickness?.trim() || null,
-                table: table || [],
+                table: processedTable,
                 resultHVT28kVp: resultHVT28kVp || null,
-                hvlTolerances: hvlTolerances || {
-                    at30: { operator: ">=", value: null },
-                    at40: { operator: ">=", value: null },
-                    at50: { operator: ">=", value: null },
-                },
             }],
             { session }
         );
@@ -106,15 +114,37 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE - With Transaction
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ message: "Valid testId is required" });
     }
 
-    // Prevent changing serviceId
+    // Prevent changing serviceId and createdAt
     delete updateData.serviceId;
     delete updateData.createdAt;
+    
+    // Remove hvlTolerances if present (no longer used)
+    delete updateData.hvlTolerances;
+    delete updateData.recommendedMinValue;
+    delete updateData.recommendedMaxValue;
+    delete updateData.recommendedKvp;
+
+    // Process table to ensure recommendedValue structure is correct
+    if (updateData.table && Array.isArray(updateData.table)) {
+        updateData.table = updateData.table.map((row) => ({
+            kvp: row.kvp || null,
+            mAs: row.mAs || null,
+            alEquivalence: row.alEquivalence || null,
+            hvt: row.hvt || null,
+            remarks: row.remarks || '',
+            recommendedValue: row.recommendedValue ? {
+                minValue: row.recommendedValue.minValue || null,
+                maxValue: row.recommendedValue.maxValue || null,
+                kvp: row.recommendedValue.kvp || null,
+            } : null,
+        }));
+    }
 
     const session = await mongoose.startSession();
     session.startTransaction();

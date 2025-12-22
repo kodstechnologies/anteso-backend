@@ -15,6 +15,7 @@ const TableIncrementationRowSchema = new Schema({
   tablePosition: { type: String, default: '', trim: true },
   expected: { type: String, default: '', trim: true },
   measured: { type: String, default: '', trim: true },
+  remark: { type: String, default: '', trim: true },
 });
 
 const TablePositionSchema = new Schema(
