@@ -788,6 +788,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationProtectionBMD"
     },
+    TotalFilterationBMD: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TotalFilterationForBMD"
+    },
 })
 export default mongoose.model(
     "ServiceReport",

@@ -4,6 +4,7 @@ import ConsistencyOfRadiationOutput from "../../../../models/testTables/BMD/Cons
 import LinearityOfMaLoading from "../../../../models/testTables/BMD/LinearityOfMasLoading.model.js";
 import TubeHousingLeakage from "../../../../models/testTables/BMD/TubeHousing.model.js";
 import RadiationProtection from "../../../../models/testTables/BMD/DetailsOfRadiationProtection.model.js";
+import TotalFilteration from "../../../../models/testTables/BMD/TotalFilteration.model.js";
 import mongoose from "mongoose";
 
 // SAVE/UPDATE Report Header for BMD
@@ -84,6 +85,7 @@ export const saveReportHeader = async (req, res) => {
             linearityMa,
             tubeLeakage,
             radProtection,
+            totalFiltration,
         ] = await Promise.all([
             AccuracyOfOperatingPotentialAndTime.findOne({ serviceId }).sort({
                 createdAt: -1,
@@ -92,6 +94,7 @@ export const saveReportHeader = async (req, res) => {
             LinearityOfMaLoading.findOne({ serviceId }).sort({ createdAt: -1 }),
             TubeHousingLeakage.findOne({ serviceId }).sort({ createdAt: -1 }),
             RadiationProtection.findOne({ serviceId }).sort({ createdAt: -1 }),
+            TotalFilteration.findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
 
         // UPDATE REPORT
@@ -125,6 +128,7 @@ export const saveReportHeader = async (req, res) => {
             LinearityOfMaLoadingBMD: linearityMa?._id || null,
             TubeHousingLeakageBMD: tubeLeakage?._id || null,
             RadiationProtectionSurveyBMD: radProtection?._id || null,
+            TotalFilterationBMD: totalFiltration?._id || null,
         });
 
         await report.save();
@@ -152,6 +156,7 @@ export const getReportHeader = async (req, res) => {
             .populate("LinearityOfMaLoadingBMD")
             .populate("TubeHousingLeakageBMD")
             .populate("RadiationProtectionSurveyBMD")
+            .populate("TotalFilterationBMD")
             .lean();
 
         if (!report) {
@@ -208,6 +213,7 @@ export const getReportHeader = async (req, res) => {
                 linearityOfMaLoading: report.LinearityOfMaLoadingBMD || await LinearityOfMaLoading.findOne({ serviceId }),
                 tubeHousingLeakage: report.TubeHousingLeakageBMD || await TubeHousingLeakage.findOne({ serviceId }),
                 radiationProtectionSurvey: report.RadiationProtectionSurveyBMD || await RadiationProtection.findOne({ serviceId }),
+                totalFiltration: report.TotalFilterationBMD || await TotalFilteration.findOne({ serviceId }),
             },
         });
     } catch (error) {

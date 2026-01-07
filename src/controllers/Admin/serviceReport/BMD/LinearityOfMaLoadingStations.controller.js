@@ -53,14 +53,37 @@ const create = asyncHandler(async (req, res) => {
       await serviceReport.save({ session });
     }
 
+    // Normalize table1 - ensure it's an object, not an array
+    let normalizedTable1 = table1;
+    if (Array.isArray(table1) && table1.length > 0) {
+      normalizedTable1 = table1[0];
+    } else if (!table1 || typeof table1 !== 'object') {
+      normalizedTable1 = { fcd: "", kv: "", time: "" };
+    }
+
+    // Normalize table2 - ensure each row has required 'ma' field
+    let normalizedTable2 = table2 || [];
+    if (Array.isArray(normalizedTable2)) {
+      normalizedTable2 = normalizedTable2.map(row => ({
+        ma: row.ma || row.mAsApplied || '', // Support both field names
+        measuredOutputs: row.measuredOutputs || [],
+        average: row.average || '',
+        x: row.x || '',
+        xMax: row.xMax || '',
+        xMin: row.xMin || '',
+        col: row.col || '',
+        remarks: row.remarks || '',
+      }));
+    }
+
     // Create the test document
     const newTest = await LinearityOfMaLoading.create(
       [
         {
           serviceId,
           serviceReportId: serviceReport._id,
-          table1: table1 || { fcd: "", kv: "", time: "" },
-          table2: table2 || [],
+          table1: normalizedTable1,
+          table2: normalizedTable2,
           tolerance: tolerance || "0.1",
         },
       ],
@@ -120,12 +143,35 @@ const update = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
+    // Normalize table1 - ensure it's an object, not an array
+    let normalizedTable1 = table1;
+    if (Array.isArray(table1) && table1.length > 0) {
+      normalizedTable1 = table1[0];
+    } else if (!table1 || typeof table1 !== 'object') {
+      normalizedTable1 = { fcd: "", kv: "", time: "" };
+    }
+
+    // Normalize table2 - ensure each row has required 'ma' field
+    let normalizedTable2 = table2 || [];
+    if (Array.isArray(normalizedTable2)) {
+      normalizedTable2 = normalizedTable2.map(row => ({
+        ma: row.ma || row.mAsApplied || '', // Support both field names
+        measuredOutputs: row.measuredOutputs || [],
+        average: row.average || '',
+        x: row.x || '',
+        xMax: row.xMax || '',
+        xMin: row.xMin || '',
+        col: row.col || '',
+        remarks: row.remarks || '',
+      }));
+    }
+
     const updatedTest = await LinearityOfMaLoading.findByIdAndUpdate(
       testId,
       {
         $set: {
-          table1: table1 || { fcd: "", kv: "", time: "" },
-          table2: table2 || [],
+          table1: normalizedTable1,
+          table2: normalizedTable2,
           tolerance: tolerance || "0.1",
           updatedAt: Date.now(),
         },

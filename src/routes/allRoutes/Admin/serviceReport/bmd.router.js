@@ -1,6 +1,9 @@
 import { Router } from "express";
 const router = Router();
 import AccuracyOfOperatingPotentailAndTimeController from "../../../../controllers/Admin/serviceReport/BMD/AccuracyOfOperatingPotentailAndTime.controller.js";
+import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/BMD/AccuracyOfIrradiationTime.controller.js";
+import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/BMD/AccuracyOfOperatingPotential.controller.js";
+import TotalFilterationController from "../../../../controllers/Admin/serviceReport/BMD/TotalFilteration.controller.js";
 import LinearityOfmALoading from "../../../../controllers/Admin/serviceReport/BMD/LinearityOfMaLoadingStations.controller.js";
 import RadiationLeakageLevel from "../../../../controllers/Admin/serviceReport/BMD/RadiationLeakageLevel.controller.js"
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/BMD/RadiationProtectionSurvey.controller.js"
@@ -10,6 +13,24 @@ import bmdReportController from "../../../../controllers/Admin/serviceReport/BMD
 
 router.put('/report-header/:serviceId', bmdReportController.saveReportHeader)
 router.get('/report-header/:serviceId', bmdReportController.getReportHeader)
+
+// Accuracy of Irradiation Time
+router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);
+router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTimeController.getByServiceId);
+router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.update);
+router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.getById);
+
+// Accuracy of Operating Potential
+router.post('/accuracy-of-operating-potential/:serviceId', AccuracyOfOperatingPotentialController.create);
+router.get('/accuracy-of-operating-potential-by-service/:serviceId', AccuracyOfOperatingPotentialController.getByServiceId);
+router.put('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.update);
+router.get('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.getById);
+
+// Total Filtration
+router.post('/total-filtration/:serviceId', TotalFilterationController.create);
+router.get('/total-filtration-by-service/:serviceId', TotalFilterationController.getByServiceId);
+router.put('/total-filtration/:testId', TotalFilterationController.update);
+router.get('/total-filtration/:testId', TotalFilterationController.getById);
 
 router.post('/accuracy-of-operating-potential-and-time/:serviceId', AccuracyOfOperatingPotentailAndTimeController.create)
 router.get('/accuracy-of-operating-potential-and-time/:testId', AccuracyOfOperatingPotentailAndTimeController.getById)
