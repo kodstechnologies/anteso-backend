@@ -12,6 +12,7 @@ import TechnicianRoutes from '../Admin/technicianRoutes.js'
 import QuotationRoutes from '../Admin/quotation.router.js'
 import OrderRoutes from '../Admin/order.router.js'
 import PDFRouter from '../Admin/pdf.router.js'
+import FileProxyRouter from '../Admin/fileProxy.router.js'
 import AdvanceRouter from '../Admin/advanceRoutes.js'
 import DealerRouter from '../Admin/dealer.router.js'
 import PaymentRouter from '../Admin/payment.router.js'
@@ -31,6 +32,9 @@ const router = Router();
 router.use('/auth', AuthRouter)
 // router.use('/refresh', refreshAccessToken);
 router.use(authenticate, authorizeRoles("admin", "Customer", "Technician", "Employee", "staff"))
+
+// File proxy route - after auth for security (axios interceptor will add token automatically)
+router.use('/file', FileProxyRouter)
 
 router.use('/clients', ClientRoutes)
 router.use('/hospital', HospitalRoutes)
