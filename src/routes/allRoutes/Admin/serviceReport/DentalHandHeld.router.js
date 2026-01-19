@@ -8,6 +8,7 @@ import RadiationLeakagelevelController from "../../../../controllers/Admin/servi
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderDentalHandHeld)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderDentalHandHeld)
 
 router.post('/accuracy-of-operating-potential-and-time/:serviceId', AccuracyOfOperatingPotentialAndTimeController.create)
 router.get('/accuracy-of-operating-potential-and-time-by-service/:serviceId', AccuracyOfOperatingPotentialAndTimeController.getByServiceId)

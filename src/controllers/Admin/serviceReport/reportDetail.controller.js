@@ -1311,6 +1311,96 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
 };
 
 
+export const saveReportHeaderDentalHandHeld = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName, address, srfNumber, srfDate, testReportNumber, issueDate,
+        nomenclature, make, model, category, slNumber, condition,
+        testingProcedureNumber, engineerNameRPId, testDate, testDueDate,
+        location, temperature, humidity, toolsUsed, notes
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        // Format tools
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId && mongoose.Types.ObjectId.isValid(tool.toolId)) {
+                toolId = tool.toolId;
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        // Format notes
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        // Fetch latest test records for Dental Hand-held
+        const [
+            accuracyOp, linearityTime, reproducibility, tubeLeakage, radiationLeakage
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ReproducibilityOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageTestDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        // Update fields
+        Object.assign(report, {
+            customerName, address, srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature, make, model, category, slNumber, condition,
+            testingProcedureNumber, engineerNameRPId,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location, temperature, humidity,
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            // Link test results
+            AccuracyOfOperatingPotentialAndTimeDentalHandHeld: accuracyOp?._id || null,
+            LinearityOfTimeDentalHandHeld: linearityTime?._id || null,
+            ReproducibilityOfRadiationOutputDentalHandHeld: reproducibility?._id || null,
+            TubeHousingLeakageDentalHandHeld: tubeLeakage?._id || null,
+            RadiationLeakageTestDentalHandHeld: radiationLeakage?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Dental Hand-held report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Dental Hand-held):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+
 export const getReportHeaderRadiographyFixed = async (req, res) => {
     const { serviceId } = req.params;
 
@@ -1777,9 +1867,9 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
         ]);
 
         // Query common tests (Radiation Protection Survey - always with tubeId: null)
-        const radiationProtectionSurvey = await mongoose.model("RadiationProtectionSurveyInventionalRadiology").findOne({ 
-            serviceId, 
-            tubeId: null 
+        const radiationProtectionSurvey = await mongoose.model("RadiationProtectionSurveyInventionalRadiology").findOne({
+            serviceId,
+            tubeId: null
         }).lean();
 
         const format = (date) =>
@@ -2425,4 +2515,4 @@ export const getReportHeaderMammography = async (req, res) => {
 };
 
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }
+export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }

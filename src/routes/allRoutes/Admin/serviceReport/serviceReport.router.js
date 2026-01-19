@@ -35,6 +35,7 @@ router.use('/dental-cone-beam-ct', DentalConeBeamCT)
 router.use('/opg', OPG)
 router.use('/dental-intra', DentalIntra)
 
+router.use('/dental-hand-held', DentalHandHeld)
 router.use('/radiography-fixed', RadiographyFixed)
 router.use('/radiography-mobile-ht', RadiographyMobileHT)
 router.use('/radiography-portable', RadiographyPortable)
