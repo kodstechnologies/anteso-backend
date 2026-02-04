@@ -182,6 +182,139 @@ const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
     }
 });
 
+const updateBasicDetailsByOrderId = asyncHandler(async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const updateData = req.body;
+
+        console.log("📝 Updating order:", orderId, "with:", updateData);
+
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({ message: "Invalid or missing order ID." });
+        }
+
+        // Fields we allow to update
+        const allowedFields = [
+            'hospitalName',
+            'fullAddress',
+            'city',
+            // 'district',
+            'state',
+            'pinCode',
+            // 'branchName',
+            'contactPersonName',
+            'emailAddress',
+            'contactNumber',
+            'designation'
+        ];
+
+        // Filter only allowed fields
+        const filteredUpdate = {};
+        allowedFields.forEach(field => {
+            if (updateData[field] !== undefined && updateData[field] !== '') {
+                filteredUpdate[field] = updateData[field];
+            }
+        });
+
+        if (Object.keys(filteredUpdate).length === 0) {
+            return res.status(400).json({ message: "No valid fields provided for update" });
+        }
+
+        // 1. Find the order
+        const order = await orderModel.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        const oldEmail = order.emailAddress;
+        const oldPhone = order.contactNumber;
+
+        const newEmail = filteredUpdate.emailAddress || oldEmail;
+        const newPhone = filteredUpdate.contactNumber || oldPhone;
+
+        // 2. Find or prepare client
+        let client = await Client.findOne({
+            $or: [
+                { email: newEmail },
+                { phone: newPhone }
+            ]
+        });
+
+        if (client) {
+            // Link hospital if not already linked
+            if (order.hospital && !client.hospitals.includes(order.hospital)) {
+                client.hospitals.push(order.hospital);
+            }
+
+            // Update client (person-level info)
+            const clientUpdate = {};
+            if (filteredUpdate.contactPersonName) clientUpdate.name = filteredUpdate.contactPersonName;
+            if (newEmail !== client.email) clientUpdate.email = newEmail;
+            if (newPhone !== client.phone) clientUpdate.phone = newPhone;
+            if (filteredUpdate.fullAddress) clientUpdate.address = filteredUpdate.fullAddress;
+
+            if (Object.keys(clientUpdate).length > 0) {
+                await Client.findByIdAndUpdate(client._id, clientUpdate, { new: true, runValidators: true });
+            }
+        } else if (newEmail && newPhone) {
+            // Create new client if none found
+            client = await Client.create({
+                name: filteredUpdate.contactPersonName || order.contactPersonName || "Unknown Contact",
+                email: newEmail,
+                phone: newPhone,
+                address: filteredUpdate.fullAddress || order.fullAddress || "",
+                hospitals: order.hospital ? [order.hospital] : [],
+            });
+        }
+
+        // 3. Update Hospital (hospital-level info)
+        if (order.hospital) {
+            const hospitalUpdate = {
+                name: filteredUpdate.hospitalName,
+                address: filteredUpdate.fullAddress,
+                city: filteredUpdate.city,
+                // district: filteredUpdate.district,
+                state: filteredUpdate.state,
+                pinCode: filteredUpdate.pinCode,
+                // branch: filteredUpdate.branchName,
+                phone: filteredUpdate.contactNumber,
+                email: filteredUpdate.emailAddress,
+
+            };
+
+            Object.keys(hospitalUpdate).forEach(key =>
+                hospitalUpdate[key] === undefined && delete hospitalUpdate[key]
+            );
+
+            if (Object.keys(hospitalUpdate).length > 0) {
+                await Hospital.findByIdAndUpdate(order.hospital, hospitalUpdate, { new: true, runValidators: true });
+            }
+        }
+
+        // 4. Update the Order itself (keep snapshot)
+        const updatedOrder = await orderModel.findByIdAndUpdate(
+            orderId,
+            { $set: filteredUpdate },
+            { new: true, runValidators: true }
+        ).select(
+            'srfNumber leadOwner hospitalName fullAddress city district state pinCode branchName ' +
+            'contactPersonName emailAddress contactNumber designation customer hospital'
+        );
+
+        return res.status(200).json({
+            message: "Basic details updated successfully",
+            data: updatedOrder
+        });
+
+    } catch (error) {
+        console.error("Error in updateBasicDetailsByOrderId:", error);
+        res.status(500).json({
+            message: "Server Error",
+            error: error.message || "Internal server error"
+        });
+    }
+});
+
 const getAdditionalServicesByOrderId = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -2029,11 +2162,250 @@ const getReportNumbers = asyncHandler(async (req, res) => {
 
 // });
 
+// export const createOrder = asyncHandler(async (req, res) => {
+//     try {
+//         console.log("📥 req.body:", req.body);
+//         console.log("📎 req.files:", req.files); // Changed to req.files (plural)
+//         console.log("📎 req.file:", req.file); // Keep for backward compatibility
+
+//         const {
+//             leadOwner,
+//             hospitalName,
+//             fullAddress,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//             branchName,
+//             contactPersonName,
+//             emailAddress,
+//             contactNumber,
+//             designation,
+//             advanceAmount,
+//             urgency,
+//             services,
+//             additionalServices,
+//             specialInstructions,
+//             courierDetails,
+//             rawFile,
+//             rawPhoto,
+//         } = req.body;
+
+//         /* =======================
+//            1️⃣ Validate Required Fields
+//         ======================== */
+//         if (
+//             !leadOwner ||
+//             !hospitalName ||
+//             !fullAddress ||
+//             !city ||
+//             !state ||
+//             !pinCode ||
+//             !contactPersonName ||
+//             !emailAddress ||
+//             !contactNumber
+//         ) {
+//             throw new ApiError(400, "Missing required fields");
+//         }
+
+//         /* =======================
+//            2️⃣ Validate Lead Owner
+//         ======================== */
+//         const leadOwnerUser = await User.findById(leadOwner).select("name role");
+//         if (!leadOwnerUser) {
+//             throw new ApiError(404, "Lead owner not found");
+//         }
+
+//         /* =======================
+//            3️⃣ Check Duplicate Client Email
+//         ======================== */
+//         const existingClient = await Client.findOne({ email: emailAddress });
+//         if (existingClient) {
+//             return res.status(400).json(
+//                 new ApiResponse(
+//                     400,
+//                     null,
+//                     `A client with email "${emailAddress}" already exists`
+//                 )
+//             );
+//         }
+
+//         /* =======================
+//            4️⃣ Find or Create Client
+//         ======================== */
+//         let client = await Client.findOne({ phone: contactNumber });
+//         if (!client) {
+//             client = await Client.create({
+//                 name: contactPersonName,
+//                 phone: contactNumber,
+//                 email: emailAddress,
+//                 address: fullAddress,
+//                 role: "Customer",
+//             });
+//         }
+
+//         /* =======================
+//            5️⃣ Create Hospital
+//         ======================== */
+//         const hospital = await Hospital.create({
+//             name: hospitalName,
+//             email: emailAddress,
+//             address: fullAddress,
+//             branch: branchName,
+//             phone: contactNumber,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//         });
+
+//         if (!client.hospitals.includes(hospital._id)) {
+//             client.hospitals.push(hospital._id);
+//             await client.save();
+//         }
+
+//         /* =======================
+//            6️⃣ Upload Work Order Files (multiple) - MODIFIED
+//         ======================== */
+//         // Get all files from the request
+//         const files = req.files || (req.file ? [req.file] : []);
+//         const fileUrls = {};
+
+//         // Process each file
+//         for (const file of files) {
+//             const { url } = await uploadToS3(file);
+//             // Extract service index from fieldname (e.g., "service_0_workOrderCopy" -> 0)
+//             const match = file.fieldname.match(/service_(\d+)_workOrderCopy/);
+//             if (match) {
+//                 fileUrls[match[1]] = url; // Store URL by service index
+//             } else if (file.fieldname === "workOrderCopy") {
+//                 // Legacy support for single file upload
+//                 fileUrls["main"] = url;
+//             }
+//         }
+
+//         /* =======================
+//            7️⃣ Parse Services
+//         ======================== */
+//         let parsedServices = [];
+//         if (services) {
+//             parsedServices =
+//                 typeof services === "string" ? JSON.parse(services) : services;
+//         }
+
+//         if (!Array.isArray(parsedServices) || !parsedServices.length) {
+//             throw new ApiError(400, "At least one service is required");
+//         }
+
+//         /* =======================
+//            8️⃣ Transform Services (IMPORTANT)
+//         ======================== */
+//         const transformedServices = parsedServices.map((s, index) => ({
+//             machineType: s.machineType,
+//             quantity: s.quantity,
+//             equipmentNo: s.equipmentNo,
+//             machineModel: s.machineModel,
+//             serialNumber: s.serialNumber,
+//             remark: s.remark,
+
+//             // ✅ Use service-specific work order copy if available, otherwise fallback
+//             workOrderCopy: fileUrls[index] || fileUrls["main"] || s.workOrderCopy || "",
+//             partyCodeOrSysId: s.partyCodeOrSysId,
+//             procNoOrPoNo: s.procNoOrPoNo,
+//             procExpiryDate: s.procExpiryDate,
+
+//             workTypeDetails: (s.workType || []).map((wt) => ({
+//                 workType: wt,
+//                 status: "pending",
+//             })),
+//         }));
+
+//         const serviceDocs = await Services.insertMany(transformedServices);
+
+//         /* =======================
+//            9️⃣ Parse Additional Services
+//         ======================== */
+//         let parsedAdditional = [];
+//         if (additionalServices) {
+//             parsedAdditional =
+//                 typeof additionalServices === "string"
+//                     ? JSON.parse(additionalServices)
+//                     : additionalServices;
+//         }
+
+//         let additionalServiceDocs = [];
+//         if (Array.isArray(parsedAdditional) && parsedAdditional.length) {
+//             additionalServiceDocs = await Promise.all(
+//                 parsedAdditional.map(async (svc) => {
+//                     const doc = await AdditionalService.create({
+//                         name: svc.name,
+//                         description: svc.description || "",
+//                         totalAmount: svc.totalAmount ?? 0,
+//                     });
+//                     return doc._id;
+//                 })
+//             );
+//         }
+
+//         /* =======================
+//            🔟 Create Order
+//         ======================== */
+//         const order = await orderModel.create({
+//             leadOwner,
+//             hospitalName,
+//             fullAddress,
+//             city,
+//             district,
+//             state,
+//             pinCode,
+//             branchName,
+//             contactPersonName,
+//             emailAddress,
+//             contactNumber,
+//             designation,
+//             advanceAmount,
+
+//             customer: client._id,
+//             urgency,
+//             services: serviceDocs.map((s) => s._id),
+//             additionalServices: additionalServiceDocs,
+//             specialInstructions,
+//             courierDetails,
+//             rawFile,
+//             rawPhoto,
+
+//             hospital: hospital._id,
+//         });
+
+//         console.log("✅ Order created:", order);
+
+//         return res
+//             .status(201)
+//             .json(new ApiResponse(201, order, "Order created successfully"));
+
+//     } catch (error) {
+//         console.error("❌ Error creating order:", error);
+
+//         if (error.code === 11000 && error.keyPattern?.email) {
+//             throw new ApiError(
+//                 400,
+//                 `A client with email "${error.keyValue.email}" already exists`
+//             );
+//         }
+
+//         throw new ApiError(500, "Failed to create order", [error.message]);
+//     }
+// });
+
 export const createOrder = asyncHandler(async (req, res) => {
     try {
         console.log("📥 req.body:", req.body);
-        console.log("📎 req.files:", req.files); // Changed to req.files (plural)
-        console.log("📎 req.file:", req.file); // Keep for backward compatibility
+        console.log("📎 req.files:", req.files?.map(f => ({
+            fieldname: f.fieldname,
+            originalname: f.originalname,
+            size: f.size
+        })) || "no files");
+        console.log("📎 req.file:", req.file);
 
         const {
             leadOwner,
@@ -2058,9 +2430,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             rawPhoto,
         } = req.body;
 
-        /* =======================
-           1️⃣ Validate Required Fields
-        ======================== */
+        // 1. Validate Required Fields
         if (
             !leadOwner ||
             !hospitalName ||
@@ -2075,17 +2445,13 @@ export const createOrder = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Missing required fields");
         }
 
-        /* =======================
-           2️⃣ Validate Lead Owner
-        ======================== */
+        // 2. Validate Lead Owner
         const leadOwnerUser = await User.findById(leadOwner).select("name role");
         if (!leadOwnerUser) {
             throw new ApiError(404, "Lead owner not found");
         }
 
-        /* =======================
-           3️⃣ Check Duplicate Client Email
-        ======================== */
+        // 3. Check Duplicate Client Email
         const existingClient = await Client.findOne({ email: emailAddress });
         if (existingClient) {
             return res.status(400).json(
@@ -2097,9 +2463,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             );
         }
 
-        /* =======================
-           4️⃣ Find or Create Client
-        ======================== */
+        // 4. Find or Create Client
         let client = await Client.findOne({ phone: contactNumber });
         if (!client) {
             client = await Client.create({
@@ -2111,9 +2475,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             });
         }
 
-        /* =======================
-           5️⃣ Create Hospital
-        ======================== */
+        // 5. Create Hospital
         const hospital = await Hospital.create({
             name: hospitalName,
             email: emailAddress,
@@ -2131,67 +2493,74 @@ export const createOrder = asyncHandler(async (req, res) => {
             await client.save();
         }
 
-        /* =======================
-           6️⃣ Upload Work Order Files (multiple) - MODIFIED
-        ======================== */
-        // Get all files from the request
-        const files = req.files || (req.file ? [req.file] : []);
-        const fileUrls = {};
+        // ───────────────────────────────────────────────────────────────
+        // 6. Handle multiple work order file uploads
+        // ───────────────────────────────────────────────────────────────
+        const files = Array.isArray(req.files) ? req.files : req.file ? [req.file] : [];
+        const fileUrlsByIndex = {};
 
-        // Process each file
         for (const file of files) {
             const { url } = await uploadToS3(file);
-            // Extract service index from fieldname (e.g., "service_0_workOrderCopy" -> 0)
-            const match = file.fieldname.match(/service_(\d+)_workOrderCopy/);
-            if (match) {
-                fileUrls[match[1]] = url; // Store URL by service index
-            } else if (file.fieldname === "workOrderCopy") {
-                // Legacy support for single file upload
-                fileUrls["main"] = url;
+
+            // Try to match service index from fieldname
+            // Supports: service_0_workOrderCopy, service_1_workOrderCopy, etc.
+            const serviceIndexMatch = file.fieldname.match(/service[_-](\d+)[_-]workOrderCopy/i);
+
+            if (serviceIndexMatch) {
+                const index = serviceIndexMatch[1];
+                fileUrlsByIndex[index] = url;
+                console.log(`→ Attached file to service #${index}: ${file.originalname} → ${url}`);
+            }
+            // Legacy fallback (single file sent as "workOrderCopy")
+            else if (file.fieldname === "workOrderCopy" || file.fieldname === "workOrderCopy[]") {
+                fileUrlsByIndex["0"] = url; // attach to first service
+                console.log(`→ Legacy file attached to service #0: ${file.originalname} → ${url}`);
             }
         }
 
-        /* =======================
-           7️⃣ Parse Services
-        ======================== */
+        // 7. Parse Services
         let parsedServices = [];
         if (services) {
             parsedServices =
                 typeof services === "string" ? JSON.parse(services) : services;
         }
 
-        if (!Array.isArray(parsedServices) || !parsedServices.length) {
+        if (!Array.isArray(parsedServices) || parsedServices.length === 0) {
             throw new ApiError(400, "At least one service is required");
         }
 
-        /* =======================
-           8️⃣ Transform Services (IMPORTANT)
-        ======================== */
-        const transformedServices = parsedServices.map((s, index) => ({
-            machineType: s.machineType,
-            quantity: s.quantity,
-            equipmentNo: s.equipmentNo,
-            machineModel: s.machineModel,
-            serialNumber: s.serialNumber,
-            remark: s.remark,
+        // 8. Transform Services – attach correct file URL per service
+        const transformedServices = parsedServices.map((s, index) => {
+            const stringIndex = String(index);
 
-            // ✅ Use service-specific work order copy if available, otherwise fallback
-            workOrderCopy: fileUrls[index] || fileUrls["main"] || s.workOrderCopy || "",
-            partyCodeOrSysId: s.partyCodeOrSysId,
-            procNoOrPoNo: s.procNoOrPoNo,
-            procExpiryDate: s.procExpiryDate,
+            return {
+                machineType: s.machineType,
+                quantity: Number(s.quantity) || 1, // ensure number
+                equipmentNo: s.equipmentNo || "",
+                machineModel: s.machineModel || "",
+                // serialNumber: s.serialNumber || "",   // uncomment if needed
+                // remark: s.remark || "",               // uncomment if needed
 
-            workTypeDetails: (s.workType || []).map((wt) => ({
-                workType: wt,
-                status: "pending",
-            })),
-        }));
+                // ── Key line: file assignment logic ────────────────────────
+                workOrderCopy:
+                    fileUrlsByIndex[stringIndex] ||           // per-service file
+                    (index === 0 ? fileUrlsByIndex["0"] || fileUrlsByIndex["main"] : null) ||  // fallback for first service
+                    "",
+
+                partyCodeOrSysId: s.partyCodeOrSysId || "",
+                procNoOrPoNo: s.procNoOrPoNo || "",
+                procExpiryDate: s.procExpiryDate || "",
+
+                workTypeDetails: (s.workType || []).map((wt) => ({
+                    workType: wt,
+                    status: "pending",
+                })),
+            };
+        });
 
         const serviceDocs = await Services.insertMany(transformedServices);
 
-        /* =======================
-           9️⃣ Parse Additional Services
-        ======================== */
+        // 9. Parse Additional Services
         let parsedAdditional = [];
         if (additionalServices) {
             parsedAdditional =
@@ -2201,22 +2570,20 @@ export const createOrder = asyncHandler(async (req, res) => {
         }
 
         let additionalServiceDocs = [];
-        if (Array.isArray(parsedAdditional) && parsedAdditional.length) {
+        if (Array.isArray(parsedAdditional) && parsedAdditional.length > 0) {
             additionalServiceDocs = await Promise.all(
                 parsedAdditional.map(async (svc) => {
                     const doc = await AdditionalService.create({
                         name: svc.name,
                         description: svc.description || "",
-                        totalAmount: svc.totalAmount ?? 0,
+                        totalAmount: Number(svc.totalAmount) ?? 0,
                     });
                     return doc._id;
                 })
             );
         }
 
-        /* =======================
-           🔟 Create Order
-        ======================== */
+        // 10. Create Order
         const order = await orderModel.create({
             leadOwner,
             hospitalName,
@@ -2230,7 +2597,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             emailAddress,
             contactNumber,
             designation,
-            advanceAmount,
+            advanceAmount: Number(advanceAmount) || 0,
 
             customer: client._id,
             urgency,
@@ -2244,11 +2611,11 @@ export const createOrder = asyncHandler(async (req, res) => {
             hospital: hospital._id,
         });
 
-        console.log("✅ Order created:", order);
+        console.log("✅ Order created:", order._id, order.srfNumber);
 
-        return res
-            .status(201)
-            .json(new ApiResponse(201, order, "Order created successfully"));
+        return res.status(201).json(
+            new ApiResponse(201, order, "Order created successfully")
+        );
 
     } catch (error) {
         console.error("❌ Error creating order:", error);
@@ -2263,7 +2630,6 @@ export const createOrder = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to create order", [error.message]);
     }
 });
-
 
 const startOrder = asyncHandler(async (req, res) => {
     const { employeeId, orderId } = req.params;
@@ -6660,4 +7026,4 @@ const getWorkOrderCopy = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy }
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId }

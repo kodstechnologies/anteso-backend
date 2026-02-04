@@ -4,6 +4,8 @@ import upload from "../../../middlewares/upload.js";
 const router = Router();
 router.get('/get-all', orderController.getAllOrders)
 router.get('/basic-details-by-orderId/:orderId', orderController.getBasicDetailsByOrderId)
+router.put('/update-details-by-orderId/:orderId', orderController.updateBasicDetailsByOrderId)
+
 router.get('/additional-services/:orderId', orderController.getAdditionalServicesByOrderId)
 router.get('/service-details-of-orders/:orderId', orderController.getAllServicesByOrderId)
 // router.get('/get-all-services-by-id/:id',orderController.getServicesByDetails)
