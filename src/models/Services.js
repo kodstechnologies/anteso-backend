@@ -59,7 +59,7 @@ const workTypeDetailSchema = new mongoose.Schema({
     //     type: String
     // }
     isSubmitted: { type: Boolean, default: false },
-   
+
     assignedAt: Date,
     completedAt: { type: Date }
 }, { _id: false });
@@ -86,6 +86,10 @@ const serviceSchema = new mongoose.Schema({
     workTypeDetails: [workTypeDetailSchema],
     verificationResponse: String,
     status: String,
-    totalAmount: Number
+    totalAmount: Number,
+    workOrderCopy: { type: String },
+    partyCodeOrSysId: { type: String },
+    procNoOrPoNo: { type: String },
+    procExpiryDate: { type: Date },
 }, { timestamps: true });
 export default mongoose.model('Service', serviceSchema);

@@ -22,10 +22,10 @@ const orderSchema = new mongoose.Schema({
     contactNumber: { type: String, required: true },
     designation: { type: String },
     advanceAmount: { type: Number },
-    workOrderCopy: { type: String },
-    partyCodeOrSysId: { type: String },
-    procNoOrPoNo: { type: String },
-    procExpiryDate: { type: Date },
+    // workOrderCopy: { type: String },
+    // partyCodeOrSysId: { type: String },
+    // procNoOrPoNo: { type: String },
+    // procExpiryDate: { type: Date },
     //  customer: Only include users of role = 'customer'
     customer: {
         type: Schema.Types.ObjectId,
@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: 'AdditionalService'
         }
-    ],  
+    ],
     specialInstructions: { type: String },
     courierDetails: {
         type: mongoose.Schema.Types.ObjectId,
@@ -72,8 +72,8 @@ const orderSchema = new mongoose.Schema({
     },
     rawFile: { type: String },
     rawPhoto: { type: String },
-    customersPDF:{
-        type:String
+    customersPDF: {
+        type: String
     }
 }, { timestamps: true });
 

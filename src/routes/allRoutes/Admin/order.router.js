@@ -75,7 +75,8 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 
 //has to be changed--changed
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
-router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
+// router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
+router.post('/create-order', upload.any(), orderController.createOrder)
 router.put(
     "/update-additional-service/:id",
     upload.single("file"), // single file key: 'file'
