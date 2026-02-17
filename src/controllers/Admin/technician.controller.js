@@ -818,6 +818,25 @@ export const updateById = asyncHandler(async (req, res) => {
 
     } catch (error) {
         console.error("❌ Update employee error:", error);
+
+        // ── Only this part is changed ──
+        if (error.code === 11000) {  // MongoDB duplicate key error
+            const field = Object.keys(error.keyValue || {})[0] || "field";
+            const value = error.keyValue?.[field] ?? "value";
+
+            const friendlyField = field === "phone" ? "phone number" : field;
+            console.log("correct");
+            
+            return res.status(409).json(
+                new ApiResponse(
+                    409,
+                    null,
+                    `The ${friendlyField} "${value}" is already used by another employee.`
+                )
+            );
+        }
+
+        // all other errors → keep original behavior
         throw new ApiError(error.statusCode || 500, error.message || "Failed to update employee");
     }
 });
