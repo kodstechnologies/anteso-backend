@@ -1,7 +1,10 @@
-// controllers/EquipmentSetting.js
 import mongoose from 'mongoose';
 import EquipmentSettingForMammography from '../../../../models/testTables/Mammography/EquipmentSetting.model.js';
+import ServiceReport from '../../../../models/serviceReports/serviceReport.model.js';
+import Service from '../../../../models/Services.js';
 import { asyncHandler } from '../../../../utils/AsyncHandler.js';
+
+const MACHINE_TYPE = "Mammography";
 
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
@@ -24,52 +27,81 @@ const create = asyncHandler(async (req, res) => {
         });
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
+    let session = null;
     try {
-        // Prevent duplicate for same serviceId
-        const existing = await EquipmentSettingForMammography.findOne({
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        // 1. Validate Service & Machine Type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+            });
+        }
+
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
+        // 3. Upsert Test Record
+        let testRecord = await EquipmentSettingForMammography.findOne({
             serviceId,
             isDeleted: false,
         }).session(session);
 
-        if (existing) {
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({
-                success: false,
-                message: 'Equipment settings already exist for this service',
-            });
+        const testData = {
+            serviceId,
+            reportId: serviceReport._id,
+            appliedCurrent: appliedCurrent?.trim() || null,
+            appliedVoltage: appliedVoltage?.trim() || null,
+            exposureTime: exposureTime?.trim() || null,
+            focalSpotSize: focalSpotSize?.trim() || null,
+            filtration: filtration?.trim() || null,
+            collimation: collimation?.trim() || null,
+            frameRate: frameRate?.trim() || null,
+            pulseWidth: pulseWidth?.trim() || null,
+        };
+
+        if (testRecord) {
+            Object.assign(testRecord, testData);
+            testRecord.updatedAt = Date.now();
+        } else {
+            testRecord = new EquipmentSettingForMammography(testData);
         }
 
-        const newSetting = await EquipmentSettingForMammography.create(
-            [{
-                serviceId,
-                appliedCurrent: appliedCurrent?.trim() || null,
-                appliedVoltage: appliedVoltage?.trim() || null,
-                exposureTime: exposureTime?.trim() || null,
-                focalSpotSize: focalSpotSize?.trim() || null,
-                filtration: filtration?.trim() || null,
-                collimation: collimation?.trim() || null,
-                frameRate: frameRate?.trim() || null,
-                pulseWidth: pulseWidth?.trim() || null,
-            }],
-            { session }
-        );
+        await testRecord.save({ session });
+
+        // 4. Link back to ServiceReport
+        serviceReport.EquipmentSettingMammography = testRecord._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
-        session.endSession();
 
         return res.status(201).json({
             success: true,
-            message: 'Equipment settings created successfully',
-            data: newSetting[0],
+            message: 'Equipment settings saved successfully',
+            data: testRecord,
         });
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
+        if (session) await session.abortTransaction();
+        console.error("EquipmentSetting Create Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save test",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
     }
 });
 

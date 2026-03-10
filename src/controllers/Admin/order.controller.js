@@ -323,16 +323,22 @@ const getAdditionalServicesByOrderId = asyncHandler(async (req, res) => {
             return res.status(400).json({ message: "Order ID is required" });
         }
 
-        // ✅ Populate 'additionalServices' including updatedBy details
+        // ✅ Populate 'additionalServices' including updatedBy and assignedStaff details
         const order = await orderModel
             .findById(orderId)
             .populate({
                 path: "additionalServices",
-                select: "name description remark status report updatedBy updatedByModel",
-                populate: {
-                    path: "updatedBy",
-                    select: "name email phone role technicianType", // ✅ include readable user info
-                },
+                select: "name description remark status report updatedBy updatedByModel assignedStaff assignedAt",
+                populate: [
+                    {
+                        path: "updatedBy",
+                        select: "name email phone role technicianType", // ✅ include readable user info
+                    },
+                    {
+                        path: "assignedStaff",
+                        select: "name email phone role technicianType profilePicture",
+                    }
+                ],
             })
             .select("additionalServices specialInstructions");
 
@@ -770,6 +776,129 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
     }
 });
 
+const addMachineToOrder = asyncHandler(async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const {
+            machineType,
+            equipmentId,
+            machineModel,
+            workType,
+            partyCodeOrSysId,
+            procNoOrPoNo,
+            procExpiryDate,
+        } = req.body;
+
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({ message: "Invalid or missing order ID." });
+        }
+
+        const order = await orderModel.findById(orderId);
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        let workOrderCopyUrl = "";
+        if (req.file) {
+            const uploaded = await uploadToS3(req.file);
+            workOrderCopyUrl = uploaded.url;
+        }
+
+        let parsedWorkTypes = [];
+        if (workType) {
+            try {
+                parsedWorkTypes = typeof workType === 'string' && workType.startsWith('[')
+                    ? JSON.parse(workType)
+                    : (Array.isArray(workType) ? workType : [workType]);
+            } catch (e) {
+                parsedWorkTypes = [workType];
+            }
+        }
+
+        const newService = await Services.create({
+            machineType,
+            equipmentNo: equipmentId,
+            machineModel,
+            quantity: 1,
+            workOrderCopy: workOrderCopyUrl,
+            partyCodeOrSysId,
+            procNoOrPoNo,
+            procExpiryDate: procExpiryDate ? new Date(procExpiryDate) : null,
+            workTypeDetails: parsedWorkTypes.map(wt => ({
+                workType: wt,
+                status: 'pending'
+            }))
+        });
+
+        order.services.push(newService._id);
+
+        // order.machineType = machineType;
+        // order.equipmentId = equipmentId;
+        // order.machineModel = machineModel;
+        // order.workType = parsedWorkTypes.join(', ');
+        // order.partyCodeOrSysId = partyCodeOrSysId;
+        // order.procNoOrPoNo = procNoOrPoNo;
+        // order.procExpiryDate = procExpiryDate ? new Date(procExpiryDate) : null;
+        // if (workOrderCopyUrl) order.workOrderCopy = workOrderCopyUrl;
+
+        await order.save();
+
+        return res.status(201).json(
+            new ApiResponse(201, { order, service: newService }, "Service added to order successfully")
+        );
+
+    } catch (error) {
+        console.error("❌ Error adding machine to order:", error);
+        return res.status(500).json({ message: "Failed to add machine to order", error: error.message });
+    }
+});
+
+const deleteMachineByorderId = asyncHandler(async (req, res) => {
+    try {
+        const { orderId, serviceId } = req.params;
+
+        if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+            return res.status(400).json({ message: "Invalid or missing order ID." });
+        }
+
+        if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+            return res.status(400).json({ message: "Invalid or missing service ID." });
+        }
+
+        // 1. Find the service to get related reports
+        const service = await Services.findById(serviceId);
+        if (!service) {
+            return res.status(404).json({ message: "Service not found" });
+        }
+
+        // 2. Collect report IDs
+        const qaTestIds = [];
+        const eloraIds = [];
+        if (service.workTypeDetails) {
+            service.workTypeDetails.forEach(wt => {
+                if (wt.QAtest) qaTestIds.push(wt.QAtest);
+                if (wt.elora) eloraIds.push(wt.elora);
+            });
+        }
+
+        // 3. Delete reports
+        if (qaTestIds.length > 0) await QATest.deleteMany({ _id: { $in: qaTestIds } });
+        if (eloraIds.length > 0) await Elora.deleteMany({ _id: { $in: eloraIds } });
+
+        // 4. Remove service from order
+        await orderModel.findByIdAndUpdate(orderId, {
+            $pull: { services: serviceId }
+        });
+
+        // 5. Delete service document
+        await Services.findByIdAndDelete(serviceId);
+
+        return res.status(200).json(new ApiResponse(200, null, "Machine deleted successfully from the order"));
+    } catch (error) {
+        console.error("❌ Error deleting machine:", error);
+        return res.status(500).json({ message: "Failed to delete machine", error: error.message });
+    }
+});
 
 const getQARawByOrderId = asyncHandler(async (req, res) => {
     try {
@@ -5073,6 +5202,208 @@ export const updateAdditionalService = async (req, res) => {
     }
 };
 
+export const assignAdditionalServiceStaff = async (req, res) => {
+    try {
+        const { orderId, serviceId } = req.params;
+        const { assignedStaff, remark } = req.body;
+
+        if (!orderId || !serviceId) {
+            return res.status(400).json({ message: "Order ID and Service ID are required" });
+        }
+
+        if (!assignedStaff) {
+            return res.status(400).json({ message: "Assigned staff is required" });
+        }
+
+        const service = await AdditionalService.findById(serviceId);
+        if (!service) {
+            return res.status(404).json({ message: "Service not found" });
+        }
+
+        const oldStatus = service.status || "pending";
+        const newStatus = "pending"; // Stay in pending state only
+
+        // 🔥 Track who updated
+        const tokenUser = req.admin || req.user;
+        let updatedBy = null;
+
+        if (tokenUser) {
+            updatedBy = {
+                _id: (tokenUser._id || tokenUser.id).toString(),
+                name: tokenUser.name,
+                role: tokenUser.role
+            };
+        }
+
+        // 🧾 Status History logic
+        if (!service.statusHistory) service.statusHistory = [];
+        service.statusHistory.push({
+            oldStatus,
+            newStatus,
+            updatedBy,
+            updatedAt: new Date()
+        });
+
+        service.assignedStaff = assignedStaff;
+        service.status = newStatus;
+        service.remark = remark || service.remark;
+        service.assignedAt = new Date();
+
+        await service.save();
+
+        res.status(200).json({
+            message: "Additional Service assigned successfully",
+            service,
+            assignedAt: service.assignedAt,
+            statusHistory: service.statusHistory
+        });
+    } catch (error) {
+        console.error("Error assigning additional service:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export const getAssignedStaffDetailsForAdditionalService = async (req, res) => {
+    try {
+        const { orderId, serviceId } = req.params;
+
+        if (!orderId || !serviceId) {
+            return res.status(400).json({ message: "Order ID and Additional Service ID are required" });
+        }
+
+        const service = await AdditionalService.findById(serviceId).populate({
+            path: "assignedStaff",
+            select: "name email phone technicianType role profilePicture",
+        });
+
+        if (!service) {
+            return res.status(404).json({ message: "Additional Service not found" });
+        }
+
+        if (!service.assignedStaff) {
+            return res.status(404).json({
+                success: false,
+                message: "No staff assigned to this additional service yet"
+            });
+        }
+
+        // Prepare available reports
+        const reports = {
+            submittedReport: service.submittedReport || null,
+            completedReport: service.completedReport || null,
+            genericReport: service.report || null
+        };
+
+        res.status(200).json({
+            success: true,
+            data: {
+                assignedStaff: service.assignedStaff || null,
+                status: service.status || "pending",
+                remark: service.remark || "",
+                reports: reports,
+                assignedAt: service.assignedAt || null,
+                statusHistory: service.statusHistory || []
+            }
+        });
+    } catch (error) {
+        console.error("❌ Error fetching assigned staff details:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while fetching staff details",
+            error: error.message
+        });
+    }
+};
+
+export const updateAdditionalServiceStatus = async (req, res) => {
+    try {
+        const { orderId, serviceId } = req.params;
+        const { staffId, status, remark, fileUrl } = req.body;
+
+        if (!orderId || !serviceId) {
+            return res.status(400).json({ message: "Order ID and Additional Service ID are required" });
+        }
+
+        if (!status) {
+            return res.status(400).json({ message: "Status is required" });
+        }
+
+        const service = await AdditionalService.findById(serviceId);
+        if (!service) {
+            return res.status(404).json({ message: "Additional Service not found" });
+        }
+
+        const oldStatus = service.status || "pending";
+        const newStatus = status.toLowerCase();
+
+        // 🔥 Track who updated (using statusId from body or token)
+        const tokenUser = req.admin || req.user;
+        let updatedBy = null;
+
+        if (tokenUser) {
+            updatedBy = {
+                _id: (tokenUser._id || tokenUser.id).toString(),
+                name: tokenUser.name,
+                role: tokenUser.role
+            };
+        } else if (staffId) {
+            // Fallback to staffId from body if no token (though middleware usually handles this)
+            const staff = await Employee.findById(staffId);
+            if (staff) {
+                updatedBy = {
+                    _id: staff._id.toString(),
+                    name: staff.name,
+                    role: "Employee"
+                };
+            }
+        }
+
+        // 🧾 Status History logic
+        if (!service.statusHistory) service.statusHistory = [];
+        service.statusHistory.push({
+            oldStatus,
+            newStatus,
+            updatedBy,
+            updatedAt: new Date()
+        });
+
+        // 📄 Handle Report URLs (priority to req.file)
+        let finalFileUrl = fileUrl || null;
+        if (req.file) {
+            const uploaded = await uploadToS3(req.file);
+            finalFileUrl = uploaded.url;
+        }
+
+        if (newStatus === "submitted" && finalFileUrl) {
+            service.submittedReport = finalFileUrl;
+        } else if (newStatus === "completed" && finalFileUrl) {
+            service.completedReport = finalFileUrl;
+        } else if (finalFileUrl) {
+            // Generic report update if status unknown but file provided
+            service.report = finalFileUrl;
+        }
+
+        service.status = newStatus;
+        if (remark) service.remark = remark;
+        if (staffId) service.assignedStaff = staffId; // Keep assigned staff updated if changed
+
+        await service.save();
+
+        res.status(200).json({
+            success: true,
+            message: `Status updated to '${newStatus}' successfully`,
+            service,
+            statusHistory: service.statusHistory
+        });
+    } catch (error) {
+        console.error("❌ Error updating additional service status:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating status",
+            error: error.message
+        });
+    }
+};
 
 const getUpdatedAdditionalServiceReport = asyncHandler(async (req, res) => {
     try {
@@ -7026,4 +7357,4 @@ const getWorkOrderCopy = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId }
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId }

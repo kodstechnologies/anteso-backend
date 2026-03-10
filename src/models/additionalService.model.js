@@ -64,9 +64,29 @@ const additionalServiceSchema = new mongoose.Schema(
         remark: {
             type: String
         },
-        report: {
+        submittedReport: {
             type: String
-        }
+        },
+        completedReport: {
+            type: String
+        },
+        assignedStaff: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Employee"
+        },
+        assignedAt: {
+            type: Date
+        },
+        statusHistory: [{
+            oldStatus: String,
+            newStatus: String,
+            updatedBy: {
+                _id: { type: String },      // store as string, NOT ObjectId
+                name: { type: String },
+                role: { type: String }
+            },
+            updatedAt: { type: Date, default: Date.now }
+        }]
     },
     { timestamps: true }
 );

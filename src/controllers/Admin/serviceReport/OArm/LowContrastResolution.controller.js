@@ -1,5 +1,6 @@
 // controllers/LowContrastResolutionController.js
 import LowContrastResolution from "../../../../models/testTables/OArm/LowContrastResolution.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
@@ -30,6 +31,12 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
         // Auto compute remark: smaller hole = better → PASS if measured ≤ recommended
         let remark = "";
         const measured = parseFloat(smallestHoleSize);
@@ -42,7 +49,7 @@ const create = asyncHandler(async (req, res) => {
         const newTest = await LowContrastResolution.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: serviceReport._id,
                 smallestHoleSize: smallestHoleSize?.toString().trim() || "",
                 recommendedStandard: recommendedStandard?.toString().trim() || "3.0",
                 tolerance: tolerance?.toString().trim() || "",
@@ -50,6 +57,9 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        serviceReport.LowContrastResolutionOArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -162,6 +172,13 @@ const update = asyncHandler(async (req, res) => {
                 success: false,
                 message: "Test not found",
             });
+        }
+
+        // Link to ServiceReport if not already linked (fixes orphaned records)
+        const serviceReport = await ServiceReport.findOne({ serviceId: updatedTest.serviceId }).session(session);
+        if (serviceReport && !serviceReport.LowContrastResolutionOArm) {
+            serviceReport.LowContrastResolutionOArm = updatedTest._id;
+            await serviceReport.save({ session });
         }
 
         await session.commitTransaction();

@@ -1,12 +1,13 @@
 // controllers/HighContrastResolutionController.js
 import HighContrastResolution from "../../../../models/testTables/OArm/HighContrastResolution.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { measuredLpPerMm, recommendedStandard, tolerance, reportId } = req.body;
+    const { measuredLpPerMm, recommendedStandard, tolerance } = req.body; // Remove reportId from body destructure
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({
@@ -30,6 +31,13 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
         // Auto compute remark: PASS if measured >= recommended (after applying tolerance logic if needed)
         let remark = "";
         const measured = parseFloat(measuredLpPerMm);
@@ -42,7 +50,7 @@ const create = asyncHandler(async (req, res) => {
         const newTest = await HighContrastResolution.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: serviceReport._id,
                 measuredLpPerMm: measuredLpPerMm?.toString().trim() || "",
                 recommendedStandard: recommendedStandard?.toString().trim() || "1.50",
                 tolerance: tolerance?.toString().trim() || "",
@@ -50,6 +58,10 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        // Link test to ServiceReport
+        serviceReport.HighContrastResolutionOArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();

@@ -360,6 +360,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfTimeDentalIntra"
     },
+    LinearityOfmAsLoadingDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMasLoadingDentalIntra"
+    },
     ReproducibilityOfRadiationOutputDentalIntra: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ReproducibilityOfRadiationOutputDentalIntra"
@@ -372,6 +376,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationLeakageTestDentalIntra"
     },
+    RadiationProtectionSurveyDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionSurveyDentalIntra"
+    },
 
     //Dental Hand-held
     AccuracyOfOperatingPotentialAndTimeDentalHandHeld: {
@@ -382,6 +390,18 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfTimeDentalHandHeld"
     },
+    LinearityOfMaLoadingDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmALoadingDentalHandHeld"
+    },
+    LinearityOfmAsLoadingDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfmAsLoadingDentalHandHeld"
+    },
+    ConsistencyOfRadiationOutputDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "ConsistencyOfRadiationOutputDentalHandHeld"
+    },
     ReproducibilityOfRadiationOutputDentalHandHeld: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ReproducibilityOfRadiationOutputDentalHandHeld"
@@ -390,9 +410,17 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageDentalHandHeld"
     },
+    RadiationLeakageLevelDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationLeakageLevelDentalHandHeld"
+    },
     RadiationLeakageTestDentalHandHeld: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "RadiationLeakageTestDentalHandHeld"
+    },
+    RadiationProtectionSurveyDentalHandHeld: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "RadiationProtectionSurveyDentalHandHeld"
     },
 
     //C-Arm
@@ -427,6 +455,10 @@ const serviceReportSchema = new mongoose.Schema({
     LinearityOfmAsLoadingCArm: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfmAsLoadingCArm"
+    },
+    LinearityOfMaLoadingCArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMaLoadingCArm"
     },
     //O-Arm
     ExposureRateTableTopOArm: {
@@ -680,6 +712,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "AccuracyOfOperatingPotentialMammography"
     },
+    AccuracyOfIrradiationTimeMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeMammography"
+    },
     TotalFilterationAndAlluminiumMammography: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TotalFilterationAndAlluminiumMammography"
@@ -712,40 +748,44 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfMasLLoadingMammography"
     },
+    LinearityOfMaLoadingStationsMammography: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMasLoadingStationsMammography"
+    },
 
     //Interventional Radiology
     AccuracyOfIrradiationTimeInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "AccuracyOfIrradiationTimeInventionalRadiology"
     },
-    CentralBeamAlignmentInventionalRadiology:{
+    CentralBeamAlignmentInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"CentralBeamAlignmentInventionalRadiology"
+        ref: "CentralBeamAlignmentInventionalRadiology"
     },
-    ConsistencyOfRadiationOutputInventionalRadiology:{
+    ConsistencyOfRadiationOutputInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"ConsistencyOfRadiationOutputInventionalRadiology"
+        ref: "ConsistencyOfRadiationOutputInventionalRadiology"
     },
 
-    EffectiveFocalSpotInventionalRadiology:{    
+    EffectiveFocalSpotInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"EffectiveFocalSpotInventionalRadiology"    
+        ref: "EffectiveFocalSpotInventionalRadiology"
     },
-    ExposureRateTableTopInventionalRadiology:{
+    ExposureRateTableTopInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"ExposureRateTableTopInventionalRadiology"
+        ref: "ExposureRateTableTopInventionalRadiology"
     },
-    MaxRadiationLevelInventionalRadiology:{
+    MaxRadiationLevelInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"MaxRadiationLevelInventionalRadiology"
+        ref: "MaxRadiationLevelInventionalRadiology"
     },
-    RadiationProtectionSurveyInventionalRadiology:{
+    RadiationProtectionSurveyInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"RadiationProtectionSurveyInventionalRadiology"
+        ref: "RadiationProtectionSurveyInventionalRadiology"
     },
-    TubeHousingLeakageInventionalRadiology:{
+    TubeHousingLeakageInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
-        ref:"TubeHousingLeakageInventionalRadiology"
+        ref: "TubeHousingLeakageInventionalRadiology"
     },
     TotalFilterationForInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,

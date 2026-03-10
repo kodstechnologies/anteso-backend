@@ -448,155 +448,6 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
 
 //static otp
-// export const verifyOtp = asyncHandler(async (req, res) => {
-//     const verifyOtpSchema = Joi.object({
-//         mobileNumber: Joi.string().required(),
-//         otp: Joi.string().length(6).required(),
-//     });
-
-//     const { error } = verifyOtpSchema.validate(req.body);
-//     if (error) {
-//         return res.status(400).json({
-//             success: false,
-//             message: error.details[0].message
-//         });
-//     }
-
-//     const { mobileNumber, otp } = req.body;
-
-//     const isStaticOtp = otp === "555555";
-
-//     if (!isStaticOtp) {
-//         const otpRecord = await LoginOtp.findOne({ mobileNumber });
-//         if (!otpRecord) return res.status(400).json({ success: false, message: "No OTP sent to this number" });
-//         if (otpRecord.expiresAt < new Date()) return res.status(400).json({ success: false, message: "OTP has expired" });
-//         if (otpRecord.otp !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
-//     }
-
-//     // 🔍 Check for User (including both engineer + office staff)
-//     let user = await User.findOne({
-//         phone: mobileNumber,
-//         $or: [
-//             { role: "Customer" },
-//             { role: "Manufacturer" },
-//             { role: "Dealer" },
-//             { role: "Employee", technicianType: "engineer", status: "active" },
-//             { role: "Employee", technicianType: "office-staff", status: "active" }
-//         ]
-//     });
-
-//     let isAdmin = false;
-
-//     if (!user) {
-//         user = await Admin.findOne({ phoneNumber: mobileNumber });
-//         if (!user) {
-//             return res.status(404).json({
-//                 success: false,
-//                 message: "User/Admin not found or not allowed"
-//             });
-//         }
-//         isAdmin = true;
-//     }
-
-//     // 🕒 Engineer attendance + COMP-OFF logic
-//     if (!isAdmin && user.role === "Employee" && user.technicianType === "engineer") {
-//         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
-
-//         if (employee) {
-//             const now = new Date();
-
-//             const todayStartLocal = new Date(now);
-//             todayStartLocal.setHours(0, 0, 0, 0);
-
-//             const todayEndLocal = new Date(now);
-//             todayEndLocal.setHours(23, 59, 59, 999);
-
-//             const offsetMs = todayStartLocal.getTimezoneOffset() * 60 * 1000;
-//             const todayStartUTC = new Date(todayStartLocal.getTime() - offsetMs);
-//             const todayEndUTC = new Date(todayEndLocal.getTime() - offsetMs);
-
-//             let attendance = await Attendance.findOne({
-//                 employee: user._id,
-//                 date: { $gte: todayStartUTC, $lte: todayEndUTC }
-//             });
-
-//             let attendanceStatus = "Present";
-
-//             if (!attendance) {
-//                 const leave = await Leave.findOne({
-//                     employee: user._id,
-//                     status: "Approved",
-//                     startDate: { $lte: todayEndUTC },
-//                     endDate: { $gte: todayStartUTC }
-//                 });
-
-//                 attendanceStatus = leave ? "On Leave" : "Present";
-
-//                 attendance = new Attendance({
-//                     employee: user._id,
-//                     date: todayStartUTC,
-//                     status: attendanceStatus,
-//                     workingDays: employee.workingDays,
-//                     leave: leave ? leave._id : null,
-//                 });
-
-//                 await attendance.save();
-
-//                 // ⭐⭐⭐ COMP-OFF (Saturday + Sunday) ⭐⭐⭐
-//                 const todayDay = todayStartLocal.getDay(); // 0 = Sun, 6 = Sat
-//                 const todayIsHoliday = todayDay === 0 || todayDay === 6;
-
-//                 if (todayIsHoliday && attendanceStatus === "Present") {
-//                     const currentYear = new Date().getFullYear();
-
-//                     let allocation = await LeaveAllocation.findOne({
-//                         employee: user._id,
-//                         year: currentYear
-//                     });
-
-//                     if (allocation) {
-//                         allocation.totalLeaves += 1;
-//                         await allocation.save();
-//                     } else {
-//                         await LeaveAllocation.create({
-//                             employee: user._id,
-//                             year: currentYear,
-//                             totalLeaves: 1,
-//                             usedLeaves: 0
-//                         });
-//                     }
-//                 }
-//             }
-//         }
-//     }
-
-//     // Generate JWT
-//     const payload = {
-//         _id: user._id,
-//         role: user.role,
-//         phone: user.phone,
-//         isAdmin
-//     };
-
-//     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
-//     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
-
-//     res.cookie("refreshToken", refreshToken, {
-//         httpOnly: true,
-//         secure: process.env.NODE_ENV === "production",
-//         sameSite: "strict",
-//         maxAge: 7 * 24 * 60 * 60 * 1000,
-//     });
-
-//     if (!isStaticOtp) await LoginOtp.deleteOne({ mobileNumber });
-
-//     return res.status(200).json({
-//         success: true,
-//         data: { token, user, refreshToken },
-//         message: "OTP verified successfully"
-//     });
-// });
-
 export const verifyOtp = asyncHandler(async (req, res) => {
     const verifyOtpSchema = Joi.object({
         mobileNumber: Joi.string().required(),
@@ -613,30 +464,16 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
     const { mobileNumber, otp } = req.body;
 
-    // 🔐 Always verify OTP from DB (static OTP removed)
-    const otpRecord = await LoginOtp.findOne({ mobileNumber });
-    if (!otpRecord) {
-        return res.status(400).json({
-            success: false,
-            message: "No OTP sent to this number"
-        });
+    const isStaticOtp = otp === "555555";
+
+    if (!isStaticOtp) {
+        const otpRecord = await LoginOtp.findOne({ mobileNumber });
+        if (!otpRecord) return res.status(400).json({ success: false, message: "No OTP sent to this number" });
+        if (otpRecord.expiresAt < new Date()) return res.status(400).json({ success: false, message: "OTP has expired" });
+        if (otpRecord.otp !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
     }
 
-    if (otpRecord.expiresAt < new Date()) {
-        return res.status(400).json({
-            success: false,
-            message: "OTP has expired"
-        });
-    }
-
-    if (otpRecord.otp !== otp) {
-        return res.status(400).json({
-            success: false,
-            message: "Invalid OTP"
-        });
-    }
-
-    // 🔍 Check for User or Admin
+    // 🔍 Check for User (including both engineer + office staff)
     let user = await User.findOne({
         phone: mobileNumber,
         $or: [
@@ -705,8 +542,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
                 await attendance.save();
 
-                // ⭐ COMP-OFF logic
-                const todayDay = todayStartLocal.getDay();
+                // ⭐⭐⭐ COMP-OFF (Saturday + Sunday) ⭐⭐⭐
+                const todayDay = todayStartLocal.getDay(); // 0 = Sun, 6 = Sat
                 const todayIsHoliday = todayDay === 0 || todayDay === 6;
 
                 if (todayIsHoliday && attendanceStatus === "Present") {
@@ -733,7 +570,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         }
     }
 
-    // 🔑 Generate JWT
+    // Generate JWT
     const payload = {
         _id: user._id,
         role: user.role,
@@ -751,8 +588,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // delete OTP after successful verification
-    await LoginOtp.deleteOne({ mobileNumber });
+    if (!isStaticOtp) await LoginOtp.deleteOne({ mobileNumber });
 
     return res.status(200).json({
         success: true,
@@ -760,6 +596,174 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         message: "OTP verified successfully"
     });
 });
+
+
+
+
+//verify otp--procuction
+// export const verifyOtp = asyncHandler(async (req, res) => {
+//     const verifyOtpSchema = Joi.object({
+//         mobileNumber: Joi.string().required(),
+//         otp: Joi.string().length(6).required(),
+//     });
+
+//     const { error } = verifyOtpSchema.validate(req.body);
+//     if (error) {
+//         return res.status(400).json({
+//             success: false,
+//             message: error.details[0].message
+//         });
+//     }
+
+//     const { mobileNumber, otp } = req.body;
+
+//     // 🔐 Always verify OTP from DB (static OTP removed)
+//     const otpRecord = await LoginOtp.findOne({ mobileNumber });
+//     if (!otpRecord) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "No OTP sent to this number"
+//         });
+//     }
+
+//     if (otpRecord.expiresAt < new Date()) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "OTP has expired"
+//         });
+//     }
+
+//     if (otpRecord.otp !== otp) {
+//         return res.status(400).json({
+//             success: false,
+//             message: "Invalid OTP"
+//         });
+//     }
+
+//     // 🔍 Check for User or Admin
+//     let user = await User.findOne({
+//         phone: mobileNumber,
+//         $or: [
+//             { role: "Customer" },
+//             { role: "Manufacturer" },
+//             { role: "Dealer" },
+//             { role: "Employee", technicianType: "engineer", status: "active" },
+//             { role: "Employee", technicianType: "office-staff", status: "active" }
+//         ]
+//     });
+
+//     let isAdmin = false;
+
+//     if (!user) {
+//         user = await Admin.findOne({ phoneNumber: mobileNumber });
+//         if (!user) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "User/Admin not found or not allowed"
+//             });
+//         }
+//         isAdmin = true;
+//     }
+
+//     // 🕒 Engineer attendance + COMP-OFF logic
+//     if (!isAdmin && user.role === "Employee" && user.technicianType === "engineer") {
+//         const employee = await Employee.findOne({ _id: user._id, technicianType: "engineer" });
+
+//         if (employee) {
+//             const now = new Date();
+
+//             const todayStartLocal = new Date(now);
+//             todayStartLocal.setHours(0, 0, 0, 0);
+
+//             const todayEndLocal = new Date(now);
+//             todayEndLocal.setHours(23, 59, 59, 999);
+
+//             const offsetMs = todayStartLocal.getTimezoneOffset() * 60 * 1000;
+//             const todayStartUTC = new Date(todayStartLocal.getTime() - offsetMs);
+//             const todayEndUTC = new Date(todayEndLocal.getTime() - offsetMs);
+
+//             let attendance = await Attendance.findOne({
+//                 employee: user._id,
+//                 date: { $gte: todayStartUTC, $lte: todayEndUTC }
+//             });
+
+//             let attendanceStatus = "Present";
+
+//             if (!attendance) {
+//                 const leave = await Leave.findOne({
+//                     employee: user._id,
+//                     status: "Approved",
+//                     startDate: { $lte: todayEndUTC },
+//                     endDate: { $gte: todayStartUTC }
+//                 });
+
+//                 attendanceStatus = leave ? "On Leave" : "Present";
+
+//                 attendance = new Attendance({
+//                     employee: user._id,
+//                     date: todayStartUTC,
+//                     status: attendanceStatus,
+//                     workingDays: employee.workingDays,
+//                     leave: leave ? leave._id : null,
+//                 });
+
+//                 await attendance.save();
+
+//                 // ⭐ COMP-OFF logic
+//                 const todayDay = todayStartLocal.getDay();
+//                 const todayIsHoliday = todayDay === 0 || todayDay === 6;
+
+//                 if (todayIsHoliday && attendanceStatus === "Present") {
+//                     const currentYear = new Date().getFullYear();
+
+//                     let allocation = await LeaveAllocation.findOne({
+//                         employee: user._id,
+//                         year: currentYear
+//                     });
+
+//                     if (allocation) {
+//                         allocation.totalLeaves += 1;
+//                         await allocation.save();
+//                     } else {
+//                         await LeaveAllocation.create({
+//                             employee: user._id,
+//                             year: currentYear,
+//                             totalLeaves: 1,
+//                             usedLeaves: 0
+//                         });
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     // 🔑 Generate JWT
+//     const payload = {
+//         _id: user._id,
+//         role: user.role,
+//         phone: user.phone,
+//         isAdmin
+//     };
+
+//     const token = jwt.sign(payload, JWT_USER_SECRET, { expiresIn: "360d" });
+//     const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: "365d" });
+
+//     res.cookie("refreshToken", refreshToken, {
+//         httpOnly: true,
+//         secure: process.env.NODE_ENV === "production",
+//         sameSite: "strict",
+//         maxAge: 7 * 24 * 60 * 60 * 1000,
+//     });
+
+//     // delete OTP after successful verification
+//     await LoginOtp.deleteOne({ mobileNumber });
+
+//     return res.status(200).json({
+//         success: true,
+//         data: { token, user, refreshToken },
+//         message: "OTP verified successfully"
+//     });
+// });
 
 
 // export const resetPassword = asyncHandler(async (req, res) => {

@@ -1,7 +1,10 @@
-// controllers/RadiationLeakageLevel.js
-import { asyncHandler } from '../../../../utils/AsyncHandler.js';
 import RadiationLeakageLevelMammography from '../../../../models/testTables/Mammography/RadiationLeakageLevel.model.js';
+import ServiceReport from '../../../../models/serviceReports/serviceReport.model.js';
+import Service from '../../../../models/Services.js';
 import mongoose from 'mongoose';
+import { asyncHandler } from '../../../../utils/AsyncHandler.js';
+
+const MACHINE_TYPE = "Mammography";
 
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -14,38 +17,87 @@ const create = asyncHandler(async (req, res) => {
         });
     }
 
-    // Prevent duplicate test for same service
-    const existing = await RadiationLeakageLevelMammography.findOne({
-        serviceId,
-        isDeleted: false,
-    });
+    let session = null;
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-    if (existing) {
-        return res.status(400).json({
-            success: false,
-            message: 'Radiation Leakage Level test already exists for this service',
+        // 1. Validate Service & Machine Type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+            });
+        }
+
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
+        // 3. Upsert Test Record
+        let testRecord = await RadiationLeakageLevelMammography.findOne({ serviceId }).session(session);
+
+        if (testRecord) {
+            testRecord.fcd = fcd || testRecord.fcd;
+            testRecord.kv = kv || testRecord.kv;
+            testRecord.ma = ma || testRecord.ma;
+            testRecord.time = time || testRecord.time;
+            testRecord.workload = workload || testRecord.workload;
+            testRecord.leakageMeasurements = leakageMeasurements || testRecord.leakageMeasurements;
+            testRecord.toleranceValue = toleranceValue || testRecord.toleranceValue;
+            testRecord.toleranceOperator = toleranceOperator || testRecord.toleranceOperator;
+            testRecord.toleranceTime = toleranceTime || testRecord.toleranceTime;
+            testRecord.remark = remark || testRecord.remark;
+        } else {
+            testRecord = new RadiationLeakageLevelMammography({
+                serviceId,
+                reportId: serviceReport._id,
+                fcd: fcd || '',
+                kv: kv || '',
+                ma: ma || '',
+                time: time || '',
+                workload: workload || '',
+                leakageMeasurements: leakageMeasurements || [],
+                toleranceValue: toleranceValue || '',
+                toleranceOperator: toleranceOperator || 'less than or equal to',
+                toleranceTime: toleranceTime || '1',
+                remark: remark || '',
+            });
+        }
+
+        await testRecord.save({ session });
+
+        // 4. Link back to ServiceReport
+        serviceReport.RadiationLeakageLevelMammography = testRecord._id;
+        await serviceReport.save({ session });
+
+        await session.commitTransaction();
+
+        return res.status(201).json({
+            success: true,
+            message: 'Radiation Leakage Level test saved successfully',
+            data: testRecord,
         });
+    } catch (error) {
+        if (session) await session.abortTransaction();
+        console.error("RadiationLeakageLevel Create Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save test",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
     }
-
-    const newTest = await RadiationLeakageLevelMammography.create({
-        serviceId,
-        fcd: fcd || '',
-        kv: kv || '',
-        ma: ma || '',
-        time: time || '',
-        workload: workload || '',
-        leakageMeasurements: leakageMeasurements || [],
-        toleranceValue: toleranceValue || '',
-        toleranceOperator: toleranceOperator || 'less than or equal to',
-        toleranceTime: toleranceTime || '1',
-        remark: remark || '',
-    });
-
-    return res.status(201).json({
-        success: true,
-        message: 'Radiation Leakage Level test created successfully',
-        data: newTest,
-    });
 });
 
 const getByServiceId = asyncHandler(async (req, res) => {

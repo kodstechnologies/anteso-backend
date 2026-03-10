@@ -15,7 +15,7 @@ app.set('trust proxy', true);
 app.use(cors({
     origin: ["https://admin.antesobiomedicalopc.com", 'http://localhost:3000',
         'http://localhost:8000',
-        'http://localhost:5173','http://localhost:5174','http://localhost:5175'],
+        'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://192.168.88.19:8000'],
     credentials: true,
 }));
 // app.use(express.json());
@@ -35,6 +35,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/anteso', mainRouter)
+
 app.use(errorHandler);
 const startServer = async () => {
     try {
@@ -46,5 +47,16 @@ const startServer = async () => {
         console.log("MONGO db connection failed !!! ", error);
     }
 }
+
+// const startServer = async () => {
+//     try {
+//         await connectToDb();
+//         app.listen(port, "0.0.0.0", () => {
+//             console.log(`server running on ${port}`);
+//         });
+//     } catch (error) {
+//         console.log("MONGO db connection failed !!! ", error);
+//     }
+// }
 startServer();
 //dummy test

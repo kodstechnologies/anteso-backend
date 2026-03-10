@@ -1,7 +1,10 @@
-// controllers/ImagingPhantom.js
 import { asyncHandler } from '../../../../utils/AsyncHandler.js';
 import ImagingPhantomMammography from '../../../../models/testTables/Mammography/ImagingPhantom.model.js';
+import ServiceReport from '../../../../models/serviceReports/serviceReport.model.js';
+import Service from '../../../../models/Services.js';
 import mongoose from 'mongoose';
+
+const MACHINE_TYPE = "Mammography";
 
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -21,63 +24,96 @@ const create = asyncHandler(async (req, res) => {
         });
     }
 
-    // Validate each row
-    for (const row of rows) {
-        if (!row.name || typeof row.visibleCount !== 'number' || !row.tolerance?.operator || typeof row.tolerance?.value !== 'number') {
-            return res.status(400).json({
+    let session = null;
+    try {
+        session = await mongoose.startSession();
+        session.startTransaction();
+
+        // 1. Validate Service & Machine Type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
+            await session.abortTransaction();
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
                 success: false,
-                message: 'Each row must have name, visibleCount (number), and tolerance { operator, value }',
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
             });
         }
-    }
 
-    // Prevent duplicate test for same service
-    const existing = await ImagingPhantomMammography.findOne({
-        serviceId,
-    }).lean();
-
-    if (existing) {
-        return res.status(400).json({
-            success: false,
-            message: 'Imaging Phantom test already exists for this service',
-        });
-    }
-
-    // Calculate remark for each row and overall remark
-    const rowsWithRemarks = rows.map(row => {
-        const { operator, value } = row.tolerance;
-        const visible = row.visibleCount;
-
-        let passes = false;
-        switch (operator) {
-            case '>': passes = visible > value; break;
-            case '>=': passes = visible >= value; break;
-            case '<': passes = visible < value; break;
-            case '<=': passes = visible <= value; break;
-            case '=': passes = visible === value; break;
-            default: passes = false;
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
         }
 
-        return {
-            ...row,
-            remark: passes ? 'Pass' : 'Fail',
-        };
-    });
+        // Calculate remark for each row and overall remark
+        const rowsWithRemarks = rows.map(row => {
+            const { operator, value } = row.tolerance;
+            const visible = row.visibleCount;
 
-    // Calculate overall remark
-    const remark = rowsWithRemarks.every(row => row.remark === 'Pass') ? 'Pass' : 'Fail';
+            let passes = false;
+            switch (operator) {
+                case '>': passes = visible > value; break;
+                case '>=': passes = visible >= value; break;
+                case '<': passes = visible < value; break;
+                case '<=': passes = visible <= value; break;
+                case '=': passes = visible === value; break;
+                default: passes = false;
+            }
 
-    const newTest = await ImagingPhantomMammography.create({
-        serviceId,
-        rows: rowsWithRemarks,
-        remark,
-    });
+            return {
+                ...row,
+                remark: passes ? 'Pass' : 'Fail',
+            };
+        });
 
-    return res.status(201).json({
-        success: true,
-        message: 'Imaging Phantom test created successfully',
-        data: newTest,
-    });
+        // Calculate overall remark
+        const overallRemark = rowsWithRemarks.every(row => row.remark === 'Pass') ? 'Pass' : 'Fail';
+
+        // 3. Upsert Test Record
+        let testRecord = await ImagingPhantomMammography.findOne({ serviceId }).session(session);
+
+        if (testRecord) {
+            testRecord.rows = rowsWithRemarks;
+            testRecord.remark = overallRemark;
+            testRecord.updatedAt = Date.now();
+        } else {
+            testRecord = new ImagingPhantomMammography({
+                serviceId,
+                reportId: serviceReport._id,
+                rows: rowsWithRemarks,
+                remark: overallRemark,
+            });
+        }
+
+        await testRecord.save({ session });
+
+        // 4. Link back to ServiceReport
+        serviceReport.ImagingPhantomMammography = testRecord._id;
+        await serviceReport.save({ session });
+
+        await session.commitTransaction();
+
+        return res.status(201).json({
+            success: true,
+            message: 'Imaging Phantom test saved successfully',
+            data: testRecord,
+        });
+    } catch (error) {
+        if (session) await session.abortTransaction();
+        console.error("ImagingPhantom Create Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save test",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
+    }
 });
 
 const getByServiceId = asyncHandler(async (req, res) => {

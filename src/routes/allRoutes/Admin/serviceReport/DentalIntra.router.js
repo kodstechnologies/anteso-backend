@@ -2,10 +2,12 @@ import { Router } from "express";
 const router = Router();
 import AccuracyOfOperatingPotentialAndTimeController from "../../../../controllers/Admin/serviceReport/DentalIntra/AccuracyOfOperatingPotentialAndTime.controller.js";
 import LinearityOfTimeController from "../../../../controllers/Admin/serviceReport/DentalIntra/LinearityOfTime.controller.js";
+import LinearityOfMasLoadingController from "../../../../controllers/Admin/serviceReport/DentalIntra/LinearityOfMasLoading.controller.js";
 import ReproducibilityOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/DentalIntra/ReproducibilityOfRadiationOutput.controller.js";
 import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/DentalIntra/TubeHousingLeakage.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 import RadiationLeakagelevelController from "../../../../controllers/Admin/serviceReport/DentalIntra/RadiationLeakagelevel.controller.js";
+import * as RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/DentalIntra/RadiationProtectionSurvey.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderDentalIntra)
 
@@ -18,6 +20,11 @@ router.post('/linearity-of-time/:serviceId', LinearityOfTimeController.create)
 router.get('/linearity-of-time-by-service/:serviceId', LinearityOfTimeController.getByServiceId)
 router.put('/linearity-of-time/:testId', LinearityOfTimeController.update)
 router.get('/linearity-of-time/:testId', LinearityOfTimeController.getById)
+
+router.post('/linearity-of-mas-loading/:serviceId', LinearityOfMasLoadingController.create)
+router.get('/linearity-of-mas-loading-by-serviceId/:serviceId', LinearityOfMasLoadingController.getByServiceId)
+router.put('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.update)
+router.get('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.getById)
 
 router.post('/reproducibility-of-radiation-output/:serviceId', ReproducibilityOfRadiationOutputController.create)
 router.get('/reproducibility-of-radiation-output-by-service/:serviceId', ReproducibilityOfRadiationOutputController.getByServiceId)
@@ -33,6 +40,11 @@ router.post('/radiation-leakage-level/:serviceId', RadiationLeakagelevelControll
 router.get('/radiation-leakage-level/:testId', RadiationLeakagelevelController.getById)
 router.put('/radiation-leakage-level/:testId', RadiationLeakagelevelController.update)
 router.get('/radiation-leakage-level-by-serviceId/:serviceId', RadiationLeakagelevelController.getByServiceId)
+
+router.post('/radiation-protection-survey/:serviceId', RadiationProtectionSurveyController.addRadiationProtectionSurvey)
+router.get('/radiation-protection-survey-by-serviceId/:serviceId', RadiationProtectionSurveyController.getRadiationProtectionSurveyByServiceId)
+router.get('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.getRadiationProtectionSurveyByTestId)
+router.put('/radiation-protection-survey/:testId', RadiationProtectionSurveyController.updateRadiationProtectionSurvey)
 
 export default router;
 

@@ -469,19 +469,13 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 
-// UPDATE MACHINE BY ID and customerId
 const updateById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        const { customerId } = req.query;
-        let query = { _id: id };
-        if (customerId) {
-            query = { _id: id, client: customerId };
-        }
 
-        const existingMachine = await Machine.findOne(query);
+        const existingMachine = await Machine.findById(id);
         if (!existingMachine) {
-            throw new ApiError(404, 'Machine not found for the given customer');
+            throw new ApiError(404, "Machine not found");
         }
 
         const {
@@ -492,47 +486,88 @@ const updateById = asyncHandler(async (req, res) => {
             equipmentId,
             qaValidity,
             licenseValidity,
-            client,
         } = req.body;
 
-        const { error } = machineSchema.validate(req.body);
+        // Validate request body
+        const { error } = machineSchema.validate({
+            machineType,
+            make,
+            model,
+            serialNumber,
+            equipmentId,
+            qaValidity,
+            licenseValidity,
+        });
         if (error) {
             throw new ApiError(400, error.details[0].message);
         }
 
-        const qaReportAttachment = req.files?.qaReportAttachment?.[0]?.path || existingMachine.qaReportAttachment;
-        const licenseReportAttachment = req.files?.licenseReportAttachment?.[0]?.path || existingMachine.licenseReportAttachment;
-        const rawDataAttachment = req.files?.rawDataAttachment?.[0]?.path || existingMachine.rawDataAttachment;
+        // Upload new files to S3 if provided
+        const uploadedFiles = {};
+        if (req.files) {
+            for (const [key, fileArray] of Object.entries(req.files)) {
+                if (fileArray && fileArray.length > 0) {
+                    const s3Result = await uploadToS3(fileArray[0]);
+                    uploadedFiles[key] = `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Result.key}`;
+                }
+            }
+        }
 
-        existingMachine.machineType = machineType;
-        existingMachine.make = make;
-        existingMachine.model = model;
-        existingMachine.serialNumber = serialNumber;
-        existingMachine.equipmentId = equipmentId;
-        existingMachine.qaValidity = qaValidity;
-        existingMachine.licenseValidity = licenseValidity;
+        // Determine status based on validity dates
+        const isDateExpired = (validityDate) => {
+            if (!validityDate) return false;
+            const date = new Date(validityDate);
+            date.setHours(0, 0, 0, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return date < today;
+        };
 
-        existingMachine.client = client;
-        existingMachine.qaReportAttachment = qaReportAttachment;
-        existingMachine.licenseReportAttachment = licenseReportAttachment;
-        existingMachine.rawDataAttachment = rawDataAttachment;
+        const isQaExpired = isDateExpired(qaValidity);
+        const isLicenseExpired = isDateExpired(licenseValidity);
 
-        await existingMachine.save();
+        let status = "Active";
+        if (isQaExpired || isLicenseExpired) {
+            status = "Expired";
+        }
 
-        res.status(200).json(new ApiResponse(200, existingMachine, 'Machine updated successfully.'));
+        // Construct update object
+        const updateData = {
+            machineType,
+            make,
+            model,
+            serialNumber,
+            equipmentId,
+            qaValidity,
+            licenseValidity,
+            status,
+            rawDataAttachment: uploadedFiles.rawDataAttachment || existingMachine.rawDataAttachment,
+            qaReportAttachment: uploadedFiles.qaReportAttachment || existingMachine.qaReportAttachment,
+            licenseReportAttachment: uploadedFiles.licenseReportAttachment || existingMachine.licenseReportAttachment,
+        };
+
+        const updatedMachine = await Machine.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true }
+        ).populate({
+            path: "hospital",
+            populate: ["rsos", "institutes", "machines"],
+        });
+
+        res.status(200).json(
+            new ApiResponse(200, updatedMachine, "Machine updated successfully.")
+        );
     } catch (error) {
-        throw new ApiError(500, error?.message || 'Internal Server Error');
+        console.error("❌ Error in updateMachine:", error);
+        throw new ApiError(500, error?.message || "Internal Server Error");
     }
 });
-// DELETE MACHINE BY ID
+
 const deleteById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        console.log("hi");
-
-        console.log("🚀 ~ id:", id)
         const { customerId } = req.query;
-        console.log("🚀 ~ customerId:", customerId)
 
         let query = { _id: id };
         if (customerId) {

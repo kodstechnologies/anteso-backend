@@ -1,7 +1,7 @@
-// controllers/TotalFilteration.js
 import mongoose from "mongoose";
 import TotalFilterationAndAlluminiumMammography from "../../../../models/testTables/Mammography/TotalFiltrationAndAluminium.model.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
@@ -24,14 +24,14 @@ const create = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        // Check existing within transaction
-        const existing = await TotalFilterationAndAlluminiumMammography.findOne({ serviceId }).session(session);
-        if (existing) {
-            await session.abortTransaction();
-            return res.status(400).json({ message: "Total Filtration data already exists for this service" });
+        // 1. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
         }
 
-        // Process table to ensure recommendedValue structure is correct
+        // Process table
         const processedTable = (table || []).map((row) => ({
             kvp: row.kvp || null,
             mAs: row.mAs || null,
@@ -45,29 +45,46 @@ const create = asyncHandler(async (req, res) => {
             } : null,
         }));
 
-        const newTest = await TotalFilterationAndAlluminiumMammography.create(
-            [{
+        // 2. Upsert Test Record
+        let testRecord = await TotalFilterationAndAlluminiumMammography.findOne({ serviceId }).session(session);
+
+        if (testRecord) {
+            testRecord.targetWindow = targetWindow.trim();
+            testRecord.addedFilterThickness = addedFilterThickness?.trim() || null;
+            testRecord.table = processedTable;
+            testRecord.resultHVT28kVp = resultHVT28kVp || null;
+            testRecord.updatedAt = Date.now();
+        } else {
+            testRecord = new TotalFilterationAndAlluminiumMammography({
                 serviceId,
+                reportId: serviceReport._id,
                 targetWindow: targetWindow.trim(),
                 addedFilterThickness: addedFilterThickness?.trim() || null,
                 table: processedTable,
                 resultHVT28kVp: resultHVT28kVp || null,
-            }],
-            { session }
-        );
+            });
+        }
+
+        await testRecord.save({ session });
+
+        // 3. Link back to ServiceReport
+        serviceReport.TotalFilterationAndAlluminiumMammography = testRecord._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
 
         return res.status(201).json({
             success: true,
-            message: "Total Filtration test created successfully",
-            data: newTest[0],
+            message: "Total Filtration test saved successfully",
+            data: testRecord,
         });
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error; // asyncHandler will catch
+        if (session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
+        throw error;
     }
 });
 
@@ -123,7 +140,7 @@ const update = asyncHandler(async (req, res) => {
     // Prevent changing serviceId and createdAt
     delete updateData.serviceId;
     delete updateData.createdAt;
-    
+
     // Remove hvlTolerances if present (no longer used)
     delete updateData.hvlTolerances;
     delete updateData.recommendedMinValue;

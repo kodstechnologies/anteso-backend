@@ -35,6 +35,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const JWT_USER_SECRET = process.env.JWT_USER_SECRET;
 const JWT_ADMIN_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+console.log("🚀 ~ JWT_REFRESH_SECRET:", JWT_REFRESH_SECRET);
+console.log("🚀 ~ JWT_USER_SECRET:", JWT_USER_SECRET);
+console.log("🚀 ~ JWT_ADMIN_SECRET:", JWT_ADMIN_SECRET);
 export const refreshAccessToken = asyncHandler(async (req, res) => {
     // Check if body exists and has refreshToken
     if (!req.body || !req.body.refreshToken) {

@@ -1,7 +1,10 @@
-// controllers/ReproducibilityOfOutput.js
 import mongoose from "mongoose";
 import ReproducibilityOfOutputMmmography from "../../../../models/testTables/Mammography/ReproducibilityOfOutput.model.js"; // Adjust path if needed
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
+
+const MACHINE_TYPE = "Mammography";
 
 // Helper function to calculate CV and remark for a row
 const calculateCVAndRemark = (outputs, tolerance) => {
@@ -15,7 +18,7 @@ const calculateCVAndRemark = (outputs, tolerance) => {
     }
 
     const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
-    
+
     let cov = 0;
     if (nums.length > 1) {
         const variance =
@@ -52,11 +55,25 @@ const create = asyncHandler(async (req, res) => {
     session.startTransaction();
 
     try {
-        const existing = await ReproducibilityOfOutputMmmography.findOne({ serviceId, isDeleted: false }).session(session);
-        if (existing) {
+        // 1. Validate Service & Machine Type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
             await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({ success: false, message: "Reproducibility of Output test already exists for this service" });
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
+                success: false,
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
+            });
+        }
+
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
         }
 
         // Process outputRows to calculate avg, cov, and remark
@@ -72,23 +89,41 @@ const create = asyncHandler(async (req, res) => {
             };
         });
 
-        const newTest = await ReproducibilityOfOutputMmmography.create([{
-            serviceId,
-            outputRows: processedRows,
-            tolerance: tolerance || '5.0',
-        }], { session });
+        // 3. Upsert Test Record
+        let testRecord = await ReproducibilityOfOutputMmmography.findOne({ serviceId }).session(session);
+
+        if (testRecord) {
+            testRecord.outputRows = processedRows;
+            testRecord.tolerance = tolerance || '5.0';
+            testRecord.updatedAt = Date.now();
+        } else {
+            testRecord = new ReproducibilityOfOutputMmmography({
+                serviceId,
+                reportId: serviceReport._id,
+                outputRows: processedRows,
+                tolerance: tolerance || '5.0',
+            });
+        }
+
+        await testRecord.save({ session });
+
+        // 4. Link back to ServiceReport
+        serviceReport.ReproducibilityOfRadiationOutputMammography = testRecord._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
 
         return res.status(201).json({
             success: true,
-            message: "Reproducibility of Output test created successfully",
-            data: newTest[0],
+            message: "Reproducibility of Output test saved successfully",
+            data: testRecord,
         });
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
+        if (session) {
+            await session.abortTransaction();
+            session.endSession();
+        }
         throw error;
     }
 });

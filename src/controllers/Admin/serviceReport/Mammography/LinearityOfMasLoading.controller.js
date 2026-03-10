@@ -66,7 +66,7 @@ const create = asyncHandler(async (req, res) => {
         await testRecord.save({ session });
 
         // Link to ServiceReport
-        serviceReport.LinearityOfMasLLoading = testRecord._id;
+        serviceReport.LinearityOfMasLoadingMammography = testRecord._id;
         await serviceReport.save({ session });
 
         await session.commitTransaction();

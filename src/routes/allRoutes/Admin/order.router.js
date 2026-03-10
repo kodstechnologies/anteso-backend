@@ -79,11 +79,21 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
 // router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
 router.post('/create-order', upload.any(), orderController.createOrder)
+router.put('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
+router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
 router.put(
     "/update-additional-service/:id",
     upload.single("file"), // single file key: 'file'
     orderController.updateAdditionalService
 );
+router.put('/assign-additional-service-staff/:orderId/:serviceId', orderController.assignAdditionalServiceStaff);
+router.put(
+    '/update-additional-service-status/:orderId/:serviceId',
+    upload.single("file"), // Handle file upload
+    orderController.updateAdditionalServiceStatus
+);
+router.get('/get-assigned-staff-details/:orderId/:serviceId', orderController.getAssignedStaffDetailsForAdditionalService);
+// router.put('/update-additional-service',)
 // router.get('/',)
 // router.post('/status-paid')
 router.get('/additional-service-report/:orderId/:additionalServiceId', orderController.getUpdatedAdditionalServiceReport)

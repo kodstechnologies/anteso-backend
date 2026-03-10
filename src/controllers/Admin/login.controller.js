@@ -810,4 +810,4 @@ const add = asyncHandler(async (req, res) => {
     }
 });
 
-export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword, getAllStates,add }
+export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword, getAllStates, add }

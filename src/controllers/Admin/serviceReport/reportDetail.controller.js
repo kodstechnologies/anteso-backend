@@ -798,6 +798,17 @@ const getReportHeader = async (req, res) => {
             "CongruenceOfRadiationForRadioFluro",
             "CentralBeamAlignmentForRadioFluoro",
             "RadiationProtectionSurvey",
+            // RadiographyFixed variants
+            "AccuracyOfIrradiationTimeRadiographyFixed",
+            "accuracyOfOperatingPotentialRadigraphyFixed",
+            "TotalFilterationRadiographyFixed",
+            "CentralBeamAlignmentRadiographyFixed",
+            "CongruenceOfRadiationRadioGraphyFixed",
+            "EffectiveFocalSpotRadiographyFixed",
+            "LinearityOfmAsLoadingRadiographyFixed",
+            "ConsistencyOfRadiationOutputFixedRadiography",
+            "RadiationLeakageLevelRadiographyFixed",
+            "RadiationProtectionSurveyRadiographyFixed",
         ];
 
         let query = serviceReportModel
@@ -881,6 +892,18 @@ const getReportHeader = async (req, res) => {
                 CongruenceOfRadiationForRadioFluro: report.CongruenceOfRadiationForRadioFluro,
                 CentralBeamAlignmentForRadioFluoro: report.CentralBeamAlignmentForRadioFluoro,
                 RadiationProtectionSurvey: report.RadiationProtectionSurvey,
+
+                // RadiographyFixed variants
+                AccuracyOfIrradiationTimeRadiographyFixed: report.AccuracyOfIrradiationTimeRadiographyFixed,
+                accuracyOfOperatingPotentialRadigraphyFixed: report.accuracyOfOperatingPotentialRadigraphyFixed,
+                TotalFilterationRadiographyFixed: report.TotalFilterationRadiographyFixed,
+                CentralBeamAlignmentRadiographyFixed: report.CentralBeamAlignmentRadiographyFixed,
+                CongruenceOfRadiationRadioGraphyFixed: report.CongruenceOfRadiationRadioGraphyFixed,
+                EffectiveFocalSpotRadiographyFixed: report.EffectiveFocalSpotRadiographyFixed,
+                LinearityOfmAsLoadingRadiographyFixed: report.LinearityOfmAsLoadingRadiographyFixed,
+                ConsistencyOfRadiationOutputFixedRadiography: report.ConsistencyOfRadiationOutputFixedRadiography,
+                RadiationLeakageLevelRadiographyFixed: report.RadiationLeakageLevelRadiographyFixed,
+                RadiationProtectionSurveyRadiographyFixed: report.RadiationProtectionSurveyRadiographyFixed,
 
             },
         });
@@ -1155,7 +1178,8 @@ export const getReportHeaderDentalIntra = async (req, res) => {
             "ReproducibilityOfRadiationOutputDentalIntra",
             "TubeHousingLeakageDentalIntra",
             "RadiationLeakageTestDentalIntra",
-            "TubeHousingLeakageDentalIntra"
+            "RadiationProtectionSurveyDentalIntra",
+            "LinearityOfmAsLoadingDentalIntra"
         ];
 
         let query = serviceReportModel
@@ -1216,11 +1240,19 @@ export const getReportHeaderDentalIntra = async (req, res) => {
                 // ⭐ DENTAL INTRA TEST RESULTS (POPULATED)
                 AccuracyOfOperatingPotentialAndTimeDentalIntra:
                     report.AccuracyOfOperatingPotentialAndTimeDentalIntra || null,
+                AccuracyOfOperatingPotentialDentalIntra:
+                    report.AccuracyOfOperatingPotentialAndTimeDentalIntra || null,
+                AccuracyOfIrradiationTimeDentalIntra:
+                    report.AccuracyOfOperatingPotentialAndTimeDentalIntra || null,
 
                 LinearityOfTimeDentalIntra:
                     report.LinearityOfTimeDentalIntra || null,
+                LinearityOfMaLoadingDentalIntra:
+                    report.LinearityOfTimeDentalIntra || null,
 
                 ReproducibilityOfRadiationOutputDentalIntra:
+                    report.ReproducibilityOfRadiationOutputDentalIntra || null,
+                ConsistencyOfRadiationOutputDentalIntra:
                     report.ReproducibilityOfRadiationOutputDentalIntra || null,
 
                 TubeHousingLeakageDentalIntra:
@@ -1228,6 +1260,14 @@ export const getReportHeaderDentalIntra = async (req, res) => {
 
                 RadiationLeakageTestDentalIntra:
                     report.RadiationLeakageTestDentalIntra || null,
+                RadiationLeakageLevelDentalIntra:
+                    report.RadiationLeakageTestDentalIntra || null,
+
+                RadiationProtectionSurveyDentalIntra:
+                    report.RadiationProtectionSurveyDentalIntra || null,
+
+                LinearityOfmAsLoadingDentalIntra:
+                    report.LinearityOfmAsLoadingDentalIntra || null,
             },
         });
     } catch (error) {
@@ -1247,9 +1287,14 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
             .populate("AccuracyOfOperatingPotentialAndTimeDentalHandHeld")
             .populate("LinearityOfTimeDentalHandHeld")
+            .populate("LinearityOfMaLoadingDentalHandHeld")
+            .populate("LinearityOfmAsLoadingDentalHandHeld")
+            .populate("ConsistencyOfRadiationOutputDentalHandHeld")
             .populate("ReproducibilityOfRadiationOutputDentalHandHeld")
             .populate("TubeHousingLeakageDentalHandHeld")
+            .populate("RadiationLeakageLevelDentalHandHeld")
             .populate("RadiationLeakageTestDentalHandHeld")
+            .populate("RadiationProtectionSurveyDentalHandHeld")
             .lean();
 
         if (!report) {
@@ -1298,10 +1343,24 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
 
                 // ⭐ DENTAL HAND-HELD TEST RESULTS (POPULATED)
                 AccuracyOfOperatingPotentialAndTimeDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
+                AccuracyOfOperatingPotentialDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
+                AccuracyOfIrradiationTimeDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
+
                 LinearityOfTimeDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
+                LinearityOfMaLoadingDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
+
+                LinearityOfmAsLoadingDentalHandHeld: report.LinearityOfmAsLoadingDentalHandHeld || null,
+
+                ConsistencyOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
                 ReproducibilityOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
+
                 TubeHousingLeakageDentalHandHeld: report.TubeHousingLeakageDentalHandHeld || null,
+
+                RadiationLeakageLevelDentalHandHeld: report.RadiationLeakageTestDentalHandHeld || null,
                 RadiationLeakageTestDentalHandHeld: report.RadiationLeakageTestDentalHandHeld || null,
+
+                RadiationProtectionSurveyDentalHandHeld: report.RadiationProtectionSurveyDentalHandHeld || null,
+                csvFileUrl: report.csvFileUrl || "",
             },
         });
     } catch (error) {
@@ -1317,7 +1376,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
         customerName, address, srfNumber, srfDate, testReportNumber, issueDate,
         nomenclature, make, model, category, slNumber, condition,
         testingProcedureNumber, engineerNameRPId, testDate, testDueDate,
-        location, temperature, humidity, toolsUsed, notes
+        location, temperature, humidity, toolsUsed, notes, csvFileUrl
     } = req.body;
 
     try {
@@ -1356,13 +1415,19 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
 
         // Fetch latest test records for Dental Hand-held
         const [
-            accuracyOp, linearityTime, reproducibility, tubeLeakage, radiationLeakage
+            accuracyOp, linearityTime, linearityMa, linearityMas, consistency,
+            reproducibility, tubeLeakage, radiationLeakageLevel, radiationLeakageTest, radiationProtection
         ] = await Promise.all([
             mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmALoadingDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("ReproducibilityOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("TubeHousingLeakageDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("RadiationLeakageTestDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
 
         // Update fields
@@ -1378,13 +1443,19 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             location, temperature, humidity,
             toolsUsed: formattedTools,
             notes: formattedNotes,
+            csvFileUrl,
 
             // Link test results
             AccuracyOfOperatingPotentialAndTimeDentalHandHeld: accuracyOp?._id || null,
             LinearityOfTimeDentalHandHeld: linearityTime?._id || null,
+            LinearityOfmALoadingDentalHandHeld: linearityMa?._id || null,
+            LinearityOfmAsLoadingDentalHandHeld: linearityMas?._id || null,
+            ConsistencyOfRadiationOutputDentalHandHeld: consistency?._id || null,
             ReproducibilityOfRadiationOutputDentalHandHeld: reproducibility?._id || null,
             TubeHousingLeakageDentalHandHeld: tubeLeakage?._id || null,
-            RadiationLeakageTestDentalHandHeld: radiationLeakage?._id || null,
+            RadiationLeakageLevelDentalHandHeld: radiationLeakageLevel?._id || null,
+            RadiationLeakageTestDentalHandHeld: radiationLeakageTest?._id || null,
+            RadiationProtectionSurveyDentalHandHeld: radiationProtection?._id || null,
         });
 
         await report.save();
@@ -1747,6 +1818,8 @@ export const getReportHeaderCArm = async (req, res) => {
             .populate("TotalFilterationForCArm")
             .populate("TubeHousingLeakageCArm")
             .populate("LinearityOfmAsLoadingCArm")
+            .populate("AccuracyOfIrradiationTimeCArm")
+            .populate("LinearityOfMaLoadingCArm")
             .lean();
 
         if (!report) {
@@ -1801,6 +1874,8 @@ export const getReportHeaderCArm = async (req, res) => {
                 TotalFilterationForCArm: report.TotalFilterationForCArm || null,
                 TubeHousingLeakageCArm: report.TubeHousingLeakageCArm || null,
                 LinearityOfmAsLoadingCArm: report.LinearityOfmAsLoadingCArm || null,
+                AccuracyOfIrradiationTimeCArm: report.AccuracyOfIrradiationTimeCArm || null,
+                LinearityOfMaLoadingCArm: report.LinearityOfMaLoadingCArm || null,
             },
         });
     } catch (error) {
@@ -2436,7 +2511,9 @@ export const getReportHeaderMammography = async (req, res) => {
             "DetailsOfRadiationProtectionMammography",
             "EquipmentSettingMammography",
             "MaximumRadiationLevelMammography",
-            "LinearityOfMasLoadingMammography"
+            "LinearityOfMasLoadingMammography",
+            "AccuracyOfIrradiationTimeMammography",
+            "LinearityOfMaLoadingStationsMammography"
         ];
         // Build the query
         let query = serviceReportModel
@@ -2506,6 +2583,8 @@ export const getReportHeaderMammography = async (req, res) => {
                 EquipmentSettingMammography: report.EquipmentSettingMammography || null,
                 MaximumRadiationLevelMammography: report.MaximumRadiationLevelMammography || null,
                 LinearityOfMasLoadingMammography: report.LinearityOfMasLoadingMammography || null,
+                AccuracyOfIrradiationTimeMammography: report.AccuracyOfIrradiationTimeMammography || null,
+                LinearityOfMaLoadingStationsMammography: report.LinearityOfMaLoadingStationsMammography || null,
             },
         });
     } catch (error) {

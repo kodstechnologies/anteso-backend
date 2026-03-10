@@ -5,7 +5,16 @@ import ServiceReport from "../../../../models/serviceReports/serviceReport.model
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
-const MACHINE_TYPE = "Dental Intra";
+const MACHINE_TYPE = "Dental (Intra Oral)";
+const ALLOWED_MACHINE_TYPES = ["Dental (Intra Oral)", "Dental (Intra-Oral)", "Dental Intra", "Dental Intra Oral", "Dental IOPA", "Intra Oral"];
+
+const isAllowedDentalIntraMachineType = (machineType) => {
+  if (!machineType || typeof machineType !== "string") return false;
+  const normalized = machineType.trim();
+  if (ALLOWED_MACHINE_TYPES.includes(normalized)) return true;
+  if (normalized.toLowerCase().includes("intra") && (normalized.toLowerCase().includes("oral") || normalized.toLowerCase().includes("dental"))) return true;
+  return false;
+};
 
 // CREATE (with transaction)
 const create = asyncHandler(async (req, res) => {
@@ -37,7 +46,7 @@ const create = asyncHandler(async (req, res) => {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: "Service not found" });
     }
-    if (service.machineType !== MACHINE_TYPE) {
+    if (!isAllowedDentalIntraMachineType(service.machineType)) {
       await session.abortTransaction();
       return res.status(403).json({
         success: false,
@@ -169,7 +178,7 @@ const update = asyncHandler(async (req, res) => {
 
     // Re-validate machine type
     const service = await Service.findById(testRecord.serviceId).session(session);
-    if (service && service.machineType !== MACHINE_TYPE) {
+    if (service && !isAllowedDentalIntraMachineType(service.machineType)) {
       await session.abortTransaction();
       return res.status(403).json({
         success: false,
@@ -226,7 +235,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
     }
 
     const service = await Service.findById(serviceId).lean();
-    if (service && service.machineType !== MACHINE_TYPE) {
+    if (service && !isAllowedDentalIntraMachineType(service.machineType)) {
       return res.status(403).json({
         success: false,
         message: `This test belongs to ${service.machineType}, not ${MACHINE_TYPE}`,

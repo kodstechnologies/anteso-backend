@@ -8,6 +8,9 @@ import ReproducibilityOfIrradiationOutput from "../../../../controllers/Admin/se
 import RadiationLeakageLevel from "../../../../controllers/Admin/serviceReport/Mammography/RadiationLeakageLevel.controller.js"
 import RadiationProtectionSurvey from "../../../../controllers/Admin/serviceReport/Mammography/DetailsOfRadiationProtection.controller.js"
 import EquipmentSetting from "../../../../controllers/Admin/serviceReport/Mammography/EquipmentSetting.controller.js"
+import AccuracyOfIrradiationTime from "../../../../controllers/Admin/serviceReport/Mammography/AccuracyOfIrradiationTime.controller.js";
+import LinearityOfMasLoadingStations from "../../../../controllers/Admin/serviceReport/Mammography/LinearityOfMasLoadingStations.controller.js";
+import MaximumRadiationLevel from "../../../../controllers/Admin/serviceReport/Mammography/MaximumRadiationLevel.controller.js";
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js"
 
 // router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
@@ -33,6 +36,21 @@ router.post('/linearity-of-mas-loading/:serviceId', LinearityOfMasLoadingControl
 router.get('/linearity-of-mas-loading-by-service/:serviceId', LinearityOfMasLoadingController.getByServiceId)
 router.put('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.update)
 router.get('/linearity-of-mas-loading/:testId', LinearityOfMasLoadingController.getById)
+
+router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTime.create)
+router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTime.getByServiceId)
+router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.update)
+router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.getById)
+
+router.post('/linearity-of-mas-loading-stations/:serviceId', LinearityOfMasLoadingStations.create)
+router.get('/linearity-of-mas-loading-stations-by-service/:serviceId', LinearityOfMasLoadingStations.getByServiceId)
+router.put('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingStations.update)
+router.get('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingStations.getById)
+
+router.post('/maximum-radiation-level/:serviceId', MaximumRadiationLevel.create)
+router.get('/maximum-radiation-level-by-service/:serviceId', MaximumRadiationLevel.getByServiceId)
+router.put('/maximum-radiation-level/:testId', MaximumRadiationLevel.update)
+router.get('/maximum-radiation-level/:testId', MaximumRadiationLevel.getById)
 
 router.post('/reproducubility-of-irradiation-output/:serviceId', ReproducibilityOfIrradiationOutput.create)
 router.get('/reproducubility-of-irradiation-output-by-service/:serviceId', ReproducibilityOfIrradiationOutput.getByServiceId)

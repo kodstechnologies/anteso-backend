@@ -1,5 +1,5 @@
-// controllers/ExposureRateController.js
 import ExposureRateTableTop from "../../../../models/testTables/OArm/ExposureRateTableTop.model.js";
+import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import mongoose from "mongoose";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
@@ -36,10 +36,16 @@ const create = asyncHandler(async (req, res) => {
             });
         }
 
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
         const newTest = await ExposureRateTableTop.create(
             [{
                 serviceId,
-                reportId: reportId || null,
+                reportId: serviceReport._id,
                 rows: rows.map(row => ({
                     distance: row.distance?.toString().trim() || "",
                     appliedKv: row.appliedKv?.toString().trim() || "",
@@ -53,6 +59,9 @@ const create = asyncHandler(async (req, res) => {
             }],
             { session }
         );
+
+        serviceReport.ExposureRateTableTopOArm = newTest[0]._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
         session.endSession();
@@ -168,6 +177,13 @@ const update = asyncHandler(async (req, res) => {
                 success: false,
                 message: "Test not found",
             });
+        }
+
+        // Link to ServiceReport if not already linked (fixes orphaned records)
+        const serviceReport = await ServiceReport.findOne({ serviceId: updatedTest.serviceId }).session(session);
+        if (serviceReport && !serviceReport.ExposureRateTableTopOArm) {
+            serviceReport.ExposureRateTableTopOArm = updatedTest._id;
+            await serviceReport.save({ session });
         }
 
         await session.commitTransaction();

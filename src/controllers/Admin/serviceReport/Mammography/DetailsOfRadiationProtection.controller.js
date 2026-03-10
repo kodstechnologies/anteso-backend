@@ -1,7 +1,10 @@
-// controllers/RadiationProtectionSurvey.js
 import mongoose from 'mongoose';
 import DetailsOfRadiationProtectionMammography from '../../../../models/testTables/Mammography/DetailsOfRadiationProtectionMammography.model.js';
+import ServiceReport from '../../../../models/serviceReports/serviceReport.model.js';
+import Service from '../../../../models/Services.js';
 import { asyncHandler } from '../../../../utils/AsyncHandler.js';
+
+const MACHINE_TYPE = "Mammography";
 
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
@@ -31,58 +34,85 @@ const create = asyncHandler(async (req, res) => {
         });
     }
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
+    let session = null;
     try {
-        // Check for existing record
-        const existing = await DetailsOfRadiationProtectionMammography.findOne({
-            serviceId,
-        }).session(session);
+        session = await mongoose.startSession();
+        session.startTransaction();
 
-        if (existing) {
+        // 1. Validate Service & Machine Type
+        const service = await Service.findById(serviceId).session(session);
+        if (!service) {
             await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json({
+            return res.status(404).json({ success: false, message: "Service not found" });
+        }
+        if (service.machineType !== MACHINE_TYPE) {
+            await session.abortTransaction();
+            return res.status(403).json({
                 success: false,
-                message: 'Radiation Protection Survey already exists for this service',
+                message: `This test is only allowed for ${MACHINE_TYPE}. Current machine: ${service.machineType}`,
             });
         }
 
-        const newSurvey = await DetailsOfRadiationProtectionMammography.create(
-            [{
-                serviceId,
-                surveyDate: surveyDate ? new Date(surveyDate) : null,
-                hasValidCalibration: hasValidCalibration || null,
-                appliedCurrent: appliedCurrent || null,
-                appliedVoltage: appliedVoltage || null,
-                exposureTime: exposureTime || null,
-                workload: workload || null,
-                locations: locations || [],
-                hospitalName: hospitalName || null,
-                equipmentId: equipmentId || null,
-                roomNo: roomNo || null,
-                manufacturer: manufacturer || null,
-                model: model || null,
-                surveyorName: surveyorName || null,
-                surveyorDesignation: surveyorDesignation || null,
-                remarks: remarks || null,
-            }],
-            { session }
-        );
+        // 2. Get or Create ServiceReport
+        let serviceReport = await ServiceReport.findOne({ serviceId }).session(session);
+        if (!serviceReport) {
+            serviceReport = new ServiceReport({ serviceId });
+            await serviceReport.save({ session });
+        }
+
+        // 3. Upsert Test Record
+        let testRecord = await DetailsOfRadiationProtectionMammography.findOne({ serviceId }).session(session);
+
+        const testData = {
+            serviceId,
+            reportId: serviceReport._id,
+            surveyDate: surveyDate ? new Date(surveyDate) : null,
+            hasValidCalibration: hasValidCalibration || null,
+            appliedCurrent: appliedCurrent || null,
+            appliedVoltage: appliedVoltage || null,
+            exposureTime: exposureTime || null,
+            workload: workload || null,
+            locations: locations || [],
+            hospitalName: hospitalName || null,
+            equipmentId: equipmentId || null,
+            roomNo: roomNo || null,
+            manufacturer: manufacturer || null,
+            model: model || null,
+            surveyorName: surveyorName || null,
+            surveyorDesignation: surveyorDesignation || null,
+            remarks: remarks || null,
+        };
+
+        if (testRecord) {
+            Object.assign(testRecord, testData);
+            testRecord.updatedAt = Date.now();
+        } else {
+            testRecord = new DetailsOfRadiationProtectionMammography(testData);
+        }
+
+        await testRecord.save({ session });
+
+        // 4. Link back to ServiceReport
+        serviceReport.DetailsOfRadiationProtectionMammography = testRecord._id;
+        await serviceReport.save({ session });
 
         await session.commitTransaction();
-        session.endSession();
 
         return res.status(201).json({
             success: true,
-            message: 'Radiation Protection Survey created successfully',
-            data: newSurvey[0],
+            message: 'Radiation Protection Survey saved successfully',
+            data: testRecord,
         });
     } catch (error) {
-        await session.abortTransaction();
-        session.endSession();
-        throw error;
+        if (session) await session.abortTransaction();
+        console.error("DetailsOfRadiationProtection Create Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to save test",
+            error: error.message,
+        });
+    } finally {
+        if (session) session.endSession();
     }
 });
 
