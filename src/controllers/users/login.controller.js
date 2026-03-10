@@ -462,15 +462,32 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         });
     }
 
-    const { mobileNumber, otp } = req.body;
+    const { mobileNumber } = req.body;
+    const otp = String(req.body.otp); // ⭐ ensure string
 
     const isStaticOtp = otp === "555555";
 
+    // ✅ Skip DB validation if static OTP
     if (!isStaticOtp) {
         const otpRecord = await LoginOtp.findOne({ mobileNumber });
-        if (!otpRecord) return res.status(400).json({ success: false, message: "No OTP sent to this number" });
-        if (otpRecord.expiresAt < new Date()) return res.status(400).json({ success: false, message: "OTP has expired" });
-        if (otpRecord.otp !== otp) return res.status(400).json({ success: false, message: "Invalid OTP" });
+
+        if (!otpRecord)
+            return res.status(400).json({
+                success: false,
+                message: "No OTP sent to this number"
+            });
+
+        if (otpRecord.expiresAt < new Date())
+            return res.status(400).json({
+                success: false,
+                message: "OTP has expired"
+            });
+
+        if (String(otpRecord.otp) !== otp)
+            return res.status(400).json({
+                success: false,
+                message: "Invalid OTP"
+            });
     }
 
     // 🔍 Check for User (including both engineer + office staff)
@@ -600,7 +617,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
 
 
-//verify otp--procuction
+//verify otp--production
 // export const verifyOtp = asyncHandler(async (req, res) => {
 //     const verifyOtpSchema = Joi.object({
 //         mobileNumber: Joi.string().required(),
