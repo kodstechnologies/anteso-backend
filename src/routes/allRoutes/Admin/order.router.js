@@ -2,6 +2,8 @@ import { Router } from "express";
 import orderController from "../../../controllers/Admin/order.controller.js";
 import upload from "../../../middlewares/upload.js";
 const router = Router();
+router.post('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
+router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
 router.get('/get-all', orderController.getAllOrders)
 router.get('/basic-details-by-orderId/:orderId', orderController.getBasicDetailsByOrderId)
 router.put('/update-details-by-orderId/:orderId', orderController.updateBasicDetailsByOrderId)
@@ -79,8 +81,7 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
 // router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
 router.post('/create-order', upload.any(), orderController.createOrder)
-router.post('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
-router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
+
 router.put(
     "/update-additional-service/:id",
     upload.single("file"), // single file key: 'file'
