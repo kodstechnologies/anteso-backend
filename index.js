@@ -35,7 +35,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/anteso', mainRouter)
-console.log("calling this after the update")
+console.log("calling this after the update-------------------------------------------")
 app.use(errorHandler);
 const startServer = async () => {
     try {
