@@ -5,7 +5,7 @@ import serviceReportModel from "../../../../models/serviceReports/serviceReport.
 import MeasurementOfOperatingPotential from "../../../../models/testTables/CTScan/MeasurementOfOperatingPotential.model.js"
 
 const create = asyncHandler(async (req, res) => {
-    const { table1, table2, toleranceValue, toleranceType, toleranceSign, tubeId } = req.body;
+    const { table1, table2, maColumnLabels, toleranceValue, toleranceType, toleranceSign, tubeId } = req.body;
     console.log("🚀 ~ toleranceType:", toleranceType)
     console.log("🚀 ~ toleranceSign:", toleranceSign)
     const { serviceId } = req.params;
@@ -58,6 +58,7 @@ const create = asyncHandler(async (req, res) => {
 
         const payload = {
             table1,
+            maColumnLabels: Array.isArray(maColumnLabels) && maColumnLabels.length > 0 ? maColumnLabels : ['10', '100', '200'],
             table2,
             tolerance,
             serviceId,
@@ -141,7 +142,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE BY TEST ID
 // ======================
 const update = asyncHandler(async (req, res) => {
-    const { table1, table2, toleranceValue, toleranceType, toleranceSign, tubeId } = req.body;
+    const { table1, table2, maColumnLabels, toleranceValue, toleranceType, toleranceSign, tubeId } = req.body;
     const { testId } = req.params;
 
     if (!testId) {
@@ -174,6 +175,9 @@ const update = asyncHandler(async (req, res) => {
 
         // Update fields
         testRecord.table1 = table1;
+        if (Array.isArray(maColumnLabels) && maColumnLabels.length > 0) {
+            testRecord.maColumnLabels = maColumnLabels;
+        }
         testRecord.table2 = table2;
         testRecord.tolerance = {
             value: toleranceValue?.toString().trim() || "",

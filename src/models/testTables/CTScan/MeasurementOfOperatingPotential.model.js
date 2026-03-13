@@ -12,20 +12,23 @@ const Table1RowSchema = new Schema({
     sliceThickness: { type: String, default: '', trim: true },
 });
 
-// Table 2 Row
+// Table 2 Row: dynamic mA columns via ma (object keyed by label), legacy ma10/ma100/ma200 kept for backward compat
 const Table2RowSchema = new Schema({
-    setKV: { type: String, default: '', trim: true },
+    setKV: { type: Schema.Types.Mixed, default: '' }, // number or string
+    ma: { type: Schema.Types.Mixed, default: {} },    // e.g. { "10": 80, "100": 81, "200": 79 }
     ma10: { type: String, default: '', trim: true },
     ma100: { type: String, default: '', trim: true },
     ma200: { type: String, default: '', trim: true },
-    avgKvp: { type: String, default: '', trim: true },
+    avgKvp: { type: Schema.Types.Mixed, default: '' },
+    deviation: { type: Number, default: null },
     remarks: { type: String, default: '', trim: true },
-});
+}, { _id: false });
 
 // Main Schema
 const MeasurementOfOperatingPotentialSchema = new Schema(
     {
         table1: [Table1RowSchema],
+        maColumnLabels: { type: [String], default: ['10', '100', '200'] },
         table2: [Table2RowSchema],
         tolerance: { type: ToleranceSchema, required: true },
         serviceReportId: {
