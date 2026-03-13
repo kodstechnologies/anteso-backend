@@ -79,7 +79,7 @@ router.get('/get-assigned-technician/:orderId/:serviceId/:workType', orderContro
 router.get('/get-assigned-staff/:orderId/:serviceId/:workType', orderController.getAssignedOfficeStaffName)
 // router.post('/create-order', upload.single("workOrderCopy"), orderController.createOrder)
 router.post('/create-order', upload.any(), orderController.createOrder)
-router.put('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
+router.post('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
 router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
 router.put(
     "/update-additional-service/:id",
