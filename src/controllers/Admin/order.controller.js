@@ -779,6 +779,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
 const addMachineToOrder = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
+        console.log("🚀 ~ orderId:", orderId)
         const {
             machineType,
             equipmentId,
@@ -855,7 +856,10 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
 
 const deleteMachineByorderId = asyncHandler(async (req, res) => {
     try {
+        console.log("🚀 ~ deleteMachineByorderId ~ route hit")
         const { orderId, serviceId } = req.params;
+        console.log("🚀 ~ orderId:", orderId)
+        console.log("🚀 ~ serviceId:", serviceId)
 
         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
             return res.status(400).json({ message: "Invalid or missing order ID." });
