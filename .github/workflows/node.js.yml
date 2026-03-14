@@ -13,14 +13,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -29,7 +21,14 @@ jobs:
           key: ${{ secrets.EC2_KEY }}
           script: |
             cd ~/anteso-backend
-            git pull origin main
+
+            git fetch origin
+            git reset --hard origin/main
+
             npm install
+
             echo "${{ secrets.BACKENDENV }}" > .env
-            pm2 restart anteso-backend || pm2 start index.js --name anteso-backend
+
+            pm2 delete anteso-backend || true
+            pm2 start index.js --name anteso-backend
+            pm2 save

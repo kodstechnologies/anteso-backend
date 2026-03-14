@@ -25,7 +25,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(cookieParser());
 app.get('/', (req, res) => {
-    res.send("tesst route")
+    res.send("test route")
 })
 
 //test push
