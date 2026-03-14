@@ -1,6 +1,6 @@
 // controllers/Admin/serviceReport/DentalHandHeld/LinearityOfMasLoading.controller.js
 import mongoose from "mongoose";
-import LinearityOfMasLoading from "../../../../models/testTables/DentalHandHeld/LinearityOfMasLoading.model.js";
+import LinearityOfMasLoading from "../../../../models/testTables/DentalHandHeld/LinearityOfmAsLoading.model.js";
 import ServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
 import Service from "../../../../models/Services.js";
 import { asyncHandler } from "../../../../utils/AsyncHandler.js";
