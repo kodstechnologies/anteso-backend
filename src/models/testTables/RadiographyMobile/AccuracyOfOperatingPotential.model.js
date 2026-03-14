@@ -1,65 +1,50 @@
 import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
+const ToleranceSchema = new mongoose.Schema({
+  value: { type: String },
+  type: { type: String },
+  sign: { type: String },
+});
 
-const AccuracyOfOperatingPotentialSchema = new Schema(
-    {
-        serviceReportId: {
-            type: Schema.Types.ObjectId,
-            ref: 'ServiceReport',
-            required: false,
-        },
-        serviceId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Service',
-        },
+const Table1RowSchema = new Schema({
+  time: { type: String, default: '', trim: true },
+  sliceThickness: { type: String, default: '', trim: true },
+});
 
-        // Configurable mA station column headers (e.g. ["50 mA", "100 mA"])
-        mAStations: {
-            type: [String],
-            default: ['50 mA', '100 mA'],
-        },
+const Table2RowSchema = new Schema({
+  setKV: { type: String, default: '', trim: true },
+  ma10: { type: String, default: '', trim: true },
+  ma100: { type: String, default: '', trim: true },
+  ma200: { type: String, default: '', trim: true },
+  avgKvp: { type: String, default: '', trim: true },
+  remarks: { type: String, default: '', trim: true },
+});
 
-        // One row per applied kVp
-        measurements: [
-            {
-                appliedKvp: { type: String },
-                measuredValues: [{ type: String }],
-                averageKvp: { type: String },
-                remarks: { type: String },
-            },
-        ],
-
-        // Tolerance for kVp (OBI-style: {sign, value})
-        tolerance: {
-            sign: { type: String },   // "±", "+", "-"
-            value: { type: String },  // e.g. "2.0"
-        },
-
-        // Total Filtration section
-        totalFiltration: {
-            measured: { type: String },
-            required: { type: String },
-            atKvp: { type: String },
-        },
-
-        // Filtration Tolerance thresholds
-        filtrationTolerance: {
-            forKvGreaterThan70: { type: String, default: '1.5' },
-            forKvBetween70And100: { type: String, default: '2.0' },
-            forKvGreaterThan100: { type: String, default: '2.5' },
-            kvThreshold1: { type: String, default: '70' },
-            kvThreshold2: { type: String, default: '100' },
-        },
+const MeasurementOfOperatingPotentialSchema = new Schema(
+  {
+    table1: [Table1RowSchema],
+    table2: [Table2RowSchema],
+    tolerance: { type: ToleranceSchema, required: true },
+    serviceReportId: {
+      type: Schema.Types.ObjectId,
+      ref: 'ServiceReport',
+      required: false,
     },
-    { timestamps: true }
+    serviceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Service',
+    },
+  },
+  { timestamps: true }
 );
 
-AccuracyOfOperatingPotentialSchema.index({ serviceId: 1 });
+MeasurementOfOperatingPotentialSchema.index({ serviceReportId: 1 });
+MeasurementOfOperatingPotentialSchema.index({ serviceId: 1 });
 
 const AccuracyOfOperatingPotential = model(
-    'accuracyOfOperatingPotentialRadigraphyMobile',
-    AccuracyOfOperatingPotentialSchema
+  'accuracyOfOperatingPotentialRadigraphyMobile',
+  MeasurementOfOperatingPotentialSchema
 );
 
 export default AccuracyOfOperatingPotential;

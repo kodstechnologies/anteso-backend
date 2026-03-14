@@ -46,12 +46,10 @@ const create = asyncHandler(async (req, res) => {
     let testRecord = await AccuracyOfOperatingPotential.findOne({ serviceId }).session(session);
 
     if (testRecord) {
-      // Update existing
       if (table1 !== undefined) testRecord.table1 = table1;
       if (table2 !== undefined) testRecord.table2 = table2;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
     } else {
-      // Create new
       testRecord = new AccuracyOfOperatingPotential({
         serviceId,
         serviceReportId: serviceReport._id,
@@ -153,7 +151,6 @@ const update = asyncHandler(async (req, res) => {
       });
     }
 
-    // Update fields
     if (table1 !== undefined) testRecord.table1 = table1;
     if (table2 !== undefined) testRecord.table2 = table2;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
