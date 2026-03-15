@@ -2,6 +2,7 @@ import { Router } from "express";
 const router = Router();
 import AccuracyOfOperatingPotentialAndTimeController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/AccuracyOfOperatingPotentialAndTime.controller.js";
 import LinearityOfTimeController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/LinearityOfTime.controller.js";
+import LinearityOfMaLoadingController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/LinearityOfMaLoading.controller.js";
 import LinearityOfMasLoadingController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/LinearityOfMasLoading.controller.js";
 import ReproducibilityOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/ReproducibilityOfRadiationOutput.controller.js";
 import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/DentalHandHeld/TubeHousingLeakage.controller.js";
@@ -21,6 +22,11 @@ router.post('/linearity-of-time/:serviceId', LinearityOfTimeController.create)
 router.get('/linearity-of-time-by-service/:serviceId', LinearityOfTimeController.getByServiceId)
 router.put('/linearity-of-time/:testId', LinearityOfTimeController.update)
 router.get('/linearity-of-time/:testId', LinearityOfTimeController.getById)
+
+router.post('/linearity-of-ma-loading/:serviceId', LinearityOfMaLoadingController.create)
+router.get('/linearity-of-ma-loading-by-serviceId/:serviceId', LinearityOfMaLoadingController.getByServiceId)
+router.put('/linearity-of-ma-loading/:testId', LinearityOfMaLoadingController.update)
+router.get('/linearity-of-ma-loading/:testId', LinearityOfMaLoadingController.getById)
 
 router.post('/linearity-of-mas-loading/:serviceId', LinearityOfMasLoadingController.create)
 router.get('/linearity-of-mas-loading-by-serviceId/:serviceId', LinearityOfMasLoadingController.getByServiceId)

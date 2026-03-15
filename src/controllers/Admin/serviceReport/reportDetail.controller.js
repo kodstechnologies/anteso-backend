@@ -28,6 +28,7 @@ import "../../../models/testTables/DentalIntra/RadiationLeakagelevel.model.js";
 // Import DentalHandHeld models to ensure they're registered with Mongoose
 import "../../../models/testTables/DentalHandHeld/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalHandHeld/LinearityOfTime.model.js";
+import "../../../models/testTables/DentalHandHeld/LinearityOfmALoading.model.js";
 import "../../../models/testTables/DentalHandHeld/ReproducibilityOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalHandHeld/TubeHousingLeakage.model.js";
 // Import RadiographyFixed models to ensure they're registered with Mongoose
