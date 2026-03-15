@@ -139,7 +139,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
         // 1️⃣ Find the order that contains this serviceId
         const order = await orderModel
             .findOne({ services: serviceId })
-            .select("hospitalName fullAddress srfNumber")
+            .select("hospitalName fullAddress srfNumber createdAt")
             .lean();
 
         if (!order) {
@@ -200,6 +200,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
                 machineType: service.machineType,
                 machineModel: service.machineModel || "N/A",
                 serialNumber: service.serialNumber || "N/A",
+                orderCreatedAt: order.createdAt,
                 engineerAssigned: qaEngineer
                     ? {
                         name: qaEngineer.name || "N/A",
@@ -615,9 +616,8 @@ const saveReportHeader = async (req, res) => {
     try {
         let report = await serviceReportModel.findOne({ serviceId });
         if (!report) {
-            return res.status(404).json({
-                message: "ServiceReport not found. Please generate the test report first.",
-            });
+            report = new serviceReportModel({ serviceId });
+            await report.save();
         }
 
         // FORMAT TOOLS
@@ -1005,6 +1005,15 @@ export const getReportHeaderCBCT = async (req, res) => {
     const { serviceId } = req.params;
 
     try {
+        let qaTestSubmittedAt = "";
+        const service = await Services.findById(serviceId)
+            .select("workTypeDetails")
+            .populate({ path: "workTypeDetails.QAtest", select: "qatestSubmittedAt" });
+        const qaWork = service?.workTypeDetails?.find((w) => w.workType === "Quality Assurance Test");
+        if (qaWork?.QAtest?.qatestSubmittedAt) {
+            qaTestSubmittedAt = new Date(qaWork.QAtest.qatestSubmittedAt).toISOString().split("T")[0];
+        }
+
         // All CBCT fields to populate
         const cbctPopulations = [
             { path: "AccuracyOfIrradiationTimeCBCT" },
@@ -1072,6 +1081,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 LinearityOfMaLoadingCBCT: report.LinearityOfMaLoadingCBCT,
                 RadiationLeakageTestCBCT: report.RadiationLeakageTestCBCT,
                 RadiationProtectionSurveyCBCT: report.RadiationProtectionSurveyCBCT,
+                qaTestSubmittedAt,
             },
         });
     } catch (error) {
@@ -1561,6 +1571,15 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
     const { serviceId } = req.params;
 
     try {
+        let qaTestSubmittedAt = "";
+        const service = await Services.findById(serviceId)
+            .select("workTypeDetails")
+            .populate({ path: "workTypeDetails.QAtest", select: "qatestSubmittedAt" });
+        const qaWork = service?.workTypeDetails?.find((w) => w.workType === "Quality Assurance Test");
+        if (qaWork?.QAtest?.qatestSubmittedAt) {
+            qaTestSubmittedAt = new Date(qaWork.QAtest.qatestSubmittedAt).toISOString().split("T")[0];
+        }
+
         // Build query - populate each field individually
         const report = await serviceReportModel
             .findOne({ serviceId })
@@ -1631,6 +1650,8 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                 ConsistencyOfRadiationOutputRadiographyMobileHT: report.ConsistencyOfRadiationOutputRadiographyMobileHT || null,
                 RadiationLeakageLevelRadiographyMobileHT: report.RadiationLeakageLevelRadiographyMobileHT || null,
                 RadiationProtectionSurveyRadiographyMobileHT: report.RadiationProtectionSurveyRadiographyMobileHT || null,
+                TotalFilterationRadiographyMobileHT: report.TotalFilterationRadiographyMobileHT || null,
+                qaTestSubmittedAt,
             },
         });
     } catch (error) {
