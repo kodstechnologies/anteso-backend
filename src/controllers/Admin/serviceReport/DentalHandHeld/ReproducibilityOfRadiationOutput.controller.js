@@ -7,6 +7,27 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "Dental (Hand-held)";
 
+// Normalize outputRows so each row has outputs as [{ value: string }] (Mongoose expects subdocuments, not raw strings)
+function normalizeOutputRows(rows) {
+  if (!Array.isArray(rows)) return [];
+  return rows.map((row) => {
+    const outputs = Array.isArray(row.outputs)
+      ? row.outputs.map((o) =>
+          o != null && typeof o === "object" && "value" in o
+            ? { value: String(o.value ?? "") }
+            : { value: String(o ?? "") }
+        )
+      : [];
+    return {
+      kv: row.kv != null ? String(row.kv) : "",
+      mas: row.mas != null ? String(row.mas) : "",
+      outputs,
+      avg: row.avg != null ? String(row.avg) : "",
+      remark: row.remark != null ? String(row.remark) : "",
+    };
+  });
+}
+
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
@@ -15,6 +36,15 @@ const create = asyncHandler(async (req, res) => {
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
   }
+
+  const normalizedOutputRows = outputRows !== undefined ? normalizeOutputRows(outputRows) : undefined;
+  const normalizedTolerance =
+    tolerance !== undefined
+      ? {
+          operator: tolerance.operator != null ? String(tolerance.operator) : "<=",
+          value: tolerance.value != null ? String(tolerance.value) : "",
+        }
+      : undefined;
 
   let session = null;
   try {
@@ -48,16 +78,16 @@ const create = asyncHandler(async (req, res) => {
     if (testRecord) {
       // Update existing
       if (ffd !== undefined) testRecord.ffd = ffd;
-      if (outputRows !== undefined) testRecord.outputRows = outputRows;
-      if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (normalizedOutputRows !== undefined) testRecord.outputRows = normalizedOutputRows;
+      if (normalizedTolerance !== undefined) testRecord.tolerance = normalizedTolerance;
     } else {
       // Create new
       testRecord = new ReproducibilityOfRadiationOutput({
         serviceId,
         reportId: serviceReport._id,
         ffd: ffd || "",
-        outputRows: outputRows || [],
-        tolerance: tolerance || { operator: "<=", value: "" },
+        outputRows: normalizedOutputRows || [],
+        tolerance: normalizedTolerance || { operator: "<=", value: "" },
       });
     }
 
@@ -132,6 +162,15 @@ const update = asyncHandler(async (req, res) => {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
 
+  const normalizedOutputRows = outputRows !== undefined ? normalizeOutputRows(outputRows) : undefined;
+  const normalizedTolerance =
+    tolerance !== undefined
+      ? {
+          operator: tolerance.operator != null ? String(tolerance.operator) : "<=",
+          value: tolerance.value != null ? String(tolerance.value) : "",
+        }
+      : undefined;
+
   let session = null;
   try {
     session = await mongoose.startSession();
@@ -155,8 +194,8 @@ const update = asyncHandler(async (req, res) => {
 
     // Update fields
     if (ffd !== undefined) testRecord.ffd = ffd;
-    if (outputRows !== undefined) testRecord.outputRows = outputRows;
-    if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (normalizedOutputRows !== undefined) testRecord.outputRows = normalizedOutputRows;
+    if (normalizedTolerance !== undefined) testRecord.tolerance = normalizedTolerance;
 
     await testRecord.save({ session });
     await session.commitTransaction();
