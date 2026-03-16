@@ -11,6 +11,8 @@ import EffectiveFocalSpotController from "../../../../controllers/Admin/serviceR
 // import LinearityOfmAsLoadingController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/LinearityOfmAsLoading.controller.js";
 import ConsistencyOfRadiationOutputController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/ConsistencyOfRadiationOutput.controller.js";
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/RadiationProtectionSurvey.controller.js";
+import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/AccuracyOfOperatingPotential.controller.js";
+import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/TubeHousingLeakage.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
 
@@ -58,5 +60,15 @@ router.get('/consistency-of-radiation-output/:testId', ConsistencyOfRadiationOut
 
 router.post('/radiation-protection-survey/:serviceId', RadiationProtectionSurveyController.create);
 router.get('/radiation-protection-survey-by-service/:serviceId', RadiationProtectionSurveyController.getByServiceId);
+
+router.post('/accuracy-of-operating-potential/:serviceId', AccuracyOfOperatingPotentialController.create);
+router.get('/accuracy-of-operating-potential-by-service/:serviceId', AccuracyOfOperatingPotentialController.getByServiceId);
+router.get('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.getById);
+router.put('/accuracy-of-operating-potential/:testId', AccuracyOfOperatingPotentialController.update);
+
+router.post('/tube-housing-leakage/:serviceId', TubeHousingLeakageController.create);
+router.get('/tube-housing-leakage-by-service/:serviceId', TubeHousingLeakageController.getByServiceId);
+router.get('/tube-housing-leakage/:testId', TubeHousingLeakageController.getById);
+router.put('/tube-housing-leakage/:testId', TubeHousingLeakageController.update);
 
 export default router;

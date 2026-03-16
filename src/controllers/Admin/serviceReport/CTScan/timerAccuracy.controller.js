@@ -216,6 +216,13 @@ const update = asyncHandler(async (req, res) => {
       return res.status(404).json({ success: false, message: "Test record not found" });
     }
 
+    // Ensure we are not updating another tube's record
+    const tubeIdValue = tubeId !== undefined ? (tubeId === null || tubeId === 'null' ? null : tubeId) : undefined;
+    if (tubeIdValue !== undefined && testRecord.tubeId !== tubeIdValue) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: "Tube mismatch: this record belongs to a different tube." });
+    }
+
     // Validate Computed Tomography
     const service = await Services.findById(testRecord.serviceId).session(session);
     if (!service || service.machineType !== "Computed Tomography") {

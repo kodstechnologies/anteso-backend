@@ -13,29 +13,28 @@ import { asyncHandler } from '../../../../utils/AsyncHandler.js';
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
   const {
+    fcd,
+    kv,
+    ma,
+    time,
     workload,
     workloadUnit = 'mA·min/week',
     measurementSettings = [],
     leakageMeasurements = [],
-    tolerance = '',
+    tolerance,
+    toleranceValue,
+    toleranceOperator,
+    toleranceTime,
+    remark,
     notes = '',
     tubeId,
   } = req.body;
 
-  // === Validate Input ===
   if (!serviceId) {
     return res.status(400).json({ success: false, message: 'serviceId is required' });
   }
-
-  if (!workload) {
-    return res.status(400).json({ success: false, message: 'workload is required' });
-  }
-
-  if (!Array.isArray(measurementSettings) || !Array.isArray(leakageMeasurements)) {
-    return res.status(400).json({
-      success: false,
-      message: 'measurementSettings and leakageMeasurements must be arrays',
-    });
+  if (!Array.isArray(leakageMeasurements)) {
+    return res.status(400).json({ success: false, message: 'leakageMeasurements must be an array' });
   }
 
   let session = null;
@@ -43,13 +42,11 @@ const create = asyncHandler(async (req, res) => {
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // 1️⃣ Validate Service + Computed Tomography
     const service = await Services.findById(serviceId).session(session);
     if (!service) {
       await session.abortTransaction();
       return res.status(404).json({ success: false, message: 'Service not found' });
     }
-
     if (service.machineType !== 'Computed Tomography') {
       await session.abortTransaction();
       return res.status(403).json({
@@ -58,29 +55,35 @@ const create = asyncHandler(async (req, res) => {
       });
     }
 
-    // 2️⃣ Get or Create ServiceReport
     let serviceReport = await serviceReportModel.findOne({ serviceId }).session(session);
     if (!serviceReport) {
       serviceReport = new serviceReportModel({ serviceId });
       await serviceReport.save({ session });
     }
 
-    // 3️⃣ Save Test Data (Upsert)
-    // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
-    const tubeIdValue = tubeId || null;
+    const tubeIdValue = tubeId === 'null' || tubeId === '' ? null : tubeId || null;
     let testRecord = await RadiationLeakageLevel.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
 
     const payload = {
-      workload,
-      workloadUnit,
-      measurementSettings,
-      leakageMeasurements,
-      tolerance: tolerance?.toString().trim() || '',
-      notes,
       serviceId,
       reportId: serviceReport._id,
       tubeId: tubeIdValue,
+      workload: (workload !== undefined && workload !== null ? String(workload) : '') || testRecord?.workload || '',
+      workloadUnit,
+      fcd: fcd !== undefined ? String(fcd) : testRecord?.fcd ?? '',
+      kv: kv !== undefined ? String(kv) : (measurementSettings?.[0]?.kv !== undefined ? String(measurementSettings[0].kv) : testRecord?.kv ?? ''),
+      ma: ma !== undefined ? String(ma) : (measurementSettings?.[0]?.ma !== undefined ? String(measurementSettings[0].ma) : testRecord?.ma ?? ''),
+      time: time !== undefined ? String(time) : (measurementSettings?.[0]?.time !== undefined ? String(measurementSettings[0].time) : testRecord?.time ?? ''),
+      leakageMeasurements,
+      toleranceValue: toleranceValue !== undefined ? String(toleranceValue) : (tolerance !== undefined ? String(tolerance) : testRecord?.toleranceValue ?? ''),
+      toleranceOperator: toleranceOperator || testRecord?.toleranceOperator || 'less than or equal to',
+      toleranceTime: toleranceTime !== undefined ? String(toleranceTime) : testRecord?.toleranceTime ?? '1',
+      remark: remark !== undefined ? String(remark) : testRecord?.remark ?? '',
+      notes: notes !== undefined ? String(notes) : testRecord?.notes ?? '',
     };
+    if (Array.isArray(measurementSettings) && measurementSettings.length > 0) {
+      payload.measurementSettings = measurementSettings;
+    }
 
     if (testRecord) {
       Object.assign(testRecord, payload);
@@ -164,9 +167,19 @@ const getById = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
   const {
+    fcd,
+    kv,
+    ma,
+    time,
+    workload,
+    workloadUnit,
     measurementSettings,
     leakageMeasurements,
     tolerance,
+    toleranceValue,
+    toleranceOperator,
+    toleranceTime,
+    remark,
     notes,
     tubeId,
   } = req.body;
@@ -174,11 +187,8 @@ const update = asyncHandler(async (req, res) => {
   if (!testId) {
     return res.status(400).json({ success: false, message: 'testId is required' });
   }
-  if (
-    measurementSettings !== undefined && !Array.isArray(measurementSettings) ||
-    leakageMeasurements !== undefined && !Array.isArray(leakageMeasurements)
-  ) {
-    return res.status(400).json({ success: false, message: 'measurementSettings and leakageMeasurements must be arrays' });
+  if (leakageMeasurements !== undefined && !Array.isArray(leakageMeasurements)) {
+    return res.status(400).json({ success: false, message: 'leakageMeasurements must be an array' });
   }
 
   let session = null;
@@ -192,7 +202,12 @@ const update = asyncHandler(async (req, res) => {
       return res.status(404).json({ success: false, message: 'Test record not found' });
     }
 
-    // Validate Computed Tomography
+    const tubeIdValue = tubeId !== undefined ? (tubeId === null || tubeId === 'null' ? null : tubeId) : undefined;
+    if (tubeIdValue !== undefined && testRecord.tubeId !== tubeIdValue) {
+      await session.abortTransaction();
+      return res.status(400).json({ success: false, message: 'Tube mismatch: this record belongs to a different tube.' });
+    }
+
     const service = await Services.findById(testRecord.serviceId).session(session);
     if (!service || service.machineType !== 'Computed Tomography') {
       await session.abortTransaction();
@@ -202,12 +217,21 @@ const update = asyncHandler(async (req, res) => {
       });
     }
 
-    // Update fields
+    if (fcd !== undefined) testRecord.fcd = String(fcd);
+    if (kv !== undefined) testRecord.kv = String(kv);
+    if (ma !== undefined) testRecord.ma = String(ma);
+    if (time !== undefined) testRecord.time = String(time);
+    if (workload !== undefined) testRecord.workload = String(workload);
+    if (workloadUnit !== undefined) testRecord.workloadUnit = workloadUnit;
     if (measurementSettings !== undefined) testRecord.measurementSettings = measurementSettings;
     if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
-    if (tolerance !== undefined) testRecord.tolerance = tolerance?.toString().trim() || '';
+    if (toleranceValue !== undefined) testRecord.toleranceValue = String(toleranceValue);
+    if (tolerance !== undefined) testRecord.toleranceValue = String(tolerance);
+    if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+    if (toleranceTime !== undefined) testRecord.toleranceTime = String(toleranceTime);
+    if (remark !== undefined) testRecord.remark = String(remark);
     if (notes !== undefined) testRecord.notes = notes;
-    if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
+    if (tubeId !== undefined) testRecord.tubeId = tubeId === null || tubeId === 'null' ? null : tubeId;
 
     await testRecord.save({ session });
     await session.commitTransaction();

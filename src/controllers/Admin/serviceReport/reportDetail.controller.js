@@ -123,6 +123,7 @@ import "../../../models/testTables/InventionalRadiology/LowContrastResolution.mo
 import "../../../models/testTables/InventionalRadiology/HighContrastResolution.model.js";
 import "../../../models/testTables/InventionalRadiology/ExposureRateTableTop.model.js";
 import "../../../models/testTables/InventionalRadiology/tubeHousingLeakage.model.js";
+import "../../../models/testTables/InventionalRadiology/AccuracyOfOperatingPotential.model.js";
 import "../../../models/testTables/InventionalRadiology/RadiationProtectionSurvey.model.js";
 import mongoose from "mongoose";
 
@@ -1549,6 +1550,9 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                notes: report.notes || [],
+                pages: report.pages || "",
+
                 // ⭐ RADIOGRAPHY FIXED TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeRadiographyFixed: report.AccuracyOfIrradiationTimeRadiographyFixed || null,
                 accuracyOfOperatingPotentialRadigraphyFixed: report.accuracyOfOperatingPotentialRadigraphyFixed || null,
@@ -1642,6 +1646,9 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                notes: report.notes || [],
+                pages: report.pages || "",
+
                 // ⭐ RADIOGRAPHY MOBILE WITH HT TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeRadiographyMobileHT: report.AccuracyOfIrradiationTimeRadiographyMobileHT || null,
                 accuracyOfOperatingPotentialRadiographyMobileHT: report.accuracyOfOperatingPotentialRadiographyMobileHT || null,
@@ -1726,6 +1733,9 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                notes: report.notes || [],
+                pages: report.pages || "",
+
                 // ⭐ RADIOGRAPHY PORTABLE TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeRadiographyPortable: report.AccuracyOfIrradiationTimeRadiographyPortable || null,
                 accuracyOfOperatingPotentialRadigraphyPortable: report.accuracyOfOperatingPotentialRadigraphyPortable || null,
@@ -1806,6 +1816,9 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                     certificate: t.certificate,
                     uncertainity: t.uncertainity,
                 })),
+
+                notes: report.notes || [],
+                pages: report.pages || "",
 
                 // ⭐ RADIOGRAPHY MOBILE TEST RESULTS (POPULATED)
                 AccuracyOfIrradiationTimeRadiographyMobile: report.AccuracyOfIrradiationTimeRadiographyMobile || null,
@@ -2263,6 +2276,9 @@ export const getReportHeaderOArm = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                notes: report.notes || [],
+                pages: report.pages || "",
+
                 // ⭐ O-ARM TEST RESULTS (POPULATED)
                 ExposureRateTableTopOArm: report.ExposureRateTableTopOArm || null,
                 HighContrastResolutionOArm: report.HighContrastResolutionOArm || null,
@@ -2388,6 +2404,9 @@ export const getReportHeaderForCTScan = async (req, res) => {
                     certificate: t.certificate,
                     uncertainity: t.uncertainity,
                 })),
+
+                notes: report.notes || [],
+                pages: report.pages || "",
 
                 // ⭐ CT SCAN (COMPUTED TOMOGRAPHY) TEST RESULTS
                 // Tests with tubeId support (queried directly)

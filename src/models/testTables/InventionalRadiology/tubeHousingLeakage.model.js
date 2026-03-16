@@ -41,6 +41,7 @@ const TubeHousingLeakageSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'ServiceReport',
         },
+        tubeId: { type: String, default: null },
 
         // Soft delete
         isDeleted: { type: Boolean, default: false },
@@ -57,5 +58,5 @@ TubeHousingLeakageSchema.index({ serviceId: 1, reportId: 1 });
 TubeHousingLeakageSchema.index({ serviceId: 1, tubeId: 1 });
 TubeHousingLeakageSchema.index({ isDeleted: 1 });
 
-export default mongoose.models.TubeHousingLeakage ||
+export default mongoose.models.TubeHousingLeakageInventionalRadiology ||
     mongoose.model('TubeHousingLeakageInventionalRadiology', TubeHousingLeakageSchema);

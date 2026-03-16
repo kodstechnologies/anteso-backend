@@ -6,6 +6,37 @@ import RadiationProtectionSurvey from "../../../../models/testTables/Inventional
 
 const MACHINE_TYPE = "Interventional Radiology";
 
+/** Parse surveyDate from string (YYYY-MM-DD or DD-MM-YYYY) to Date for Mongoose */
+function parseSurveyDate(value) {
+    if (value == null || value === "") return new Date();
+    if (value instanceof Date) return isNaN(value.getTime()) ? new Date() : value;
+    const s = String(value).trim();
+    if (!s) return new Date();
+    // ISO: YYYY-MM-DD
+    const iso = new Date(s);
+    if (!isNaN(iso.getTime())) return iso;
+    // DD-MM-YYYY
+    const parts = s.split(/[-/]/);
+    if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const year = parseInt(parts[2], 10);
+        if (day >= 1 && day <= 31 && month >= 0 && month <= 11 && year >= 1900 && year <= 2100) {
+            const d = new Date(year, month, day);
+            if (!isNaN(d.getTime())) return d;
+        }
+        // If first part is > 31, treat as YYYY-MM-DD (year-month-day)
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const day2 = parseInt(parts[2], 10);
+        if (y >= 1900 && y <= 2100 && m >= 0 && m <= 11 && day2 >= 1 && day2 <= 31) {
+            const d2 = new Date(y, m, day2);
+            if (!isNaN(d2.getTime())) return d2;
+        }
+    }
+    return new Date();
+}
+
 const create = asyncHandler(async (req, res) => {
     const { surveyDate, hasValidCalibration, appliedCurrent, appliedVoltage, exposureTime, workload, locations, hospitalName, equipmentId, roomNo, manufacturer, model, surveyorName, surveyorDesignation, remarks } = req.body;
     const { serviceId } = req.params;
@@ -47,7 +78,7 @@ const create = asyncHandler(async (req, res) => {
         let testRecord = await RadiationProtectionSurvey.findOne({ serviceId, tubeId: null }).session(session);
 
         const payload = {
-            surveyDate: surveyDate || new Date(),
+            surveyDate: parseSurveyDate(surveyDate),
             hasValidCalibration: hasValidCalibration?.trim().toUpperCase() || "",
             appliedCurrent: appliedCurrent?.trim() || "",
             appliedVoltage: appliedVoltage?.trim() || "",
@@ -173,7 +204,7 @@ const update = asyncHandler(async (req, res) => {
         }
 
         // Update fields
-        if (surveyDate !== undefined) testRecord.surveyDate = surveyDate;
+        if (surveyDate !== undefined) testRecord.surveyDate = parseSurveyDate(surveyDate);
         if (hasValidCalibration !== undefined) testRecord.hasValidCalibration = hasValidCalibration?.trim().toUpperCase() || "";
         if (appliedCurrent !== undefined) testRecord.appliedCurrent = appliedCurrent?.trim() || "";
         if (appliedVoltage !== undefined) testRecord.appliedVoltage = appliedVoltage?.trim() || "";

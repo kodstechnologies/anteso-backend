@@ -17,8 +17,9 @@ const Table2RowSchema = new Schema({
     xMin: { type: String, default: '', trim: true },
     col: { type: String, default: '', trim: true },
     remarks: { type: String, default: '', trim: true },
-    avgOutput: { type: String, default: '', trim: true },
-    avgOutput: { type: Number },
+    avgOutput: { type: Schema.Types.Mixed, default: '' },
+    average: { type: Schema.Types.Mixed, default: '' },
+    x: { type: Schema.Types.Mixed, default: '' },
 });
 
 // Main Schema
