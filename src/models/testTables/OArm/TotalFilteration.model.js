@@ -33,6 +33,15 @@ const TotalFilterationSchema = new Schema({
     totalFiltration: {
         measured: { type: String },  // mm Al
         required: { type: String },  // mm Al
+        atKvp: { type: String },     // kVp at which filtration is specified
+    },
+    // Tolerance for Total Filtration (dynamic, same as RadiographyFixed)
+    filtrationTolerance: {
+        forKvGreaterThan70: { type: String, default: '1.5' },      // mm Al for kV < kvThreshold1
+        forKvBetween70And100: { type: String, default: '2.0' },    // mm Al for kvThreshold1 ≤ kV ≤ kvThreshold2
+        forKvGreaterThan100: { type: String, default: '2.5' },       // mm Al for kV > kvThreshold2
+        kvThreshold1: { type: String, default: '70' },
+        kvThreshold2: { type: String, default: '100' },
     },
 
     reportId: {

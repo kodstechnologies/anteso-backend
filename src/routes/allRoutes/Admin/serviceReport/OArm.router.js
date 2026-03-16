@@ -1,6 +1,7 @@
 import { Router } from "express";
 const router = Router();
 import TotalFilterationForOArmController from "../../../../controllers/Admin/serviceReport/OArm/TotalFilterationForOArm.controller.js";
+import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/OArm/AccuracyOfIrradiationTime.controller.js";
 import OutputConsistencyController from "../../../../controllers/Admin/serviceReport/OArm/OutputConsistency.controller.js";
 import HighContrastResolutionController from "../../../../controllers/Admin/serviceReport/OArm/HighContrastResolution.controller.js";
 import LowContrastResolution from "../../../../controllers/Admin/serviceReport/OArm/LowContrastResolution.controller.js";
@@ -8,6 +9,11 @@ import ExposureRate from "../../../../controllers/Admin/serviceReport/OArm/Expos
 import TubeHousing from "../../../../controllers/Admin/serviceReport/OArm/TubeHousingLeakage.controller.js"
 import LinearityOfMasLoadingStation from "../../../../controllers/Admin/serviceReport/OArm/LinearityOfMasLoadingStation.controller.js"
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
+
+router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);
+router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTimeController.getByServiceId);
+router.put('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.update);
+router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTimeController.getById);
 
 router.post('/total-filteration/:serviceId', TotalFilterationForOArmController.create)
 router.get('/total-filteration-by-service/:serviceId', TotalFilterationForOArmController.getByServiceId)

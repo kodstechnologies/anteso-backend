@@ -102,6 +102,7 @@ import "../../../models/testTables/OArm/OutputConsisitency.model.js";
 import "../../../models/testTables/OArm/TotalFilteration.model.js";
 import "../../../models/testTables/OArm/TubeHousingLeakage.model.js";
 import "../../../models/testTables/OArm/LinearityOfMasLoadingStation.model.js";
+import "../../../models/testTables/OArm/AccuracyOfIrradiationTime.model.js";
 // Import Mammography models to ensure they're registered with Mongoose
 import "../../../models/testTables/Mammography/AccuracyOfOperatingPotential.model.js";
 import "../../../models/testTables/Mammography/TotalFiltrationAndAluminium.model.js";
@@ -2215,6 +2216,7 @@ export const getReportHeaderOArm = async (req, res) => {
             .populate("TotalFilterationForOArm")
             .populate("TubeHousingLeakageOArm")
             .populate("LinearityOfmAsLoadingOArm")
+            .populate("AccuracyOfIrradiationTimeOArm")
             .lean();
 
         if (!report) {
@@ -2269,6 +2271,7 @@ export const getReportHeaderOArm = async (req, res) => {
                 TotalFilterationForOArm: report.TotalFilterationForOArm || null,
                 TubeHousingLeakageOArm: report.TubeHousingLeakageOArm || null,
                 LinearityOfmAsLoadingOArm: report.LinearityOfmAsLoadingOArm || null,
+                AccuracyOfIrradiationTimeOArm: report.AccuracyOfIrradiationTimeOArm || null,
             },
         });
     } catch (error) {

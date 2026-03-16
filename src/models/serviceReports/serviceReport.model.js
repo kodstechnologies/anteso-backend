@@ -489,6 +489,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfmAsLoadingOArm"
     },
+    AccuracyOfIrradiationTimeOArm: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AccuracyOfIrradiationTimeOArm"
+    },
 
     //radiography fixed
     AccuracyOfIrradiationTimeRadiographyFixed: {

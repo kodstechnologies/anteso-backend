@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 const MACHINE_TYPE = "O-Arm";
 
 const create = asyncHandler(async (req, res) => {
-  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
   const { serviceId } = req.params;
 
   // === Basic Validation ===
@@ -73,7 +73,17 @@ const create = asyncHandler(async (req, res) => {
       testRecord.totalFiltration = {
         measured: totalFiltration.measured?.toString().trim() || "",
         required: totalFiltration.required?.toString().trim() || "",
+        atKvp: totalFiltration.atKvp?.toString().trim() || "",
       };
+      if (filtrationTolerance) {
+        testRecord.filtrationTolerance = {
+          forKvGreaterThan70: filtrationTolerance.forKvGreaterThan70?.toString().trim() || "1.5",
+          forKvBetween70And100: filtrationTolerance.forKvBetween70And100?.toString().trim() || "2.0",
+          forKvGreaterThan100: filtrationTolerance.forKvGreaterThan100?.toString().trim() || "2.5",
+          kvThreshold1: filtrationTolerance.kvThreshold1?.toString().trim() || "70",
+          kvThreshold2: filtrationTolerance.kvThreshold2?.toString().trim() || "100",
+        };
+      }
     } else {
       // Create new
       testRecord = new TotalFilterationForOArm({
@@ -93,7 +103,15 @@ const create = asyncHandler(async (req, res) => {
         totalFiltration: {
           measured: totalFiltration.measured?.toString().trim() || "",
           required: totalFiltration.required?.toString().trim() || "",
+          atKvp: totalFiltration.atKvp?.toString().trim() || "",
         },
+        filtrationTolerance: filtrationTolerance ? {
+          forKvGreaterThan70: filtrationTolerance.forKvGreaterThan70?.toString().trim() || "1.5",
+          forKvBetween70And100: filtrationTolerance.forKvBetween70And100?.toString().trim() || "2.0",
+          forKvGreaterThan100: filtrationTolerance.forKvGreaterThan100?.toString().trim() || "2.5",
+          kvThreshold1: filtrationTolerance.kvThreshold1?.toString().trim() || "70",
+          kvThreshold2: filtrationTolerance.kvThreshold2?.toString().trim() || "100",
+        } : undefined,
       });
     }
 
@@ -127,7 +145,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
   const { testId } = req.params;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -173,8 +191,18 @@ const update = asyncHandler(async (req, res) => {
     }
     if (totalFiltration) {
       testRecord.totalFiltration = {
-        measured: totalFiltration.measured !== undefined ? totalFiltration.measured.toString().trim() : testRecord.totalFiltration.measured,
-        required: totalFiltration.required !== undefined ? totalFiltration.required.toString().trim() : testRecord.totalFiltration.required,
+        measured: totalFiltration.measured !== undefined ? totalFiltration.measured.toString().trim() : testRecord.totalFiltration?.measured,
+        required: totalFiltration.required !== undefined ? totalFiltration.required.toString().trim() : testRecord.totalFiltration?.required,
+        atKvp: totalFiltration.atKvp !== undefined ? totalFiltration.atKvp.toString().trim() : (testRecord.totalFiltration?.atKvp ?? ''),
+      };
+    }
+    if (filtrationTolerance) {
+      testRecord.filtrationTolerance = {
+        forKvGreaterThan70: filtrationTolerance.forKvGreaterThan70?.toString().trim() ?? testRecord.filtrationTolerance?.forKvGreaterThan70 ?? '1.5',
+        forKvBetween70And100: filtrationTolerance.forKvBetween70And100?.toString().trim() ?? testRecord.filtrationTolerance?.forKvBetween70And100 ?? '2.0',
+        forKvGreaterThan100: filtrationTolerance.forKvGreaterThan100?.toString().trim() ?? testRecord.filtrationTolerance?.forKvGreaterThan100 ?? '2.5',
+        kvThreshold1: filtrationTolerance.kvThreshold1?.toString().trim() ?? testRecord.filtrationTolerance?.kvThreshold1 ?? '70',
+        kvThreshold2: filtrationTolerance.kvThreshold2?.toString().trim() ?? testRecord.filtrationTolerance?.kvThreshold2 ?? '100',
       };
     }
 
