@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 const MACHINE_TYPE = "Mammography"; // Change if needed: "Fluoroscopy", "C-Arm", etc.
 
 const create = asyncHandler(async (req, res) => {
-    const { table1, table2, toleranceValue, toleranceType, toleranceSign } = req.body;
+    const { table1, table2, toleranceValue, toleranceType, toleranceSign, totalFiltration, filtrationTolerance } = req.body;
     const { serviceId } = req.params;
 
     // === Validation ===
@@ -55,6 +55,8 @@ const create = asyncHandler(async (req, res) => {
             if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
             if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
             if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
+            if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+            if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
         } else {
             // Create new
             testRecord = new AccuracyOfOperatingPotential({
@@ -67,6 +69,8 @@ const create = asyncHandler(async (req, res) => {
                     type: toleranceType,
                     sign: toleranceSign,
                 },
+                totalFiltration: totalFiltration || {},
+                filtrationTolerance: filtrationTolerance || {},
             });
         }
 
@@ -100,7 +104,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { table1, table2, toleranceValue, toleranceType, toleranceSign } = req.body;
+    const { table1, table2, toleranceValue, toleranceType, toleranceSign, totalFiltration, filtrationTolerance } = req.body;
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -134,6 +138,8 @@ const update = asyncHandler(async (req, res) => {
         if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
         if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
         if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
+        if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+        if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
 
         await testRecord.save({ session });
         await session.commitTransaction();

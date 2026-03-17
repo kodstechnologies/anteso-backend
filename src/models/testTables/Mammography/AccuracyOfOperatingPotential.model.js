@@ -24,6 +24,21 @@ const ToleranceSchema = new mongoose.Schema({
     sign: { type: String, enum: ['plus', 'minus', 'both'] },
 });
 
+// Total Filtration (same as RadiographyFixed TotalFilteration)
+const totalFiltrationSchema = new mongoose.Schema({
+    measured: { type: String, default: '' },
+    required: { type: String, default: '' },
+    atKvp: { type: String, default: '' },
+}, { _id: false });
+
+const filtrationToleranceSchema = new mongoose.Schema({
+    forKvGreaterThan70: { type: String, default: '1.5' },
+    forKvBetween70And100: { type: String, default: '2.0' },
+    forKvGreaterThan100: { type: String, default: '2.5' },
+    kvThreshold1: { type: String, default: '70' },
+    kvThreshold2: { type: String, default: '100' },
+}, { _id: false });
+
 const AccuracyOfOperatingPotentialSchema = new mongoose.Schema({
     serviceId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,6 +58,9 @@ const AccuracyOfOperatingPotentialSchema = new mongoose.Schema({
 
     // Tolerance settings
     tolerance: { type: ToleranceSchema, required: true },
+
+    totalFiltration: { type: totalFiltrationSchema, default: () => ({}) },
+    filtrationTolerance: { type: filtrationToleranceSchema, default: () => ({}) },
 
     // Metadata
     createdAt: {
