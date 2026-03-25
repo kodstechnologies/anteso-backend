@@ -31,6 +31,10 @@ const paymentSchema = new Schema(
         paymentStatus:{
             type:String,
             enum:['paid','pending']
+        },
+        paymentMode:{
+            type:String,
+            enum:['Cash','Bank transfer','Cheque','UPI','Other']
         }
     },
     { timestamps: true }

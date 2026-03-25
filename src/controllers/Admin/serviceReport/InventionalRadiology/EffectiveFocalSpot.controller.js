@@ -6,6 +6,45 @@ import EffectiveFocalSpot from "../../../../models/testTables/InventionalRadiolo
 
 const MACHINE_TYPE = "Interventional Radiology";
 
+const toNumberOrNull = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeFocalSpots = (spots) => {
+    if (!Array.isArray(spots)) return spots;
+    return spots.map((spot = {}) => {
+        const statedNominal =
+            toNumberOrNull(spot.statedNominal) ??
+            (() => {
+                const sw = toNumberOrNull(spot.statedWidth);
+                const sh = toNumberOrNull(spot.statedHeight);
+                if (sw !== null && sh !== null) return (sw + sh) / 2;
+                return sw ?? sh;
+            })();
+
+        const measuredNominal =
+            toNumberOrNull(spot.measuredNominal) ??
+            (() => {
+                const mw = toNumberOrNull(spot.measuredWidth);
+                const mh = toNumberOrNull(spot.measuredHeight);
+                if (mw !== null && mh !== null) return (mw + mh) / 2;
+                return mw ?? mh;
+            })();
+
+        return {
+            ...spot,
+            statedNominal: statedNominal ?? 0,
+            measuredNominal: measuredNominal ?? 0,
+            statedWidth: toNumberOrNull(spot.statedWidth) ?? statedNominal ?? 0,
+            statedHeight: toNumberOrNull(spot.statedHeight) ?? statedNominal ?? 0,
+            measuredWidth: toNumberOrNull(spot.measuredWidth) ?? measuredNominal ?? 0,
+            measuredHeight: toNumberOrNull(spot.measuredHeight) ?? measuredNominal ?? 0,
+        };
+    });
+};
+
 const create = asyncHandler(async (req, res) => {
     const { fcd, toleranceCriteria, focalSpots, finalResult, tubeId } = req.body;
     const { serviceId } = req.params;
@@ -54,7 +93,7 @@ const create = asyncHandler(async (req, res) => {
                 medium: { multiplier: 0.4, lowerLimit: 0.8, upperLimit: 1.5 },
                 large: { multiplier: 0.3, lowerLimit: 1.5 },
             },
-            focalSpots: focalSpots || [],
+            focalSpots: normalizeFocalSpots(focalSpots) || [],
             finalResult: finalResult || "",
             serviceId,
             reportId: serviceReport._id,
@@ -169,7 +208,7 @@ const update = asyncHandler(async (req, res) => {
         // Update fields
         if (fcd !== undefined) testRecord.fcd = fcd;
         if (toleranceCriteria !== undefined) testRecord.toleranceCriteria = toleranceCriteria;
-        if (focalSpots !== undefined) testRecord.focalSpots = focalSpots;
+        if (focalSpots !== undefined) testRecord.focalSpots = normalizeFocalSpots(focalSpots);
         if (finalResult !== undefined) testRecord.finalResult = finalResult;
         if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
 

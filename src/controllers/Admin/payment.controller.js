@@ -11,12 +11,24 @@ import mongoose from "mongoose";
 
 const addPayment = asyncHandler(async (req, res) => {
     try {
-        const { orderId, totalAmount, paymentAmount, paymentType, utrNumber } = req.body;
-        console.log("🚀 ~ utrNumber:", utrNumber)
-        console.log("🚀 ~ paymentType:", paymentType)
-        console.log("🚀 ~ paymentAmount:", paymentAmount)
-        console.log("🚀 ~ totalAmount:", totalAmount)
-        console.log("🚀 ~ orderId:", orderId)
+        const {
+            orderId,
+            totalAmount,
+            paymentAmount,
+            paymentType,
+            utrNumber,
+            paymentMode,  // ✅ Added paymentMode
+            paymentStatus  // ✅ Added paymentStatus
+        } = req.body;
+
+        console.log("🚀 ~ orderId:", orderId);
+        console.log("🚀 ~ paymentType:", paymentType);
+        console.log("🚀 ~ paymentAmount:", paymentAmount);
+        console.log("🚀 ~ totalAmount:", totalAmount);
+        console.log("🚀 ~ utrNumber:", utrNumber);
+        console.log("🚀 ~ paymentMode:", paymentMode);
+        console.log("🚀 ~ paymentStatus:", paymentStatus);
+
         // Validation
         if (!orderId || !paymentType) {
             res.status(400);
@@ -44,10 +56,12 @@ const addPayment = asyncHandler(async (req, res) => {
             paymentAmount,
             paymentType,
             utrNumber,
+            paymentMode,  // ✅ Added paymentMode
+            paymentStatus, // ✅ Added paymentStatus
             screenshot: screenshotUrl,
         });
-        console.log("🚀 ~ payment:", payment)
-        console.log("🚀 ~ payment:", payment.paymentType)
+
+        console.log("🚀 ~ payment created:", payment);
 
         res.status(201).json({
             success: true,
@@ -614,15 +628,33 @@ const getAllPayments = asyncHandler(async (req, res) => {
     try {
         const payments = await Payment.find()
             .populate({
-                path: "orderId", // assumes Payment schema has { orderId: { type: ObjectId, ref: "Order" } }
-                select: "srfNumber", // only return needed fields
+                path: "orderId",
+                select: "srfNumber hospitalName", // ✅ Added hospitalName
             })
-            .sort({ createdAt: -1 }); // latest first
+            .sort({ createdAt: -1 });
+
+        // Transform the response to include all fields
+        const formattedPayments = payments.map(payment => ({
+            _id: payment._id,
+            paymentId: payment.paymentId,
+            orderId: payment.orderId?._id,
+            srfNumber: payment.orderId?.srfNumber || "N/A",
+            hospitalName: payment.orderId?.hospitalName || "N/A",
+            totalAmount: payment.totalAmount,
+            paymentAmount: payment.paymentAmount,
+            paymentType: payment.paymentType,
+            utrNumber: payment.utrNumber,
+            paymentMode: payment.paymentMode,  // ✅ Added paymentMode
+            paymentStatus: payment.paymentStatus, // ✅ Added paymentStatus
+            screenshot: payment.screenshot,
+            createdAt: payment.createdAt,
+            updatedAt: payment.updatedAt,
+        }));
 
         res.status(200).json({
             success: true,
-            count: payments.length,
-            payments,
+            count: formattedPayments.length,
+            payments: formattedPayments,
         });
     } catch (error) {
         console.error("Error fetching payments:", error);
@@ -767,9 +799,9 @@ const getPaymentById = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Payment ID is required");
         }
 
-        // ✅ Fetch payment with related Order (to get SRF number etc.)
+        // ✅ Fetch payment with related Order
         const payment = await Payment.findById(id).populate("orderId", "srfNumber hospitalName");
-
+        console.log("🚀 ~ payment:", payment);
         if (!payment) {
             throw new ApiError(404, "Payment not found");
         }
@@ -778,6 +810,7 @@ const getPaymentById = asyncHandler(async (req, res) => {
             new ApiResponse(
                 200,
                 {
+                    _id: payment._id,
                     paymentId: payment.paymentId,
                     orderId: payment.orderId?._id,
                     srfNumber: payment.orderId?.srfNumber || "N/A",
@@ -786,6 +819,8 @@ const getPaymentById = asyncHandler(async (req, res) => {
                     paymentAmount: payment.paymentAmount,
                     paymentType: payment.paymentType,
                     utrNumber: payment.utrNumber,
+                    paymentMode: payment.paymentMode,  // ✅ Added paymentMode
+                    paymentStatus: payment.paymentStatus, // ✅ Added paymentStatus
                     screenshot: payment.screenshot,
                     createdAt: payment.createdAt,
                     updatedAt: payment.updatedAt,
@@ -798,7 +833,6 @@ const getPaymentById = asyncHandler(async (req, res) => {
         throw new ApiError(500, error.message || "Failed to fetch payment");
     }
 });
-
 
 const deletePayment = asyncHandler(async (req, res) => {
     try {
@@ -867,7 +901,16 @@ const deletePayment = asyncHandler(async (req, res) => {
 const editPaymentById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
-        const { srfClient, totalAmount, paymentAmount, paymentType, utrNumber } = req.body;
+        const {
+            srfClient,
+            totalAmount,
+            paymentAmount,
+            paymentType,
+            utrNumber,
+            paymentMode,     // ✅ Added paymentMode
+            paymentStatus    // ✅ Added paymentStatus
+        } = req.body;
+
         console.log("🚀 ~ req.body:", req.body);
         console.log("🚀 ~ req.file:", req.file);
 
@@ -885,8 +928,10 @@ const editPaymentById = asyncHandler(async (req, res) => {
         if (srfClient) payment.srfNumber = srfClient;
         if (totalAmount !== undefined) payment.totalAmount = totalAmount;
         if (paymentAmount !== undefined) payment.paymentAmount = paymentAmount;
-        if (paymentType) payment.paymentType = paymentType.toLowerCase(); // ensure lowercase
+        if (paymentType) payment.paymentType = paymentType.toLowerCase();
         if (utrNumber) payment.utrNumber = utrNumber;
+        if (paymentMode) payment.paymentMode = paymentMode;  // ✅ Added paymentMode update
+        if (paymentStatus) payment.paymentStatus = paymentStatus; // ✅ Added paymentStatus update
 
         // 🖼️ Handle Screenshot Upload
         if (req.file) {
@@ -896,17 +941,38 @@ const editPaymentById = asyncHandler(async (req, res) => {
 
         await payment.save();
 
+        // Return updated payment with populated fields
+        const updatedPayment = await Payment.findById(id).populate("orderId", "srfNumber hospitalName");
+
         res.status(200).json({
             success: true,
             message: "Payment updated successfully",
-            payment,
+            payment: {
+                _id: updatedPayment._id,
+                paymentId: updatedPayment.paymentId,
+                orderId: updatedPayment.orderId?._id,
+                srfNumber: updatedPayment.orderId?.srfNumber || "N/A",
+                hospitalName: updatedPayment.orderId?.hospitalName || "N/A",
+                totalAmount: updatedPayment.totalAmount,
+                paymentAmount: updatedPayment.paymentAmount,
+                paymentType: updatedPayment.paymentType,
+                utrNumber: updatedPayment.utrNumber,
+                paymentMode: updatedPayment.paymentMode,  // ✅ Added in response
+                paymentStatus: updatedPayment.paymentStatus, // ✅ Added in response
+                screenshot: updatedPayment.screenshot,
+                createdAt: updatedPayment.createdAt,
+                updatedAt: updatedPayment.updatedAt,
+            },
         });
     } catch (error) {
         console.error("Error in editPaymentById:", error);
-        res.status(500).json({ success: false, message: "Failed to update payment" });
+        res.status(500).json({
+            success: false,
+            message: "Failed to update payment",
+            error: error.message
+        });
     }
 });
-
 
 const getPaymentDetailsByOrderId = async (req, res) => {
     try {

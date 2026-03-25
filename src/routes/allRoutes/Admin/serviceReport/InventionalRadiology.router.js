@@ -13,6 +13,8 @@ import ConsistencyOfRadiationOutputController from "../../../../controllers/Admi
 import RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/RadiationProtectionSurvey.controller.js";
 import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/AccuracyOfOperatingPotential.controller.js";
 import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/TubeHousingLeakage.controller.js";
+import TimerAccuracyController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/timerAccuracy.controller.js";
+import MeasurementOfMaLinearityController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/measurementOfMaLinearity.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
 
@@ -24,6 +26,7 @@ router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrra
 router.post('/total-filteration/:serviceId', TotalFilterationForInventionalRadiologyController.create)
 router.get('/total-filteration/:testId', TotalFilterationForInventionalRadiologyController.getById)
 router.put('/total-filteration/:testId', TotalFilterationForInventionalRadiologyController.update)
+router.get('/total-filteration-by-service/:serviceId', TotalFilterationForInventionalRadiologyController.getByServiceId)
 
 router.post('/exposure-rate/:serviceId', ExposureRateTableTopController.create)
 router.get('/exposure-rate/:testId', ExposureRateTableTopController.getById)
@@ -70,5 +73,16 @@ router.post('/tube-housing-leakage/:serviceId', TubeHousingLeakageController.cre
 router.get('/tube-housing-leakage-by-service/:serviceId', TubeHousingLeakageController.getByServiceId);
 router.get('/tube-housing-leakage/:testId', TubeHousingLeakageController.getById);
 router.put('/tube-housing-leakage/:testId', TubeHousingLeakageController.update);
+
+// CTScan-style tables for IR
+router.post('/timer-accuracy/:serviceId', TimerAccuracyController.create);
+router.get('/timer-accuracy/:testId', TimerAccuracyController.getById);
+router.put('/timer-accuracy/:testId', TimerAccuracyController.update);
+router.get('/timer-accuracy/service/:serviceId', TimerAccuracyController.getByServiceId);
+
+router.post('/measurement-of-ma-linearity/:serviceId', MeasurementOfMaLinearityController.create);
+router.get('/measurement-of-ma-linearity/:testId', MeasurementOfMaLinearityController.getById);
+router.put('/measurement-of-ma-linearity/:testId', MeasurementOfMaLinearityController.update);
+router.get('/measurement-of-ma-linearity/service/:serviceId', MeasurementOfMaLinearityController.getByServiceId);
 
 export default router;

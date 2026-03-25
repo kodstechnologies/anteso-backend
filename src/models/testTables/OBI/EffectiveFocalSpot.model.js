@@ -47,6 +47,12 @@ const EffectiveFocalSpotSchema = new Schema(
           type: String,
           required: true,
         },
+        statedNominal: {
+          type: Number,
+        },
+        measuredNominal: {
+          type: Number,
+        },
         statedWidth: {
           type: Number,
           required: true,

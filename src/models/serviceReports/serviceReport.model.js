@@ -791,6 +791,14 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "TubeHousingLeakageInventionalRadiology"
     },
+    TimerAccuracyInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "TimerAccuracyInventionalRadiology"
+    },
+    MeasurementOfMaLinearityInventionalRadiology: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MeasurementOfMaLinearityInventionalRadiology"
+    },
     TotalFilterationForInventionalRadiology: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "TotalFilterationForInventionalRadiology"

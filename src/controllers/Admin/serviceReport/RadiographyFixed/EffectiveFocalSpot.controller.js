@@ -7,9 +7,49 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "Radiography (Fixed)";
 
+const toNumberOrNull = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeFocalSpots = (spots) => {
+  if (!Array.isArray(spots)) return spots;
+  return spots.map((spot = {}) => {
+    const statedNominal =
+      toNumberOrNull(spot.statedNominal) ??
+      (() => {
+        const sw = toNumberOrNull(spot.statedWidth);
+        const sh = toNumberOrNull(spot.statedHeight);
+        if (sw !== null && sh !== null) return (sw + sh) / 2;
+        return sw ?? sh;
+      })();
+    const measuredNominal =
+      toNumberOrNull(spot.measuredNominal) ??
+      (() => {
+        const mw = toNumberOrNull(spot.measuredWidth);
+        const mh = toNumberOrNull(spot.measuredHeight);
+        if (mw !== null && mh !== null) return (mw + mh) / 2;
+        return mw ?? mh;
+      })();
+
+    return {
+      ...spot,
+      statedNominal: statedNominal ?? 0,
+      measuredNominal: measuredNominal ?? 0,
+      // Keep legacy fields aligned with nominal for old templates/views.
+      statedWidth: toNumberOrNull(spot.statedWidth) ?? statedNominal ?? 0,
+      statedHeight: toNumberOrNull(spot.statedHeight) ?? statedNominal ?? 0,
+      measuredWidth: toNumberOrNull(spot.measuredWidth) ?? measuredNominal ?? 0,
+      measuredHeight: toNumberOrNull(spot.measuredHeight) ?? measuredNominal ?? 0,
+    };
+  });
+};
+
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
   const { fcd, toleranceCriteria, focalSpots, finalResult } = req.body;
+  const normalizedFocalSpots = normalizeFocalSpots(focalSpots);
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -44,7 +84,7 @@ const create = asyncHandler(async (req, res) => {
     if (testRecord) {
       if (fcd !== undefined) testRecord.fcd = fcd;
       if (toleranceCriteria !== undefined) testRecord.toleranceCriteria = toleranceCriteria;
-      if (focalSpots !== undefined) testRecord.focalSpots = focalSpots;
+      if (focalSpots !== undefined) testRecord.focalSpots = normalizedFocalSpots;
       if (finalResult !== undefined) testRecord.finalResult = finalResult;
     } else {
       testRecord = new EffectiveFocalSpot({
@@ -56,7 +96,7 @@ const create = asyncHandler(async (req, res) => {
           medium: { multiplier: 0.4, lowerLimit: 0.8, upperLimit: 1.5 },
           large: { multiplier: 0.3, lowerLimit: 1.5 },
         },
-        focalSpots: focalSpots || [],
+        focalSpots: normalizedFocalSpots || [],
         finalResult: finalResult || "",
       });
     }
@@ -108,6 +148,7 @@ const getById = asyncHandler(async (req, res) => {
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
   const { fcd, toleranceCriteria, focalSpots, finalResult } = req.body;
+  const normalizedFocalSpots = normalizeFocalSpots(focalSpots);
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
@@ -130,7 +171,7 @@ const update = asyncHandler(async (req, res) => {
     }
     if (fcd !== undefined) testRecord.fcd = fcd;
     if (toleranceCriteria !== undefined) testRecord.toleranceCriteria = toleranceCriteria;
-    if (focalSpots !== undefined) testRecord.focalSpots = focalSpots;
+    if (focalSpots !== undefined) testRecord.focalSpots = normalizedFocalSpots;
     if (finalResult !== undefined) testRecord.finalResult = finalResult;
     await testRecord.save({ session });
     await session.commitTransaction();

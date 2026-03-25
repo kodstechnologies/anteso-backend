@@ -93,17 +93,77 @@ import Invoice from "../../models/invoice.model.js";
 //     }
 // });
 
+// const getAllOrders = asyncHandler(async (req, res) => {
+//     try {
+//         let orders = await orderModel.find({}).sort({ createdAt: -1 });
+
+//         // ✅ Fetch leadOwner name & type (fallback to customer if leadOwner missing)
+//         orders = await Promise.all(
+//             orders.map(async (order) => {
+//                 let leadOwnerName = "N/A";
+//                 let leadOwnerType = "N/A";
+
+//                 // 🔹 Try Lead Owner first
+//                 if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+//                     const user = await User.findById(order.leadOwner).select("name role");
+//                     if (user) {
+//                         leadOwnerName = user.name;
+//                         leadOwnerType = user.role;
+//                     }
+//                 }
+
+//                 // 🔹 If Lead Owner not found → try Customer
+//                 if (
+//                     (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
+//                     order.customer &&
+//                     mongoose.Types.ObjectId.isValid(order.customer)
+//                 ) {
+//                     const customer = await User.findById(order.customer).select("name role");
+//                     if (customer) {
+//                         leadOwnerName = customer.name;
+//                         leadOwnerType = customer.role;
+//                     }
+//                 }
+
+//                 return {
+//                     ...order.toObject(),
+//                     createdAt: order.createdAt,
+//                     leadOwner: leadOwnerName,
+//                     leadOwnerType,
+//                 };
+//             })
+//         );
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(200).json(new ApiResponse(200, [], "No Orders found"));
+//         }
+
+//         res.status(200).json({
+//             message: "Orders fetched successfully",
+//             count: orders.length,
+//             orders,
+//         });
+//     } catch (error) {
+//         console.error("Error in getAllOrders:", error);
+//         res.status(500).json({ message: "Server error", error: error.message });
+//     }
+// });
+
 const getAllOrders = asyncHandler(async (req, res) => {
     try {
-        let orders = await orderModel.find({}).sort({ createdAt: -1 });
+        let orders = await orderModel
+            .find({})
+            .populate({
+                path: "services",
+                select: "procNoOrPoNo procExpiryDate machineType"
+            })
+            .sort({ createdAt: -1 });
 
-        // ✅ Fetch leadOwner name & type (fallback to customer if leadOwner missing)
         orders = await Promise.all(
             orders.map(async (order) => {
                 let leadOwnerName = "N/A";
                 let leadOwnerType = "N/A";
 
-                // 🔹 Try Lead Owner first
                 if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
                     const user = await User.findById(order.leadOwner).select("name role");
                     if (user) {
@@ -112,7 +172,6 @@ const getAllOrders = asyncHandler(async (req, res) => {
                     }
                 }
 
-                // 🔹 If Lead Owner not found → try Customer
                 if (
                     (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
                     order.customer &&
@@ -130,26 +189,25 @@ const getAllOrders = asyncHandler(async (req, res) => {
                     createdAt: order.createdAt,
                     leadOwner: leadOwnerName,
                     leadOwnerType,
+
+                    // ✅ Flatten first service (or handle multiple)
+                    procNoOrPoNo: order.services?.[0]?.procNoOrPoNo || null,
+                    procExpiryDate: order.services?.[0]?.procExpiryDate || null,
                 };
             })
         );
-
-        if (!orders || orders.length === 0) {
-            return res.status(200).json(new ApiResponse(200, [], "No Orders found"));
-        }
 
         res.status(200).json({
             message: "Orders fetched successfully",
             count: orders.length,
             orders,
         });
+
     } catch (error) {
         console.error("Error in getAllOrders:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
-
-
 
 
 const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
