@@ -3170,12 +3170,17 @@ const getUpdatedOrderServices2 = asyncHandler(async (req, res) => {
         const service = order.services[0];
 
         // 2️⃣ Filter workTypeDetails for the given technician & work type
-        const technicianWork = service.workTypeDetails.find(
-            w =>
+        // const technicianWork = service.workTypeDetails.find(
+        //     w =>
+        //         w.engineer?._id?.toString() === technicianId &&
+        //         w.workType?.toLowerCase() === workType.toLowerCase()
+        // );
+        const technicianWork = service.workTypeDetails
+            .filter(w =>
                 w.engineer?._id?.toString() === technicianId &&
                 w.workType?.toLowerCase() === workType.toLowerCase()
-        );
-
+            )
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
         if (!technicianWork) {
             return res.status(403).json({ message: 'Technician not assigned to this work type in this service' });
         }
@@ -4779,10 +4784,8 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
                 const oldStatus = work.status || "pending";
                 const newStatus = status.toLowerCase();
 
-                // ✅ Update status
-                if (normalizedReportType !== "elora") {
-                    work.status = newStatus;
-                }
+                // ✅ Update status (Always update status now)
+                work.status = newStatus;
 
                 if (["completed", "generated"].includes(newStatus)) {
                     work.completedAt = new Date();
@@ -7237,6 +7240,7 @@ const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
 
         // Step 1: Populate all references (QATest + Elora)
         let orders = await orderModel.find({})
+            .sort({ createdAt: -1 })
             .populate({
                 path: "services",
                 populate: {
