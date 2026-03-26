@@ -2831,6 +2831,7 @@ const startOrder = asyncHandler(async (req, res) => {
 
     // Step 1: Find the order with populated fields
     const order = await orderModel.findOne({ _id: orderId })
+
         .populate({ path: 'services', model: 'Service' })
         .populate({
             path: 'customer',
@@ -2843,21 +2844,22 @@ const startOrder = asyncHandler(async (req, res) => {
     }
 
     // Step 2: Filter services and workTypes to only include ones assigned to this engineer
-    const filteredServices = order.services.map(service => {
-        const filteredWorkTypes = service.workTypeDetails.filter(
-            work => work.engineer?.toString() === employeeId
-        );
+    const filteredServices = order.services
+        .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) // 🔥 SORT SERVICES
+        .map(service => {
+            const filteredWorkTypes = service.workTypeDetails
+                .filter(work => work.engineer?.toString() === employeeId)
+                .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 
-        // Return service only if it has at least one assigned workType
-        if (filteredWorkTypes.length > 0) {
-            return {
-                ...service.toObject(),
-                workTypeDetails: filteredWorkTypes
-            };
-        }
-        return null;
-    }).filter(service => service !== null);
-
+            if (filteredWorkTypes.length > 0) {
+                return {
+                    ...service.toObject(),
+                    workTypeDetails: filteredWorkTypes
+                };
+            }
+            return null;
+        })
+        .filter(service => service !== null);
     if (filteredServices.length === 0) {
         return res.status(403).json({ message: 'Engineer is not assigned to this order' });
     }
