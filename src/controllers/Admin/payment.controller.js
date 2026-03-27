@@ -570,7 +570,7 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
             .find({})
             .select('srfNumber hospitalName leadOwner _id createdAt quotation services additionalServices')
             .populate('quotation')
-            .populate('services', 'machineType price quantity')
+            .populate('services', 'machineType price quantity totalAmount')
             .populate('additionalServices', 'name totalAmount')
             .sort({ createdAt: -1 })
             .lean();
@@ -667,7 +667,7 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                     if (Array.isArray(order.services)) {
                         breakdownServices.push(...order.services.map(s => ({
                             serviceName: s.machineType,
-                            amount: s.price || 0
+                            amount: s.totalAmount || s.price || 0
                         })));
                     }
                     if (Array.isArray(order.additionalServices)) {
@@ -750,27 +750,45 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
 // });
 
 const getTotalAmount = asyncHandler(async (req, res) => {
-    const { srfNumber } = req.query;  // ✅ expect srfNumber
+    const { srfNumber } = req.query;
 
     if (!srfNumber) {
         return res.status(400).json({ success: false, message: "SRF number is required" });
     }
 
-    // Find order by SRF number and populate its quotation
+    // Find order by SRF number and populate its quotation, services and additionalServices
     const order = await Order.findOne({ srfNumber })
-        .populate("quotation", "total"); // only bring 'total' field from quotation
+        .populate("quotation", "total")
+        .populate("services", "price totalAmount")
+        .populate("additionalServices", "totalAmount");
 
     if (!order) {
         return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    if (!order.quotation) {
-        return res.status(404).json({ success: false, message: "Quotation not found for this order" });
+    let totalAmount = 0;
+
+    // 1. Try to get total from quotation
+    if (order.quotation && order.quotation.total) {
+        totalAmount = order.quotation.total;
+    } else {
+        // 2. Fallback: Sum up service prices and additional service prices
+        const servicesTotal = (order.services || []).reduce((sum, s) => {
+            // Priority: s.price (as requested) or fallback to s.totalAmount
+            const price = s.price || s.totalAmount || 0;
+            return sum + (Number(price) || 0);
+        }, 0);
+
+        const additionalTotal = (order.additionalServices || []).reduce((sum, s) => {
+            return sum + (Number(s.totalAmount) || 0);
+        }, 0);
+
+        totalAmount = servicesTotal + additionalTotal;
     }
 
     res.json({
         success: true,
-        totalAmount: order.quotation.total,  // ✅ use quotation total
+        totalAmount,
     });
 });
 

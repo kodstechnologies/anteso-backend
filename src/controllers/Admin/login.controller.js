@@ -260,7 +260,7 @@ const adminLogin = asyncHandler(async (req, res) => {
         if (!isPasswordValid) throw new ApiError(401, "Invalid email or password");
 
         const accessToken = jwt.sign(
-            { id: employee._id, email: employee.email, role: "staff" },
+            { id: employee._id, email: employee.email, role: "staff", department: employee.department },
             process.env.JWT_SECRET,
             { expiresIn: "360d" }
         );
@@ -378,7 +378,7 @@ const staffLogin = asyncHandler(async (req, res) => {
 
     // 4️⃣ Generate tokens
     const accessToken = jwt.sign(
-        { id: staff._id, email: staff.email, role: "office-staff" },
+        { id: staff._id, email: staff.email, role: "office-staff", department: staff.department },
         process.env.JWT_SECRET,
         { expiresIn: "1d" }
     );

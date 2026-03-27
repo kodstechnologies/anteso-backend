@@ -155,7 +155,7 @@ const getAllOrders = asyncHandler(async (req, res) => {
             .find({})
             .populate({
                 path: "services",
-                select: "procNoOrPoNo procExpiryDate machineType"
+                select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId"
             })
             .sort({ createdAt: -1 });
 

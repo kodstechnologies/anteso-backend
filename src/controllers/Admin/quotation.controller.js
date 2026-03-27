@@ -1750,17 +1750,11 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         // 5) Clone enquiry.services → Order.services
         const serviceDocs = await Promise.all(
             (enquiry.services || []).map(async (service) => {
-                // Find matching service in quotation items to get the agreed price
-                const quotedService = (quotation.items?.services || []).find(
-                    (qs) => qs.id?.toString() === service._id.toString()
-                );
-
                 const newService = new Services({
                     machineType: service.machineType,
                     equipmentNo: service.equipmentNo,
                     quantity: service.quantity,
                     machineModel: service.machineModel,
-                    price: quotedService ? quotedService.totalAmount : service.price, // Use quoted price or fallback
                     workTypeDetails: (service.workTypeDetails || []).map((wt) => ({
                         workType: wt.workType,
                         serviceName: wt.serviceName,
