@@ -3,6 +3,7 @@ import orderController from "../../../controllers/Admin/order.controller.js";
 import upload from "../../../middlewares/upload.js";
 const router = Router();
 router.post('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), orderController.addMachineToOrder)
+router.patch('/update-price/:orderId/:serviceId', orderController.updateServicePrice)
 router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
 router.get('/get-all', orderController.getAllOrders)
 router.get('/basic-details-by-orderId/:orderId', orderController.getBasicDetailsByOrderId)

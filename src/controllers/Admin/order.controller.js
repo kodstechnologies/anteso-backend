@@ -189,7 +189,7 @@ const getAllOrders = asyncHandler(async (req, res) => {
                     createdAt: order.createdAt,
                     leadOwner: leadOwnerName,
                     leadOwnerType,
-
+                    partyCodeOrSysId: order.services?.[0]?.partyCodeOrSysId || null,
                     // ✅ Flatten first service (or handle multiple)
                     procNoOrPoNo: order.services?.[0]?.procNoOrPoNo || null,
                     procExpiryDate: order.services?.[0]?.procExpiryDate || null,
@@ -735,7 +735,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
         const order = await orderModel.findById(orderId)
             .populate({
                 path: "services",
-                select: "machineType equipmentNo machineModel quantity serialNumber remark workOrderCopy partyCodeOrSysId procNoOrPoNo procExpiryDate workTypeDetails", // ✅ Include the new fields
+                select: "machineType equipmentNo machineModel quantity serialNumber remark workOrderCopy partyCodeOrSysId procNoOrPoNo procExpiryDate workTypeDetails price", // ✅ Include the new fields
                 populate: [
                     {
                         path: "workTypeDetails.QAtest",
@@ -811,6 +811,8 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
                     })
                     : null,
 
+                price: service.price || 0, // ✅ Include price
+
                 workTypeDetails: updatedWorkTypes,
                 createdAt: service.createdAt,
                 updatedAt: service.updatedAt
@@ -818,7 +820,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
         });
 
         return res.status(200).json(
-            new ApiResponse(200, services, "Machine details fetched successfully")
+            new ApiResponse(200, { services, leadOwner: order.leadOwner }, "Machine details fetched successfully")
         );
 
     } catch (error) {
@@ -846,6 +848,7 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             partyCodeOrSysId,
             procNoOrPoNo,
             procExpiryDate,
+            price,
         } = req.body;
 
         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
@@ -886,7 +889,8 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             workTypeDetails: parsedWorkTypes.map(wt => ({
                 workType: wt,
                 status: 'pending'
-            }))
+            })),
+            price: price || 0
         });
 
         order.services.push(newService._id);
@@ -2727,6 +2731,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             return {
                 machineType: s.machineType,
                 quantity: Number(s.quantity) || 1, // ensure number
+                price: Number(s.price) || 0, // ✅ added price
                 equipmentNo: s.equipmentNo || "",
                 machineModel: s.machineModel || "",
                 // serialNumber: s.serialNumber || "",   // uncomment if needed
@@ -7394,6 +7399,34 @@ const deleteOrderAndReports = asyncHandler(async (req, res) => {
     });
 });
 
+const updateServicePrice = asyncHandler(async (req, res) => {
+    try {
+        const { orderId, serviceId } = req.params;
+        const { price } = req.body;
+
+        if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+            return res.status(400).json({ message: "Invalid or missing service ID." });
+        }
+
+        const service = await Services.findByIdAndUpdate(
+            serviceId,
+            { price: price || 0 },
+            { new: true }
+        );
+
+        if (!service) {
+            return res.status(404).json({ message: "Service not found" });
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, service, "Price updated successfully")
+        );
+    } catch (error) {
+        console.error("❌ Error updating service price:", error);
+        return res.status(500).json({ message: "Failed to update service price", error: error.message });
+    }
+});
+
 const getWorkOrderCopy = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -7425,4 +7458,4 @@ const getWorkOrderCopy = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId }
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice }

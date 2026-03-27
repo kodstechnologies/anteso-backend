@@ -79,6 +79,10 @@ const serviceSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    price: {
+        type: Number,
+        // required: true,
+    },
     equipmentNo: String,
     machineModel: String,
     serialNumber: String,

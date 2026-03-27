@@ -452,13 +452,126 @@ const addPayment = asyncHandler(async (req, res) => {
 //     }
 // });
 
+//original
+// const allOrdersWithClientName = asyncHandler(async (req, res) => {
+//     try {
+//         // 1. Fetch all orders (unpaid later)
+//         let orders = await orderModel
+//             .find({})
+//             .select('srfNumber hospitalName leadOwner _id createdAt')
+//             .sort({ createdAt: -1 })
+//             .lean();
+
+//         if (!orders || orders.length === 0) {
+//             return res.status(404).json({ message: 'No orders found' });
+//         }
+
+//         // 2. Extract valid leadOwner IDs
+//         const leadOwnerIds = [
+//             ...new Set(
+//                 orders
+//                     .map(o => o.leadOwner)
+//                     .filter(id => id && mongoose.Types.ObjectId.isValid(id))
+//             )
+//         ];
+
+//         // 3. Fetch basic user info (name, role, email)
+//         const users = await User.find({ _id: { $in: leadOwnerIds } })
+//             .select('_id name role email')
+//             .lean();
+
+//         const userMap = {};
+//         users.forEach(u => {
+//             userMap[u._id.toString()] = {
+//                 _id: u._id,
+//                 name: u.name,
+//                 role: u.role || 'Unknown',
+//                 email: u.email,
+//             };
+//         });
+
+//         // 4. Fetch custom pricing for Dealer & Manufacturer (safe query — no discriminator needed)
+//         const pricingMap = {}; // This will hold qaTests + services for both roles
+
+//         if (leadOwnerIds.length > 0) {
+//             const privilegedUsers = await User.find({
+//                 _id: { $in: leadOwnerIds },
+//                 role: { $in: ['Dealer', 'Manufacturer'] }
+//             })
+//                 .select('_id role qaTests services')
+//                 .lean();
+
+//             privilegedUsers.forEach(user => {
+//                 const id = user._id.toString();
+
+//                 if (user.role === 'Dealer') {
+//                     pricingMap[id] = {
+//                         type: 'Dealer',
+//                         qaTests: user.qaTests || [],
+//                         services: []
+//                     };
+//                 }
+
+//                 if (user.role === 'Manufacturer') {
+//                     pricingMap[id] = {
+//                         type: 'Manufacturer',
+//                         qaTests: user.qaTests || [],
+//                         services: user.services || [] // ← includes serviceName + amount
+//                     };
+//                 }
+//             });
+//         }
+
+//         // 5. Get paid orders to filter them out
+//         const paidOrders = await Payment.find({}).select('orderId').lean();
+//         const paidOrderIds = new Set(paidOrders.map(p => p.orderId?.toString()).filter(Boolean));
+
+//         // 6. Final enriched orders
+//         const formattedOrders = orders
+//             .filter(order => !paidOrderIds.has(order._id.toString()))
+//             .map(order => {
+//                 const owner = order.leadOwner ? userMap[order.leadOwner.toString()] : null;
+//                 const pricing = order.leadOwner ? pricingMap[order.leadOwner.toString()] : null;
+
+//                 return {
+//                     ...order,
+//                     srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
+//                     leadOwnerDetails: owner,
+//                     isPrivilegedOrder: !!pricing,
+//                     pricingType: pricing?.type || null,
+//                     customPricing: {
+//                         qaTests: pricing?.qaTests || [],
+//                         services: pricing?.services || []
+//                     }
+//                 };
+//             });
+
+//         res.status(200).json({
+//             success: true,
+//             count: formattedOrders.length,
+//             orders: formattedOrders,
+//         });
+
+//     } catch (error) {
+//         console.error('Error fetching orders:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: error.message || 'Internal Server Error',
+//         });
+//     }
+// });
+
+
 // In your order controller
 const allOrdersWithClientName = asyncHandler(async (req, res) => {
     try {
         // 1. Fetch all orders (unpaid later)
         let orders = await orderModel
             .find({})
-            .select('srfNumber hospitalName leadOwner _id createdAt')
+            .select('srfNumber hospitalName leadOwner _id createdAt quotation services additionalServices')
+            .populate('quotation')
+            .populate('services', 'machineType price quantity')
+            .populate('additionalServices', 'name totalAmount')
             .sort({ createdAt: -1 })
             .lean();
 
@@ -533,6 +646,38 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                 const owner = order.leadOwner ? userMap[order.leadOwner.toString()] : null;
                 const pricing = order.leadOwner ? pricingMap[order.leadOwner.toString()] : null;
 
+                let breakdownServices = [];
+                let breakdownSource = "Order Items";
+
+                if (order.quotation && order.quotation.items) {
+                    breakdownSource = "Quotation";
+                    if (Array.isArray(order.quotation.items.services)) {
+                        breakdownServices.push(...order.quotation.items.services.map(s => ({
+                            serviceName: s.machineType,
+                            amount: s.totalAmount || 0
+                        })));
+                    }
+                    if (Array.isArray(order.quotation.items.additionalServices)) {
+                        breakdownServices.push(...order.quotation.items.additionalServices.map(s => ({
+                            serviceName: s.name,
+                            amount: s.totalAmount || 0
+                        })));
+                    }
+                } else {
+                    if (Array.isArray(order.services)) {
+                        breakdownServices.push(...order.services.map(s => ({
+                            serviceName: s.machineType,
+                            amount: s.price || 0
+                        })));
+                    }
+                    if (Array.isArray(order.additionalServices)) {
+                        breakdownServices.push(...order.additionalServices.map(s => ({
+                            serviceName: s.name,
+                            amount: s.totalAmount || 0
+                        })));
+                    }
+                }
+
                 return {
                     ...order,
                     srfNumberWithHospital: `${order.srfNumber} - ${order.hospitalName}`,
@@ -542,6 +687,11 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                     customPricing: {
                         qaTests: pricing?.qaTests || [],
                         services: pricing?.services || []
+                    },
+                    hasPricingBreakdown: breakdownServices.length > 0,
+                    breakdownSource,
+                    pricingBreakdown: {
+                        services: breakdownServices
                     }
                 };
             });
