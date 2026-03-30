@@ -29,10 +29,18 @@ const TotalFilterationSchema = new Schema({
     value: { type: String,  },   // e.g., "2.0"
   },
 
-  // Table 2: Total Filtration
+  // Table 2: Total Filtration (align with RadiographyFixed — atKvp + mm Al values)
   totalFiltration: {
-    measured: { type: String },  // mm Al
-    required: { type: String },  // mm Al
+    measured: { type: String },  // mm Al (alternate field name from some UIs)
+    required: { type: String },  // mm Al (primary input in IR form for measured filtration)
+    atKvp: { type: String },     // kVp at which total filtration is assessed
+  },
+  filtrationTolerance: {
+    forKvGreaterThan70: { type: String, default: "1.5" },
+    forKvBetween70And100: { type: String, default: "2.0" },
+    forKvGreaterThan100: { type: String, default: "2.5" },
+    kvThreshold1: { type: String, default: "70" },
+    kvThreshold2: { type: String, default: "100" },
   },
 
   reportId: {

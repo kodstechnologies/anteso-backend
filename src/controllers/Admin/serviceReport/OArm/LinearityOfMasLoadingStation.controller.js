@@ -47,6 +47,7 @@ const create = asyncHandler(async (req, res) => {
         serviceId,
         reportId: serviceReport._id,
         testName: testName || "Linearity of mAs Loading",
+        selection: selection || "mAs",
         table1: table1 || [],
         table2: table2 || [],
         measHeaders: measHeaders || [],
@@ -102,7 +103,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
+  const { testName, selection, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -112,6 +113,7 @@ const update = asyncHandler(async (req, res) => {
     testId,
     {
       ...(testName !== undefined && { testName }),
+      ...(selection !== undefined && { selection }),
       ...(table1 !== undefined && { table1 }),
       ...(table2 !== undefined && { table2 }),
       ...(measHeaders !== undefined && { measHeaders }),

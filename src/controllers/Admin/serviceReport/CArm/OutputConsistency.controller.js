@@ -213,6 +213,7 @@ const update = asyncHandler(async (req, res) => {
                     outputs: row.outputs?.map(o => o?.toString().trim() || "") || [],
                     mean: row.mean || "",
                     cov: row.cov || "",
+                    remark: row.remark || "",
                 })),
                 measurementHeaders: Array.isArray(measurementHeaders) && measurementHeaders.length > 0
                     ? measurementHeaders

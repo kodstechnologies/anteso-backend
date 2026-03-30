@@ -20,6 +20,12 @@ const linearityOfmAsLoadingSchema = new mongoose.Schema(
 
         },
 
+        selection: {
+            type: String,
+            enum: ["mA", "mAs"],
+            default: "mAs",
+        },
+
         // First table: FCD & kV
         table1: {
             type: [table1RowSchema],

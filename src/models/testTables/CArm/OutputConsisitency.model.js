@@ -3,9 +3,11 @@ import mongoose from "mongoose";
 
 const outputRowSchema = new mongoose.Schema({
   kvp: { type: String, required: true, trim: true },
+  ma: { type: String, required: true, trim: true },
   outputs: [{ type: String, trim: true }], // array of measurement strings
   mean: { type: String }, // stored as string to preserve formatting
   cov: { type: String },  // COV as decimal (e.g., "0.0123")
+  remark: { type: String }, // Row-level remark (Pass/Fail)
 }, { _id: false });
 
 const outputConsistencySchema = new mongoose.Schema(
@@ -26,7 +28,7 @@ const outputConsistencySchema = new mongoose.Schema(
 
     // Fixed test parameters
     parameters: {
-      ffd: { type: String, trim: true,},   // ← FFD in cm
+      ffd: { type: String, trim: true, },   // ← FFD in cm
       time: { type: String, trim: true },  // ← Exposure time
     },
 

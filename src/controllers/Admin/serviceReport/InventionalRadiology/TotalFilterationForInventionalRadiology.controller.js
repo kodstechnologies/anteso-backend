@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 const MACHINE_TYPE = "Interventional Radiology";
 
 const create = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance, totalFiltration, tubeId } = req.body;
+    const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance, tubeId } = req.body;
     const { serviceId } = req.params;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
@@ -53,6 +53,7 @@ const create = asyncHandler(async (req, res) => {
             testRecord.measurements = measurements ?? testRecord.measurements;
             testRecord.tolerance = tolerance ?? testRecord.tolerance;
             testRecord.totalFiltration = totalFiltration ?? testRecord.totalFiltration;
+            if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
             testRecord.tubeId = tubeIdValue;
             testRecord.updatedAt = Date.now();
         } else {
@@ -63,6 +64,7 @@ const create = asyncHandler(async (req, res) => {
                 measurements,
                 tolerance,
                 totalFiltration,
+                filtrationTolerance,
                 tubeId: tubeIdValue,
                 reportId: serviceReport._id,
             });
@@ -98,7 +100,7 @@ const create = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { mAStations, measurements, tolerance, totalFiltration, tubeId } = req.body;
+    const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance, tubeId } = req.body;
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -137,6 +139,7 @@ const update = asyncHandler(async (req, res) => {
         if (measurements !== undefined) testRecord.measurements = measurements;
         if (tolerance !== undefined) testRecord.tolerance = tolerance;
         if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+        if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
         if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
         testRecord.updatedAt = Date.now();
 
