@@ -412,7 +412,7 @@ const serviceReportSchema = new mongoose.Schema({
     },
     RadiationLeakageLevelDentalHandHeld: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "RadiationLeakageLevelDentalHandHeld"
+        ref: "RadiationLeakageTestDentalHandHeld"
     },
     RadiationLeakageTestDentalHandHeld: {
         type: mongoose.Schema.Types.ObjectId,

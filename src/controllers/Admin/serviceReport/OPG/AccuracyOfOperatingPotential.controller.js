@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Ortho Pantomography (OPG)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
       testRecord.measurements = measurements !== undefined ? measurements : testRecord.measurements;
       testRecord.tolerance = tolerance !== undefined ? tolerance : testRecord.tolerance;
       testRecord.totalFiltration = totalFiltration !== undefined ? totalFiltration : testRecord.totalFiltration;
+      testRecord.filtrationTolerance = filtrationTolerance !== undefined ? filtrationTolerance : testRecord.filtrationTolerance;
     } else {
       // Create new
       testRecord = new AccuracyOfOperatingPotential({
@@ -59,7 +60,8 @@ const create = asyncHandler(async (req, res) => {
         mAStations: mAStations || [],
         measurements: measurements || [],
         tolerance: tolerance || { sign: "±", value: "" },
-        totalFiltration: totalFiltration || { measured: "", required: "" },
+        totalFiltration: totalFiltration || { measured: "", required: "", atKvp: "" },
+        filtrationTolerance: filtrationTolerance || { forKvGreaterThan70: "", forKvBetween70And100: "", forKvGreaterThan100: "", kvThreshold1: "", kvThreshold2: "" },
       });
     }
 
@@ -128,7 +130,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { mAStations, measurements, tolerance, totalFiltration } = req.body;
+  const { mAStations, measurements, tolerance, totalFiltration, filtrationTolerance } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -160,6 +162,7 @@ const update = asyncHandler(async (req, res) => {
     if (measurements !== undefined) testRecord.measurements = measurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
     if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
+    if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
 
     await testRecord.save({ session });
     await session.commitTransaction();

@@ -3,10 +3,12 @@ import mongoose from "mongoose";
 
 const outputRowSchema = new mongoose.Schema(
   {
-    ffd: { type: String, trim: true },           // FFD per row
+    kvp: { type: String, trim: true },
+    mas: { type: String, trim: true },
     outputs: [{ type: String, trim: true }],     // measurement values
     mean: { type: String, trim: true },
     cov: { type: String, trim: true },
+    remarks: { type: String, trim: true },
   },
   { _id: false }
 );

@@ -9,6 +9,7 @@ const { Schema, model } = mongoose;
 const SettingsRowSchema = new Schema({
     ffd: { type: String, trim: true, default: '' }, // FFD in cm
     kvp: { type: String, trim: true, default: '' },
+    kv: { type: String, trim: true, default: '' }, // Frontend alias
     ma: { type: String, trim: true, default: '' },
     time: { type: String, trim: true, default: '' }, // in seconds
 });
@@ -21,7 +22,9 @@ const LeakageRowSchema = new Schema({
     left: { type: String, trim: true, default: '' },
     right: { type: String, trim: true, default: '' },
     top: { type: String, trim: true, default: '' },
+    front: { type: String, trim: true, default: '' }, // Frontend alias
     up: { type: String, trim: true, default: '' },
+    back: { type: String, trim: true, default: '' }, // Frontend alias
     down: { type: String, trim: true, default: '' },
     max: { type: String, trim: true, default: '' }, // auto-calculated
     unit: { type: String, trim: true, default: '' },
@@ -48,6 +51,7 @@ const RadiationLeakageTestSchema = new Schema(
 
         // === Measurement Settings ===
         settings: [SettingsRowSchema],
+        measurementSettings: [SettingsRowSchema], // Frontend alias
 
         // === Leakage Measurements ===
         leakageMeasurements: [LeakageRowSchema],
@@ -58,6 +62,7 @@ const RadiationLeakageTestSchema = new Schema(
 
         // === Tolerance ===
         toleranceValue: { type: String, default: '' },       // e.g., "1.0"
+        tolerance: { type: String, default: '' },            // Frontend alias
         toleranceOperator: {
             type: String,
             default: '',

@@ -22,15 +22,21 @@ import RadiationProtectionSurveyCTScan from "../../../models/testTables/CTScan/R
 // import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
 import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
+import "../../../models/testTables/DentalIntra/LinearityOfMasLoading.model.js";
 import "../../../models/testTables/DentalIntra/ReproducibilityOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalIntra/TubeHousingLeakage.model.js";
 import "../../../models/testTables/DentalIntra/RadiationLeakagelevel.model.js";
+import "../../../models/testTables/DentalIntra/RadiationProtectionSurvey.model.js";
 // Import DentalHandHeld models to ensure they're registered with Mongoose
 import "../../../models/testTables/DentalHandHeld/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalHandHeld/LinearityOfTime.model.js";
 import "../../../models/testTables/DentalHandHeld/LinearityOfmALoading.model.js";
+import "../../../models/testTables/DentalHandHeld/LinearityOfmAsLoading.model.js";
+import "../../../models/testTables/DentalHandHeld/ConsistencyOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalHandHeld/ReproducibilityOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalHandHeld/TubeHousingLeakage.model.js";
+import "../../../models/testTables/DentalHandHeld/RadiationLeakagelevel.model.js";
+import "../../../models/testTables/DentalHandHeld/RadiationProtectionSurvey.model.js";
 // Import RadiographyFixed models to ensure they're registered with Mongoose
 import "../../../models/testTables/RadiographyFixed/AccuracyOfIrradiationTime.model.js";
 import "../../../models/testTables/RadiographyFixed/AccuracyOfOperatingPotential.model.js";
@@ -125,6 +131,30 @@ import "../../../models/testTables/InventionalRadiology/ExposureRateTableTop.mod
 import "../../../models/testTables/InventionalRadiology/tubeHousingLeakage.model.js";
 import "../../../models/testTables/InventionalRadiology/AccuracyOfOperatingPotential.model.js";
 import "../../../models/testTables/InventionalRadiology/RadiationProtectionSurvey.model.js";
+
+// Import BMD models to ensure they're registered with Mongoose
+import "../../../models/testTables/BMD/AccuracyOfOperatingPotentialAndTime.model.js";
+import "../../../models/testTables/BMD/ConsistencyOfRadiationOutput.model.js";
+import "../../../models/testTables/BMD/DetailsOfRadiationProtection.model.js";
+import "../../../models/testTables/BMD/LinearityOfMasLoading.model.js";
+import "../../../models/testTables/BMD/TotalFilteration.model.js";
+import "../../../models/testTables/BMD/TubeHousing.model.js";
+
+// Import OPG models to ensure they're registered with Mongoose
+import "../../../models/testTables/OPG/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/OPG/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/OPG/ConsistencyOfRadiationOutput.model.js";
+import "../../../models/testTables/OPG/LinearityOfmALoading.model.js";
+import "../../../models/testTables/OPG/RadiationLeakagelevel.model.js";
+import "../../../models/testTables/OPG/RadiationProtectionSurvey.model.js";
+
+// Import CBCT models to ensure they're registered with Mongoose
+import "../../../models/testTables/DentalConeBeamCT/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/DentalConeBeamCT/AccuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/DentalConeBeamCT/ConsistencyOfRadiationOutput.model.js";
+import "../../../models/testTables/DentalConeBeamCT/LinearityOfmALoading.model.js";
+import "../../../models/testTables/DentalConeBeamCT/RadiationLeakagelevel.model.js";
+import "../../../models/testTables/DentalConeBeamCT/RadiationProtectionSurvey.model.js";
 import mongoose from "mongoose";
 
 
@@ -1305,7 +1335,6 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
             .populate("ConsistencyOfRadiationOutputDentalHandHeld")
             .populate("ReproducibilityOfRadiationOutputDentalHandHeld")
             .populate("TubeHousingLeakageDentalHandHeld")
-            .populate("RadiationLeakageLevelDentalHandHeld")
             .populate("RadiationLeakageTestDentalHandHeld")
             .populate("RadiationProtectionSurveyDentalHandHeld")
             .lean();
@@ -1429,7 +1458,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
         // Fetch latest test records for Dental Hand-held
         const [
             accuracyOp, linearityTime, linearityMa, linearityMas, consistency,
-            reproducibility, tubeLeakage, radiationLeakageLevel, radiationLeakageTest, radiationProtection
+            reproducibility, tubeLeakage, radiationLeakageTest, radiationProtection
         ] = await Promise.all([
             mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
@@ -1438,7 +1467,6 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             mongoose.model("ConsistencyOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("ReproducibilityOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("TubeHousingLeakageDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
-            mongoose.model("RadiationLeakageLevelDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("RadiationLeakageTestDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("RadiationProtectionSurveyDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
@@ -1466,7 +1494,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             ConsistencyOfRadiationOutputDentalHandHeld: consistency?._id || null,
             ReproducibilityOfRadiationOutputDentalHandHeld: reproducibility?._id || null,
             TubeHousingLeakageDentalHandHeld: tubeLeakage?._id || null,
-            RadiationLeakageLevelDentalHandHeld: radiationLeakageLevel?._id || null,
+            RadiationLeakageLevelDentalHandHeld: radiationLeakageTest?._id || null,
             RadiationLeakageTestDentalHandHeld: radiationLeakageTest?._id || null,
             RadiationProtectionSurveyDentalHandHeld: radiationProtection?._id || null,
         });

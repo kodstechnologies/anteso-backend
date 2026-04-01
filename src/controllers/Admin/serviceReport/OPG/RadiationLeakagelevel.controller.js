@@ -15,16 +15,22 @@ const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
   const {
     settings,
+    measurementSettings,
     leakageMeasurements,
     workload,
     workloadUnit,
     maxLeakageResult,
     maxRadiationLeakage,
     toleranceValue,
+    tolerance,
     toleranceOperator,
     toleranceTime,
     notes,
   } = req.body;
+
+  // Map frontend fields if backend fields are missing
+  const finalSettings = settings || measurementSettings;
+  const finalToleranceValue = toleranceValue || tolerance;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -61,13 +67,15 @@ const create = asyncHandler(async (req, res) => {
     let testRecord;
     if (existing) {
       // Update existing
-      existing.settings = settings !== undefined ? settings : existing.settings;
+      existing.settings = finalSettings !== undefined ? finalSettings : existing.settings;
+      existing.measurementSettings = finalSettings !== undefined ? finalSettings : existing.measurementSettings;
       existing.leakageMeasurements = leakageMeasurements !== undefined ? leakageMeasurements : existing.leakageMeasurements;
       existing.workload = workload !== undefined ? workload : existing.workload;
       existing.workloadUnit = workloadUnit !== undefined ? workloadUnit : existing.workloadUnit;
       existing.maxLeakageResult = maxLeakageResult !== undefined ? maxLeakageResult : existing.maxLeakageResult;
       existing.maxRadiationLeakage = maxRadiationLeakage !== undefined ? maxRadiationLeakage : existing.maxRadiationLeakage;
-      existing.toleranceValue = toleranceValue !== undefined ? toleranceValue : existing.toleranceValue;
+      existing.toleranceValue = finalToleranceValue !== undefined ? finalToleranceValue : existing.toleranceValue;
+      existing.tolerance = finalToleranceValue !== undefined ? finalToleranceValue : existing.tolerance;
       existing.toleranceOperator = toleranceOperator !== undefined ? toleranceOperator : existing.toleranceOperator;
       existing.toleranceTime = toleranceTime !== undefined ? toleranceTime : existing.toleranceTime;
       existing.notes = notes !== undefined ? notes : existing.notes;
@@ -77,13 +85,15 @@ const create = asyncHandler(async (req, res) => {
       testRecord = new RadiationLeakagelevel({
         serviceId,
         reportId: serviceReport._id,
-        settings: settings || [],
+        settings: finalSettings || [],
+        measurementSettings: finalSettings || [],
         leakageMeasurements: leakageMeasurements || [],
         workload: workload || "",
         workloadUnit: workloadUnit || "mA·min/week",
         maxLeakageResult: maxLeakageResult || "",
         maxRadiationLeakage: maxRadiationLeakage || "",
-        toleranceValue: toleranceValue || "",
+        toleranceValue: finalToleranceValue || "",
+        tolerance: finalToleranceValue || "",
         toleranceOperator: toleranceOperator || "less than or equal to",
         toleranceTime: toleranceTime || "1",
         notes: notes || "",
@@ -147,16 +157,22 @@ const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
   const {
     settings,
+    measurementSettings,
     leakageMeasurements,
     workload,
     workloadUnit,
     maxLeakageResult,
     maxRadiationLeakage,
     toleranceValue,
+    tolerance,
     toleranceOperator,
     toleranceTime,
     notes,
   } = req.body;
+
+  // Map frontend fields if backend fields are missing
+  const finalSettings = settings || measurementSettings;
+  const finalToleranceValue = toleranceValue || tolerance;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -184,13 +200,19 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
-    if (settings !== undefined) testRecord.settings = settings;
+    if (finalSettings !== undefined) {
+      testRecord.settings = finalSettings;
+      testRecord.measurementSettings = finalSettings;
+    }
     if (leakageMeasurements !== undefined) testRecord.leakageMeasurements = leakageMeasurements;
     if (workload !== undefined) testRecord.workload = workload;
     if (workloadUnit !== undefined) testRecord.workloadUnit = workloadUnit;
     if (maxLeakageResult !== undefined) testRecord.maxLeakageResult = maxLeakageResult;
     if (maxRadiationLeakage !== undefined) testRecord.maxRadiationLeakage = maxRadiationLeakage;
-    if (toleranceValue !== undefined) testRecord.toleranceValue = toleranceValue;
+    if (finalToleranceValue !== undefined) {
+      testRecord.toleranceValue = finalToleranceValue;
+      testRecord.tolerance = finalToleranceValue;
+    }
     if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
     if (toleranceTime !== undefined) testRecord.toleranceTime = toleranceTime;
     if (notes !== undefined) testRecord.notes = notes;

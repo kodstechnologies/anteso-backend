@@ -844,11 +844,12 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             machineType,
             equipmentId,
             machineModel,
-            workType,
+            workTypes,       // new: JSON array of { workType, price }
+            workType,        // legacy fallback
             partyCodeOrSysId,
             procNoOrPoNo,
             procExpiryDate,
-            price,
+            price,           // legacy fallback
         } = req.body;
 
         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
@@ -866,14 +867,47 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             workOrderCopyUrl = uploaded.url;
         }
 
-        let parsedWorkTypes = [];
-        if (workType) {
+        // Parse workTypes
+        let workTypeDetails = [];
+        let finalTotalPrice = 0;
+
+        if (workTypes) {
+            // Case 1: workTypes is sent as an array of { workType, price } (from previous version or other clients)
             try {
-                parsedWorkTypes = typeof workType === 'string' && workType.startsWith('[')
+                const parsedWorkTypes = typeof workTypes === 'string' ? JSON.parse(workTypes) : workTypes;
+                workTypeDetails = Array.isArray(parsedWorkTypes) ? parsedWorkTypes.map(item => ({
+                    workType: typeof item === 'string' ? item : item.workType,
+                    price: typeof item === 'string' ? 0 : (item.price || 0),
+                    status: 'pending'
+                })) : [];
+                
+                // If it's a simple array of strings, use the top-level price
+                if (Array.isArray(parsedWorkTypes) && typeof parsedWorkTypes[0] === 'string') {
+                    finalTotalPrice = Number(price) || 0;
+                } else {
+                    finalTotalPrice = workTypeDetails.reduce((sum, wt) => sum + (wt.price || 0), 0) || Number(price) || 0;
+                }
+            } catch (e) {
+                workTypeDetails = [];
+            }
+        }
+
+        // Fallback or Case 2: workType is sent as an array of strings or single string (from new simple UI)
+        if (workTypeDetails.length === 0 && workType) {
+            try {
+                const parsedTypes = typeof workType === 'string' && workType.startsWith('[')
                     ? JSON.parse(workType)
                     : (Array.isArray(workType) ? workType : [workType]);
+                
+                workTypeDetails = parsedTypes.map(wt => ({
+                    workType: wt,
+                    price: 0,
+                    status: 'pending'
+                }));
+                finalTotalPrice = Number(price) || 0;
             } catch (e) {
-                parsedWorkTypes = [workType];
+                workTypeDetails = [{ workType, price: 0, status: 'pending' }];
+                finalTotalPrice = Number(price) || 0;
             }
         }
 
@@ -886,11 +920,8 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             partyCodeOrSysId,
             procNoOrPoNo,
             procExpiryDate: procExpiryDate ? new Date(procExpiryDate) : null,
-            workTypeDetails: parsedWorkTypes.map(wt => ({
-                workType: wt,
-                status: 'pending'
-            })),
-            price: price || 0
+            workTypeDetails,
+            price: finalTotalPrice
         });
 
         order.services.push(newService._id);

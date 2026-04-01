@@ -60,6 +60,8 @@ const workTypeDetailSchema = new mongoose.Schema({
     // }
     isSubmitted: { type: Boolean, default: false },
 
+    price: { type: Number, default: 0 },
+
     assignedAt: Date,
     completedAt: { type: Date }
 }, { _id: false });

@@ -38,6 +38,15 @@ const TotalFilterationSchema = new Schema({
   totalFiltration: {
     measured: { type: String },  // mm Al
     required: { type: String },  // mm Al
+    atKvp: { type: String },
+  },
+
+  filtrationTolerance: {
+    forKvGreaterThan70: { type: String },
+    forKvBetween70And100: { type: String },
+    forKvGreaterThan100: { type: String },
+    kvThreshold1: { type: String },
+    kvThreshold2: { type: String },
   },
 
   reportId: {
