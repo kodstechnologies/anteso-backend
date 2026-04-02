@@ -13,5 +13,7 @@ export const createToolSchema = Joi.object({
   range: Joi.string().required(),
   certificate: Joi.string().allow(''),
   submitDate: Joi.date(),
-
+ applicableMachines: Joi.array()
+    .items(Joi.string()) // OR Joi.objectId() if using Mongo IDs
+    .optional()
 });

@@ -65,7 +65,13 @@ const toolsSchema = new Schema(
         submitDate: {
             type: Date,
 
-        }
+        },
+        applicableMachines: [
+            {
+                type:String,
+            },
+        ],  
+
     },
     {
         timestamps: true,
