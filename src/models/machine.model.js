@@ -12,7 +12,7 @@ const MACHINE_TYPES = [
     "C-Arm",
     "O-Arm",
     "Computed Tomography",
-    "Mammography",
+    "Mammography",  
     "Dental Cone Beam CT",
     "Ortho Pantomography (OPG)",
     "Dental (Intra Oral)",
