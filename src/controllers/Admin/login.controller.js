@@ -313,30 +313,44 @@ const adminLogin = asyncHandler(async (req, res) => {
             );
         }
 
-        // ⭐⭐⭐ COMP-OFF LOGIC FOR STAFF (SATURDAY + SUNDAY) ⭐⭐⭐
-        const todayDay = today.getDay();   // 0 = Sunday, 6 = Saturday
-        const todayIsHoliday = todayDay === 0 || todayDay === 6;
+        // Comp off: credit 1 day when office staff logs in on Saturday (working Saturday), once per calendar day
+        const todayDay = today.getDay(); // 6 = Saturday
+        const isSaturday = todayDay === 6;
 
-        if (todayIsHoliday && attendanceStatus === "Present") {
-            console.log("🎉 Staff worked on weekend (Sat/Sun)! Adding comp-off...");
-
-            const currentYear = new Date().getFullYear();
+        if (isSaturday && attendanceStatus === "Present") {
+            const currentYear = today.getFullYear();
 
             let allocation = await LeaveAllocation.findOne({
                 employee: employee._id,
                 year: currentYear,
             });
 
-            if (allocation) {
-                allocation.totalLeaves += 1;
-                await allocation.save();
-            } else {
-                await LeaveAllocation.create({
-                    employee: employee._id,
-                    year: currentYear,
-                    totalLeaves: 1,
-                    usedLeaves: 0,
-                });
+            const alreadyCredited =
+                allocation?.compOffLastCreditedAt &&
+                new Date(allocation.compOffLastCreditedAt).setHours(0, 0, 0, 0) === today.getTime();
+
+            if (!alreadyCredited) {
+                if (allocation) {
+                    if (allocation.allocatedLeaves == null && allocation.compOffLeaves == null) {
+                        allocation.allocatedLeaves = Number(allocation.totalLeaves) || 0;
+                        allocation.compOffLeaves = 0;
+                    }
+                    allocation.compOffLeaves = (Number(allocation.compOffLeaves) || 0) + 1;
+                    allocation.totalLeaves =
+                        (Number(allocation.allocatedLeaves) || 0) + allocation.compOffLeaves;
+                    allocation.compOffLastCreditedAt = today;
+                    await allocation.save();
+                } else {
+                    await LeaveAllocation.create({
+                        employee: employee._id,
+                        year: currentYear,
+                        allocatedLeaves: 0,
+                        compOffLeaves: 1,
+                        totalLeaves: 1,
+                        usedLeaves: 0,
+                        compOffLastCreditedAt: today,
+                    });
+                }
             }
         }
 

@@ -636,14 +636,23 @@ const allocateLeavesToAll = asyncHandler(async (req, res) => {
         const existing = await LeaveAllocation.findOne({ employee: emp._id, year });
 
         if (existing) {
-            existing.totalLeaves = totalLeaves;
+            // Legacy docs may only have totalLeaves; normalize before updating
+            if (existing.allocatedLeaves == null && existing.compOffLeaves == null) {
+                existing.allocatedLeaves = Number(existing.totalLeaves) || 0;
+                existing.compOffLeaves = 0;
+            }
+            existing.allocatedLeaves = Number(totalLeaves);
+            existing.compOffLeaves = Number(existing.compOffLeaves) || 0;
+            existing.totalLeaves = existing.allocatedLeaves + existing.compOffLeaves;
             await existing.save();
             updatedCount++;
         } else {
             await LeaveAllocation.create({
                 employee: emp._id,
                 year,
-                totalLeaves,
+                allocatedLeaves: Number(totalLeaves),
+                compOffLeaves: 0,
+                totalLeaves: Number(totalLeaves),
                 usedLeaves: 0,
             });
             createdCount++;
@@ -682,18 +691,28 @@ const getAllLeaveAllocations = asyncHandler(async (req, res) => {
     }
 
     // 3️⃣ Map data into a clean, readable format
-    const formattedData = allocations.map((allocation) => ({
-        employeeId: allocation.employee?._id,
-        empId: allocation.employee?.empId,
-        name: `${allocation.employee?.firstName || ''} ${allocation.employee?.lastName || ''}`.trim(),
-        status: allocation.employee?.status,
-        year: allocation.year,
-        totalLeaves: allocation.totalLeaves,
-        usedLeaves: allocation.usedLeaves,
-        remainingLeaves: allocation.totalLeaves - allocation.usedLeaves,
-        createdAt: allocation.createdAt,
-        updatedAt: allocation.updatedAt,
-    }));
+    const formattedData = allocations.map((allocation) => {
+        const compOff = Number(allocation.compOffLeaves) || 0;
+        const allocated =
+            allocation.allocatedLeaves != null
+                ? Number(allocation.allocatedLeaves)
+                : Math.max(0, Number(allocation.totalLeaves) - compOff);
+        const total = allocated + compOff;
+        return {
+            employeeId: allocation.employee?._id,
+            empId: allocation.employee?.empId,
+            name: `${allocation.employee?.firstName || ''} ${allocation.employee?.lastName || ''}`.trim(),
+            status: allocation.employee?.status,
+            year: allocation.year,
+            allocatedLeaves: allocated,
+            compOffLeaves: compOff,
+            totalLeaves: total || Number(allocation.totalLeaves),
+            usedLeaves: allocation.usedLeaves,
+            remainingLeaves: (total || Number(allocation.totalLeaves)) - (allocation.usedLeaves || 0),
+            createdAt: allocation.createdAt,
+            updatedAt: allocation.updatedAt,
+        };
+    });
 
     return res.status(200).json({
         success: true,
@@ -1001,20 +1020,34 @@ const getEmployeeLeaveSummary = asyncHandler(async (req, res) => {
     });
 
     if (!allocation) {
-        return res.status(404).json({ message: "No leave allocation found" });
+        return res.status(200).json({
+            message: "No leave allocation for this year",
+            data: {
+                year: Number(year),
+                allocatedLeaves: 0,
+                compOffLeaves: 0,
+                totalLeaves: 0,
+                usedLeaves: 0,
+                remainingLeaves: 0,
+            },
+        });
     }
 
-    // Global allocated leaves (initial assigned)
-    const allocatedLeaves = allocation.globalLeaves ?? allocation.totalLeaves;
+    const compOffLeaves = Number(allocation.compOffLeaves) || 0;
+    let allocatedLeaves =
+        allocation.allocatedLeaves != null ? Number(allocation.allocatedLeaves) : null;
 
-    // Comp-off earned leaves
-    const compOffLeaves = allocation.totalLeaves - allocatedLeaves;
+    // Legacy documents: only totalLeaves was stored (annual pool)
+    if (allocatedLeaves == null || Number.isNaN(allocatedLeaves)) {
+        allocatedLeaves = Math.max(0, Number(allocation.totalLeaves) - compOffLeaves);
+        if (compOffLeaves === 0) {
+            allocatedLeaves = Number(allocation.totalLeaves) || 0;
+        }
+    }
 
-    // Used leaves
+    const totalLeaves = allocatedLeaves + compOffLeaves;
     const usedLeaves = allocation.usedLeaves ?? 0;
-
-    // Remaining
-    const remainingLeaves = allocation.totalLeaves - usedLeaves;
+    const remainingLeaves = totalLeaves - usedLeaves;
 
     return res.status(200).json({
         message: "Leave summary fetched successfully",
@@ -1022,10 +1055,10 @@ const getEmployeeLeaveSummary = asyncHandler(async (req, res) => {
             year: Number(year),
             allocatedLeaves,
             compOffLeaves,
-            totalLeaves: allocation.totalLeaves,
+            totalLeaves,
             usedLeaves,
-            remainingLeaves
-        }
+            remainingLeaves,
+        },
     });
 });
 
