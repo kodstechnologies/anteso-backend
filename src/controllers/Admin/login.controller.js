@@ -11,7 +11,7 @@ import Leave from "../../models/leave.model.js";
 import Joi from "joi";
 import sendSMS from "../../utils/SendSMS.js";
 import LoginOtp from "../../models/otpLogins.model.js";
-import { LeaveAllocation } from "../../models/allocateLeaves.model.js"
+import { creditSaturdayCompOffIfEligible } from "../../utils/creditSaturdayCompOff.js";
 import User from "../../models/user.model.js";
 import Client from "../../models/client.model.js";
 import Hospital from "../../models/hospital.model.js";
@@ -313,46 +313,7 @@ const adminLogin = asyncHandler(async (req, res) => {
             );
         }
 
-        // Comp off: credit 1 day when office staff logs in on Saturday (working Saturday), once per calendar day
-        const todayDay = today.getDay(); // 6 = Saturday
-        const isSaturday = todayDay === 6;
-
-        if (isSaturday && attendanceStatus === "Present") {
-            const currentYear = today.getFullYear();
-
-            let allocation = await LeaveAllocation.findOne({
-                employee: employee._id,
-                year: currentYear,
-            });
-
-            const alreadyCredited =
-                allocation?.compOffLastCreditedAt &&
-                new Date(allocation.compOffLastCreditedAt).setHours(0, 0, 0, 0) === today.getTime();
-
-            if (!alreadyCredited) {
-                if (allocation) {
-                    if (allocation.allocatedLeaves == null && allocation.compOffLeaves == null) {
-                        allocation.allocatedLeaves = Number(allocation.totalLeaves) || 0;
-                        allocation.compOffLeaves = 0;
-                    }
-                    allocation.compOffLeaves = (Number(allocation.compOffLeaves) || 0) + 1;
-                    allocation.totalLeaves =
-                        (Number(allocation.allocatedLeaves) || 0) + allocation.compOffLeaves;
-                    allocation.compOffLastCreditedAt = today;
-                    await allocation.save();
-                } else {
-                    await LeaveAllocation.create({
-                        employee: employee._id,
-                        year: currentYear,
-                        allocatedLeaves: 0,
-                        compOffLeaves: 1,
-                        totalLeaves: 1,
-                        usedLeaves: 0,
-                        compOffLastCreditedAt: today,
-                    });
-                }
-            }
-        }
+        await creditSaturdayCompOffIfEligible(employee._id, today, attendanceStatus);
 
         // -------------------------
 

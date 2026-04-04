@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import Employee from "../../models/technician.model.js";
 import Attendance from "../../models/attendanceSchema.model.js";
 import Leave from "../../models/leave.model.js";
+import { creditSaturdayCompOffIfEligible } from "../../utils/creditSaturdayCompOff.js";
 import bcrypt from "bcryptjs";
 import Admin from "../../models/admin.model.js";
 
@@ -558,32 +559,16 @@ export const verifyOtp = asyncHandler(async (req, res) => {
                 });
 
                 await attendance.save();
-
-                // ⭐⭐⭐ COMP-OFF (Saturday + Sunday) ⭐⭐⭐
-                const todayDay = todayStartLocal.getDay(); // 0 = Sun, 6 = Sat
-                const todayIsHoliday = todayDay === 0 || todayDay === 6;
-
-                if (todayIsHoliday && attendanceStatus === "Present") {
-                    const currentYear = new Date().getFullYear();
-
-                    let allocation = await LeaveAllocation.findOne({
-                        employee: user._id,
-                        year: currentYear
-                    });
-
-                    if (allocation) {
-                        allocation.totalLeaves += 1;
-                        await allocation.save();
-                    } else {
-                        await LeaveAllocation.create({
-                            employee: user._id,
-                            year: currentYear,
-                            totalLeaves: 1,
-                            usedLeaves: 0
-                        });
-                    }
-                }
+            } else {
+                attendanceStatus =
+                    attendance.status === "On Leave" ? "On Leave" : "Present";
             }
+
+            await creditSaturdayCompOffIfEligible(
+                user._id,
+                todayStartLocal,
+                attendanceStatus
+            );
         }
     }
 
