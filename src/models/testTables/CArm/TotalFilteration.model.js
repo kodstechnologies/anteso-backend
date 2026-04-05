@@ -35,6 +35,15 @@ const TotalFilterationSchema = new Schema({
         required: { type: String },  // mm Al
     },
 
+    // Tolerance for Total Filtration (dynamic thresholds)
+    filtrationTolerance: {
+        forKvLessThan70: { type: String, default: "1.5" },
+        forKvBetween70And100: { type: String, default: "2.0" },
+        forKvGreaterThan100: { type: String, default: "2.5" },
+        kvThreshold1: { type: String, default: "70" },
+        kvThreshold2: { type: String, default: "100" },
+    },
+
     reportId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "ServiceReport",
