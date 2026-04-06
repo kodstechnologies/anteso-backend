@@ -66,11 +66,7 @@ const toolsSchema = new Schema(
             type: Date,
 
         },
-        applicableMachines: [
-            {
-                type:String,
-            },
-        ],  
+        applicableMachines: [String],
 
     },
     {

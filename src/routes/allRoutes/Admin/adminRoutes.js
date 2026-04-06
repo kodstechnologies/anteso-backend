@@ -21,6 +21,7 @@ import Manufacturer from '../Admin/manufacturer.router.js'
 import SalaryRouter from "../Admin/salary.router.js"
 import CourierRouter from "../Admin/courier.router.js"
 import DashboardRouter from "../Admin/dashboard.router.js"
+import CustomMachineRouter from "../Admin/customMachine.router.js"
 import ServiceReportRouter from "./serviceReport/serviceReport.router.js"
 import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js'
 
@@ -62,4 +63,5 @@ router.use('/invoice', InvoiceRouter)
 router.use('/courier', CourierRouter)
 router.use('/service-report', ServiceReportRouter)
 router.use('/dashboard', DashboardRouter)
+router.use('/custom-machines', CustomMachineRouter)
 export default router

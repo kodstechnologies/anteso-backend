@@ -6,7 +6,7 @@ const customMachineSchema = new Schema({
     code: {
         type: String,
     },
-    
+
 });
 
-export const CustomMachine = mongoose.model('CustomMachine', customApplicableMachineSchema);
+export const CustomMachine = mongoose.model('CustomMachine', customMachineSchema);
