@@ -7,10 +7,31 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "O-Arm";
 
+/** Frontend sends settings: [{ fcd, kv, ma, time }]; persist those on the root document. */
+function mergedExposureFields(body) {
+  const s = Array.isArray(body.settings) ? body.settings[0] : body.settings && typeof body.settings === "object" ? body.settings : null;
+  const coalesce = (top, ...fromSettingsKeys) => {
+    if (top !== undefined && top !== null && String(top).trim() !== "") return String(top).trim();
+    if (!s) return "";
+    for (const key of fromSettingsKeys) {
+      const b = s[key];
+      if (b !== undefined && b !== null && String(b).trim() !== "") return String(b).trim();
+    }
+    return "";
+  };
+  return {
+    fcd: coalesce(body.fcd, "fcd", "FCD"),
+    kv: coalesce(body.kv, "kv", "kV", "KV"),
+    ma: coalesce(body.ma, "ma", "mA", "MA"),
+    time: coalesce(body.time, "time", "Time"),
+  };
+}
+
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { fcd, kv, ma, time } = mergedExposureFields(req.body);
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -140,7 +161,8 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { fcd, kv, ma, time, workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { workload, leakageMeasurements, toleranceValue, toleranceOperator, toleranceTime, remark } = req.body;
+  const { fcd, kv, ma, time } = mergedExposureFields(req.body);
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });

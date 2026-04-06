@@ -7,7 +7,7 @@ const Table1RowSchema = new mongoose.Schema({
     sliceThickness: { type: String, default: '', trim: true },
 });
 
-// Table 2 Row Schema
+// Table 2 Row Schema — strict: false so dynamic mA column keys (from the form) persist alongside defaults
 const Table2RowSchema = new mongoose.Schema({
     setKV: { type: String, default: '', trim: true },
     ma10: { type: String, default: '', trim: true },
@@ -15,7 +15,8 @@ const Table2RowSchema = new mongoose.Schema({
     ma200: { type: String, default: '', trim: true },
     avgKvp: { type: String, default: '', trim: true },
     remarks: { type: String, default: '', trim: true },
-});
+    deviation: { type: String, default: '', trim: true },
+}, { _id: false, strict: false });
 
 // Tolerance Schema
 const ToleranceSchema = new mongoose.Schema({

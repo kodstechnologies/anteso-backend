@@ -45,7 +45,7 @@ const calculateCVAndRemark = (outputs, tolerance) => {
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { outputRows, tolerance } = req.body;
+    const { outputRows, tolerance, fdd } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -95,11 +95,13 @@ const create = asyncHandler(async (req, res) => {
         if (testRecord) {
             testRecord.outputRows = processedRows;
             testRecord.tolerance = tolerance || '5.0';
+            if (fdd !== undefined) testRecord.fdd = fdd == null ? '' : String(fdd);
             testRecord.updatedAt = Date.now();
         } else {
             testRecord = new ReproducibilityOfOutputMmmography({
                 serviceId,
                 reportId: serviceReport._id,
+                fdd: fdd == null ? '' : String(fdd),
                 outputRows: processedRows,
                 tolerance: tolerance || '5.0',
             });

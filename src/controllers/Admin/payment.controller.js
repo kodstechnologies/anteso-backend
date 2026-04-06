@@ -9,6 +9,104 @@ import { generateReadableId } from "../../utils/GenerateReadableId.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
 import mongoose from "mongoose";
 
+const normPricingKey = (v) => (v == null ? "" : String(v).trim().toLowerCase());
+
+/**
+ * Dealer/Manufacturer direct orders often create Service rows without price/totalAmount;
+ * amounts live on the lead owner's qaTests (testName ≈ machineType) or manufacturer services list.
+ */
+const resolvePrivilegedServiceLineAmount = (serviceDoc, pricing) => {
+    if (!pricing) return 0;
+
+    const machineTypeKey = normPricingKey(serviceDoc?.machineType);
+    const qaTests = pricing.qaTests || [];
+
+    const byExact = qaTests.find((qt) => normPricingKey(qt.testName) === machineTypeKey);
+    if (byExact != null && byExact.price != null && !Number.isNaN(Number(byExact.price))) {
+        const qty = Number(serviceDoc?.quantity) > 0 ? Number(serviceDoc.quantity) : 1;
+        return Number(byExact.price) * qty;
+    }
+
+    const byPartial = qaTests.find((qt) => {
+        const t = normPricingKey(qt.testName);
+        return t && machineTypeKey && (machineTypeKey.includes(t) || t.includes(machineTypeKey));
+    });
+    if (byPartial != null && byPartial.price != null && !Number.isNaN(Number(byPartial.price))) {
+        const qty = Number(serviceDoc?.quantity) > 0 ? Number(serviceDoc.quantity) : 1;
+        return Number(byPartial.price) * qty;
+    }
+
+    if (pricing.type === "Manufacturer" && Array.isArray(pricing.services)) {
+        const row = pricing.services.find((ps) => normPricingKey(ps.serviceName) === machineTypeKey);
+        if (row != null && row.amount != null && !Number.isNaN(Number(row.amount))) {
+            const qty = Number(serviceDoc?.quantity) > 0 ? Number(serviceDoc.quantity) : 1;
+            return Number(row.amount) * qty;
+        }
+    }
+
+    return 0;
+};
+
+/** Amount from a quotation item row (totalAmount or unit price × qty). Returns null if no positive amount. */
+const quotationRowAmount = (row) => {
+    if (!row) return null;
+    let a = Number(row.totalAmount) || 0;
+    if (!a && row.price != null) {
+        const unit = Number(row.price) || 0;
+        const qty = Number(row.quantity) > 0 ? Number(row.quantity) : 1;
+        a = unit * qty;
+    }
+    return a > 0 ? a : null;
+};
+
+const quotationAmountForMachine = (quotation, machineType) => {
+    const items = quotation?.items?.services;
+    if (!Array.isArray(items)) return null;
+    const key = normPricingKey(machineType);
+    const row = items.find((s) => normPricingKey(s.machineType) === key);
+    return quotationRowAmount(row);
+};
+
+const quotationAmountForAdditional = (quotation, name) => {
+    const items = quotation?.items?.additionalServices;
+    if (!Array.isArray(items)) return null;
+    const key = normPricingKey(name);
+    const row = items.find((s) => normPricingKey(s.name) === key);
+    return quotationRowAmount(row);
+};
+
+/** Same totalAmount logic as quotation line / View.tsx: enquiry.services[].totalAmount or price×qty */
+const enquiryAmountForMachine = (quotation, machineType) => {
+    const list = quotation?.enquiry?.services;
+    if (!Array.isArray(list)) return null;
+    const key = normPricingKey(machineType);
+    const row = list.find((svc) => normPricingKey(svc.machineType) === key);
+    return row ? quotationRowAmount(row) : null;
+};
+
+const enquiryAmountForAdditional = (quotation, name) => {
+    const list = quotation?.enquiry?.additionalServices;
+    if (!Array.isArray(list)) return null;
+    const key = normPricingKey(name);
+    const row = list.find((svc) => normPricingKey(svc.name) === key);
+    return row ? quotationRowAmount(row) : null;
+};
+
+/** Prefer embedded quotation.items snapshot; else populated enquiry services (items often absent from strict schema). */
+const quotationLinkedAmountForMachine = (quotation, machineType) => {
+    if (!quotation) return null;
+    const fromItems = quotationAmountForMachine(quotation, machineType);
+    if (fromItems != null) return fromItems;
+    return enquiryAmountForMachine(quotation, machineType);
+};
+
+const quotationLinkedAmountForAdditional = (quotation, name) => {
+    if (!quotation) return null;
+    const fromItems = quotationAmountForAdditional(quotation, name);
+    if (fromItems != null) return fromItems;
+    return enquiryAmountForAdditional(quotation, name);
+};
+
 const addPayment = asyncHandler(async (req, res) => {
     try {
         const {
@@ -569,7 +667,16 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
         let orders = await orderModel
             .find({})
             .select('srfNumber hospitalName leadOwner _id createdAt quotation services additionalServices')
-            .populate('quotation')
+            .populate({
+                path: 'quotation',
+                populate: {
+                    path: 'enquiry',
+                    populate: [
+                        { path: 'services', select: 'machineType price quantity totalAmount' },
+                        { path: 'additionalServices', select: 'name totalAmount' },
+                    ],
+                },
+            })
             .populate('services', 'machineType price quantity totalAmount')
             .populate('additionalServices', 'name totalAmount')
             .sort({ createdAt: -1 })
@@ -649,32 +756,156 @@ const allOrdersWithClientName = asyncHandler(async (req, res) => {
                 let breakdownServices = [];
                 let breakdownSource = "Order Items";
 
-                if (order.quotation && order.quotation.items) {
+                const isEmployee = owner?.role === "Employee";
+
+                if (isEmployee) {
+                    breakdownSource = order.quotation ? "Quotation" : "Order Items";
+                    if (Array.isArray(order.services)) {
+                        breakdownServices.push(
+                            ...order.services.map((s) => {
+                                let amount = quotationLinkedAmountForMachine(order.quotation, s.machineType);
+                                if (amount == null) {
+                                    amount = Number(s.totalAmount) || 0;
+                                    if (!amount && s.price != null) {
+                                        const unit = Number(s.price) || 0;
+                                        const qty = Number(s.quantity) > 0 ? Number(s.quantity) : 1;
+                                        amount = unit * qty;
+                                    }
+                                }
+                                return { serviceName: s.machineType, amount };
+                            })
+                        );
+                    }
+                    if (Array.isArray(order.additionalServices)) {
+                        breakdownServices.push(
+                            ...order.additionalServices.map((s) => {
+                                let amount = quotationLinkedAmountForAdditional(order.quotation, s.name);
+                                if (amount == null) {
+                                    amount = Number(s.totalAmount) || 0;
+                                }
+                                return { serviceName: s.name, amount };
+                            })
+                        );
+                    }
+                    if (breakdownServices.length === 0 && order.quotation?.items) {
+                        if (Array.isArray(order.quotation.items.services)) {
+                            breakdownServices.push(
+                                ...order.quotation.items.services.map((s) => {
+                                    const fromQuot = quotationRowAmount(s);
+                                    return {
+                                        serviceName: s.machineType,
+                                        amount:
+                                            fromQuot != null
+                                                ? fromQuot
+                                                : Number(s.totalAmount) || 0,
+                                    };
+                                })
+                            );
+                        }
+                        if (Array.isArray(order.quotation.items.additionalServices)) {
+                            breakdownServices.push(
+                                ...order.quotation.items.additionalServices.map((s) => {
+                                    const fromQuot = quotationRowAmount(s);
+                                    return {
+                                        serviceName: s.name,
+                                        amount:
+                                            fromQuot != null
+                                                ? fromQuot
+                                                : Number(s.totalAmount) || 0,
+                                    };
+                                })
+                            );
+                        }
+                    }
+                    if (breakdownServices.length === 0 && order.quotation?.enquiry) {
+                        if (Array.isArray(order.quotation.enquiry.services)) {
+                            breakdownServices.push(
+                                ...order.quotation.enquiry.services.map((s) => {
+                                    const fromQuot = quotationRowAmount(s);
+                                    return {
+                                        serviceName: s.machineType,
+                                        amount:
+                                            fromQuot != null
+                                                ? fromQuot
+                                                : Number(s.totalAmount) || 0,
+                                    };
+                                })
+                            );
+                        }
+                        if (Array.isArray(order.quotation.enquiry.additionalServices)) {
+                            breakdownServices.push(
+                                ...order.quotation.enquiry.additionalServices.map((s) => {
+                                    const fromQuot = quotationRowAmount(s);
+                                    return {
+                                        serviceName: s.name,
+                                        amount:
+                                            fromQuot != null
+                                                ? fromQuot
+                                                : Number(s.totalAmount) || 0,
+                                    };
+                                })
+                            );
+                        }
+                    }
+                } else if (order.quotation && order.quotation.items) {
                     breakdownSource = "Quotation";
                     if (Array.isArray(order.quotation.items.services)) {
-                        breakdownServices.push(...order.quotation.items.services.map(s => ({
-                            serviceName: s.machineType,
-                            amount: s.totalAmount || 0
-                        })));
+                        breakdownServices.push(
+                            ...order.quotation.items.services.map((s) => {
+                                const fromQuot = quotationRowAmount(s);
+                                return {
+                                    serviceName: s.machineType,
+                                    amount:
+                                        fromQuot != null ? fromQuot : Number(s.totalAmount) || 0,
+                                };
+                            })
+                        );
                     }
                     if (Array.isArray(order.quotation.items.additionalServices)) {
-                        breakdownServices.push(...order.quotation.items.additionalServices.map(s => ({
-                            serviceName: s.name,
-                            amount: s.totalAmount || 0
-                        })));
+                        breakdownServices.push(
+                            ...order.quotation.items.additionalServices.map((s) => {
+                                const fromQuot = quotationRowAmount(s);
+                                return {
+                                    serviceName: s.name,
+                                    amount:
+                                        fromQuot != null ? fromQuot : Number(s.totalAmount) || 0,
+                                };
+                            })
+                        );
                     }
                 } else {
                     if (Array.isArray(order.services)) {
-                        breakdownServices.push(...order.services.map(s => ({
-                            serviceName: s.machineType,
-                            amount: s.totalAmount || s.price || 0
-                        })));
+                        breakdownServices.push(...order.services.map((s) => {
+                            let amount = order.quotation
+                                ? quotationLinkedAmountForMachine(order.quotation, s.machineType)
+                                : null;
+                            if (amount == null) {
+                                amount = Number(s.totalAmount) || 0;
+                            }
+                            if (!amount && s.price != null) {
+                                const unit = Number(s.price) || 0;
+                                const qty = Number(s.quantity) > 0 ? Number(s.quantity) : 1;
+                                amount = unit * qty;
+                            }
+                            if (!amount && pricing) {
+                                amount = resolvePrivilegedServiceLineAmount(s, pricing);
+                            }
+                            return {
+                                serviceName: s.machineType,
+                                amount,
+                            };
+                        }));
                     }
                     if (Array.isArray(order.additionalServices)) {
-                        breakdownServices.push(...order.additionalServices.map(s => ({
-                            serviceName: s.name,
-                            amount: s.totalAmount || 0
-                        })));
+                        breakdownServices.push(...order.additionalServices.map((s) => {
+                            let amount = order.quotation
+                                ? quotationLinkedAmountForAdditional(order.quotation, s.name)
+                                : null;
+                            if (amount == null) {
+                                amount = Number(s.totalAmount) || 0;
+                            }
+                            return { serviceName: s.name, amount };
+                        }));
                     }
                 }
 
@@ -758,9 +989,18 @@ const getTotalAmount = asyncHandler(async (req, res) => {
 
     // Find order by SRF number and populate its quotation, services and additionalServices
     const order = await Order.findOne({ srfNumber })
-        .populate("quotation", "total")
-        .populate("services", "price totalAmount")
-        .populate("additionalServices", "totalAmount");
+        .populate({
+            path: "quotation",
+            populate: {
+                path: "enquiry",
+                populate: [
+                    { path: "services", select: "machineType price quantity totalAmount" },
+                    { path: "additionalServices", select: "name totalAmount" },
+                ],
+            },
+        })
+        .populate("services", "machineType price quantity totalAmount")
+        .populate("additionalServices", "name totalAmount");
 
     if (!order) {
         return res.status(404).json({ success: false, message: "Order not found" });
@@ -772,15 +1012,43 @@ const getTotalAmount = asyncHandler(async (req, res) => {
     if (order.quotation && order.quotation.total) {
         totalAmount = order.quotation.total;
     } else {
-        // 2. Fallback: Sum up service prices and additional service prices
+        let pricing = null;
+        if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+            const u = await User.findById(order.leadOwner).select("role qaTests services").lean();
+            if (u && (u.role === "Dealer" || u.role === "Manufacturer")) {
+                pricing = {
+                    type: u.role,
+                    qaTests: u.qaTests || [],
+                    services: u.role === "Manufacturer" ? u.services || [] : [],
+                };
+            }
+        }
+
+        const q = order.quotation;
+
+        // 2. Fallback: Sum up service prices and additional service prices (quotation.items or enquiry.services like View.tsx)
         const servicesTotal = (order.services || []).reduce((sum, s) => {
-            // Priority: s.price (as requested) or fallback to s.totalAmount
-            const price = s.price || s.totalAmount || 0;
-            return sum + (Number(price) || 0);
+            let line = q ? quotationLinkedAmountForMachine(q, s.machineType) : null;
+            if (line == null) {
+                line = Number(s.totalAmount) || 0;
+            }
+            if (!line && s.price != null) {
+                const unit = Number(s.price) || 0;
+                const qty = Number(s.quantity) > 0 ? Number(s.quantity) : 1;
+                line = unit * qty;
+            }
+            if (!line && pricing) {
+                line = resolvePrivilegedServiceLineAmount(s, pricing);
+            }
+            return sum + (Number(line) || 0);
         }, 0);
 
         const additionalTotal = (order.additionalServices || []).reduce((sum, s) => {
-            return sum + (Number(s.totalAmount) || 0);
+            let line = q ? quotationLinkedAmountForAdditional(q, s.name) : null;
+            if (line == null) {
+                line = Number(s.totalAmount) || 0;
+            }
+            return sum + (Number(line) || 0);
         }, 0);
 
         totalAmount = servicesTotal + additionalTotal;

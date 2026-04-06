@@ -8,6 +8,8 @@ const LeakageMeasurementSchema = new mongoose.Schema({
     front: { type: String, trim: true },
     back: { type: String, trim: true },
     top: { type: String, trim: true },
+    max: { type: String, trim: true },
+    remark: { type: String, trim: true },
 });
 
 const TubeHousingLeakageSchema = new mongoose.Schema(

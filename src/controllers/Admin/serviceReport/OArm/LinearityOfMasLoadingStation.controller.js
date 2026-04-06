@@ -10,7 +10,7 @@ const MACHINE_TYPE = "O-Arm";
 // CREATE or UPDATE (Upsert) by serviceId
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testName, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
+  const { testName, selection, table1, table2, measHeaders, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });

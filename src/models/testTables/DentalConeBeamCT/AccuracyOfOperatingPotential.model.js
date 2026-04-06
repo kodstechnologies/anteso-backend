@@ -33,16 +33,27 @@ const TotalFilterationSchema = new Schema({
     },
   ],
 
-  // Tolerance for kVp
+  // Tolerance for kVp (frontend may send `type` or `sign`)
   tolerance: {
-    sign: { type: String, },    // e.g., "±", "+", "-"
-    value: { type: String, },   // e.g., "2.0"
+    sign: { type: String, },
+    type: { type: String, },
+    value: { type: String, },
   },
 
-  // Table 2: Total Filtration
+  // Table 2: Total Filtration (atKvp = "Total filtration is (at ___ kVp)")
   totalFiltration: {
-    measured: { type: String },  // mm Al
-    required: { type: String },  // mm Al
+    measured: { type: String },
+    required: { type: String },
+    atKvp: { type: String },
+  },
+
+  // Threshold table used with total filtration
+  filtrationTolerance: {
+    forKvGreaterThan70: { type: String },
+    forKvBetween70And100: { type: String },
+    forKvGreaterThan100: { type: String },
+    kvThreshold1: { type: String },
+    kvThreshold2: { type: String },
   },
 
   reportId: {

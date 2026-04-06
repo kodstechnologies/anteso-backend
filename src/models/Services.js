@@ -48,7 +48,7 @@ const workTypeDetailSchema = new mongoose.Schema({
         },
         updatedAt: { type: Date, default: Date.now }
     }],
-
+    
     uploadFile: { type: String },
     viewFile: { type: [String], default: [] }, // array of strings    remark: { type: String }
     // report: { type: String },

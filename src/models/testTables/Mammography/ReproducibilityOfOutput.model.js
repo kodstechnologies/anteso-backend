@@ -12,6 +12,9 @@ const OutputRowSchema = new mongoose.Schema({
 
 const ReproducibilityOfOutputSchema = new mongoose.Schema(
     {
+        // FDD / FCD (cm) for test setup — persisted for reports
+        fdd: { type: String, default: '', trim: true },
+
         // Dynamic rows of kV/mAs + measurements
         outputRows: [OutputRowSchema],
 

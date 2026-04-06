@@ -18,6 +18,8 @@ const SettingsRowSchema = new Schema({
  */
 const LeakageRowSchema = new Schema({
     location: { type: String, trim: true, required: true }, // e.g., "Tube", "Collimator"
+    front: { type: String, trim: true, default: '' },
+    back: { type: String, trim: true, default: '' },
     left: { type: String, trim: true, default: '' },
     right: { type: String, trim: true, default: '' },
     top: { type: String, trim: true, default: '' },
