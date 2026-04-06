@@ -271,6 +271,8 @@ const serviceSchema = new Schema({
     description: { type: String, trim: true },
     quantity: { type: Number, min: [1, "Quantity must be at least 1"], default: 1 },
     rate: { type: Number, min: [0, "Rate cannot be negative"], default: 0 },
+    /** Line total for the machine row (preferred over quantity × rate when set). */
+    totalAmount: { type: Number, min: [0, "Total amount cannot be negative"], default: 0 },
     hsnno: { type: String, trim: true },
 });
 

@@ -1,6 +1,7 @@
 import Order from "../../models/order.model.js";
 import User from "../../models/user.model.js";
 import Dealer from "../../models/dealer.model.js";
+import Manufacturer from "../../models/manufacturer.model.js";
 import Hospital from "../../models/hospital.model.js";
 import Enquiry from '../../models/enquiry.model.js'
 import { asyncHandler } from "../../utils/AsyncHandler.js";
@@ -1445,7 +1446,10 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
         select: 'total discount subtotal gstRate gstAmount enquiry',
         populate: {
           path: 'enquiry',
-          populate: { path: 'services', select: 'machineType totalAmount' }
+          populate: [
+            { path: 'services', model: 'Service', select: 'machineType totalAmount price quantity' },
+            { path: 'additionalServices', model: 'AdditionalService', select: 'name description totalAmount' },
+          ],
         }
       })
       .lean();
@@ -1454,15 +1458,108 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    // 🧮 Use service totals from quotation.enquiry if available
+    // 🧮 Use service totals from quotation.enquiry (same source style as getQuotationByEnquiryId)
     let servicesWithAmount = order.services;
+    let privilegedPricing = null;
+    if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+      const leadUser = await User.findById(order.leadOwner).select("role qaTests services").lean();
+      if (leadUser && (leadUser.role === "Dealer" || leadUser.role === "Manufacturer")) {
+        privilegedPricing = {
+          role: leadUser.role,
+          qaTests: leadUser.qaTests || [],
+          services: leadUser.role === "Manufacturer" ? (leadUser.services || []) : [],
+        };
+      }
+    }
+
     if (order.quotation?.enquiry?.services?.length) {
       const enquiryServices = order.quotation.enquiry.services;
+      const norm = (v) => String(v || '').trim().toLowerCase();
+      const resolvePrivilegedLine = (service) => {
+        if (!privilegedPricing) return 0;
+        const key = norm(service?.machineType);
+        if (!key) return 0;
+        const qty = Number(service?.quantity) || 1;
+
+        const exactQa = privilegedPricing.qaTests.find((qt) => norm(qt?.testName) === key);
+        if (exactQa && Number(exactQa.price) > 0) return Number(exactQa.price) * qty;
+
+        const partialQa = privilegedPricing.qaTests.find((qt) => {
+          const qn = norm(qt?.testName);
+          return qn && (qn.includes(key) || key.includes(qn));
+        });
+        if (partialQa && Number(partialQa.price) > 0) return Number(partialQa.price) * qty;
+
+        if (privilegedPricing.role === "Manufacturer") {
+          const ms = privilegedPricing.services.find((sv) => norm(sv?.serviceName) === key);
+          if (ms && Number(ms.amount) > 0) return Number(ms.amount) * qty;
+        }
+        return 0;
+      };
+
+      const resolveFromEnquiry = (service) => {
+        const key = norm(service?.machineType);
+        if (!key) return 0;
+
+        const exact = enquiryServices.find((es) => norm(es?.machineType) === key);
+        if (exact && Number(exact.totalAmount) > 0) {
+          return Number(exact.totalAmount);
+        }
+
+        const partial = enquiryServices.find((es) => {
+          const n = norm(es?.machineType);
+          return n && (n.includes(key) || key.includes(n));
+        });
+        if (partial && Number(partial.totalAmount) > 0) {
+          return Number(partial.totalAmount);
+        }
+
+        return 0;
+      };
+
       servicesWithAmount = order.services.map(s => {
-        const matched = enquiryServices.find(es => es.machineType === s.machineType);
+        const enquiryTotal = resolveFromEnquiry(s);
+        const directTotal = Number(s.totalAmount) || 0;
+        const qty = Number(s.quantity) || 1;
+        const priceBased = qty * (Number(s.price) || 0);
+        const privilegedTotal = resolvePrivilegedLine(s);
         return {
           ...s,
-          totalAmount: matched?.totalAmount || s.totalAmount || 0,
+          totalAmount: enquiryTotal || directTotal || priceBased || privilegedTotal || 0,
+        };
+      });
+    } else if (Array.isArray(order.services) && order.services.length > 0) {
+      const norm = (v) => String(v || '').trim().toLowerCase();
+      const resolvePrivilegedLine = (service) => {
+        if (!privilegedPricing) return 0;
+        const key = norm(service?.machineType);
+        if (!key) return 0;
+        const qty = Number(service?.quantity) || 1;
+
+        const exactQa = privilegedPricing.qaTests.find((qt) => norm(qt?.testName) === key);
+        if (exactQa && Number(exactQa.price) > 0) return Number(exactQa.price) * qty;
+
+        const partialQa = privilegedPricing.qaTests.find((qt) => {
+          const qn = norm(qt?.testName);
+          return qn && (qn.includes(key) || key.includes(qn));
+        });
+        if (partialQa && Number(partialQa.price) > 0) return Number(partialQa.price) * qty;
+
+        if (privilegedPricing.role === "Manufacturer") {
+          const ms = privilegedPricing.services.find((sv) => norm(sv?.serviceName) === key);
+          if (ms && Number(ms.amount) > 0) return Number(ms.amount) * qty;
+        }
+        return 0;
+      };
+
+      servicesWithAmount = order.services.map((s) => {
+        const directTotal = Number(s.totalAmount) || 0;
+        const qty = Number(s.quantity) || 1;
+        const priceBased = qty * (Number(s.price) || 0);
+        const privilegedTotal = resolvePrivilegedLine(s);
+        return {
+          ...s,
+          totalAmount: directTotal || priceBased || privilegedTotal || 0,
         };
       });
     }
@@ -1671,21 +1768,45 @@ const createInvoice = asyncHandler(async (req, res) => {
 
 const getDealerOrders = asyncHandler(async (req, res) => {
   try {
-    // Step 1: Fetch all dealer _ids
-    const dealers = await Dealer.find({}, "_id");
-    const dealerIds = dealers.map((d) => d._id.toString());
+    const [dealers, manufacturers] = await Promise.all([
+      Dealer.find({}, "_id").lean(),
+      Manufacturer.find({}, "_id").lean(),
+    ]);
 
-    // Step 2: Find orders whose leadOwner matches any dealer _id
-    const dealerOrders = await Order.find(
-      { leadOwner: { $in: dealerIds } },
-      { _id: 1, srfNumber: 1 } // only return id and srfNumber
-    );
+    const dealerIdSet = new Set(dealers.map((d) => d._id.toString()));
+    const manufacturerIdSet = new Set(manufacturers.map((m) => m._id.toString()));
 
-    // Step 3: Return result
+    const leadOwnerIds = [...new Set([...dealerIdSet, ...manufacturerIdSet])];
+
+    if (leadOwnerIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const orders = await Order.find(
+      { leadOwner: { $in: leadOwnerIds } },
+      { _id: 1, srfNumber: 1, leadOwner: 1 }
+    )
+      .sort({ createdAt: -1 }) 
+      .lean();
+
+    const data = orders.map((o) => {
+      const lid = o.leadOwner?.toString();
+      const leadType = manufacturerIdSet.has(lid) ? "Manufacturer" : "Dealer";
+      return {
+        _id: o._id,
+        srfNumber: o.srfNumber,
+        leadType,
+      };
+    });
+
     res.status(200).json({
       success: true,
-      count: dealerOrders.length,
-      data: dealerOrders,
+      count: data.length,
+      data,
     });
   } catch (error) {
     console.error("❌ Error fetching dealer orders:", error);
