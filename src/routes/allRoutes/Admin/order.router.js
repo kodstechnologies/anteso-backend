@@ -127,4 +127,7 @@ router.get('/get-pdf/:orderId', orderController.getPdfForAcceptQuotation)
 router.get('/assigned-orders-for-staff', orderController.getAssignedOrdersForStaff)
 router.delete('/delete-order/:orderId', orderController.deleteOrderAndReports)
 router.get('/get-work-order-copy/:orderId', orderController.getWorkOrderCopy)
+router.post('/customer-feedback/:orderId/:hospitalId', orderController.customerFeedback)
+router.get('/customer-feedback/:orderId', orderController.getCustomerFeedbackByOrderId)
+
 export default router

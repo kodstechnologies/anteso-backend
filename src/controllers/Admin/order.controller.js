@@ -13,6 +13,7 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 import Payment from "../../models/payment.model.js";
 import { getFileUrl, getMultipleFileUrls } from "../../utils/s3Fetch.js";
 import AdditionalService from "../../models/additionalService.model.js";
+import { CustomMachine } from "../../models/customeMachine.model.js";
 import QATest from "../../models/QATest.model.js";
 import Elora from "../../models/elora.model.js";
 import Attendance from "../../models/attendanceSchema.model.js"
@@ -850,6 +851,7 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
             procNoOrPoNo,
             procExpiryDate,
             price,           // legacy fallback
+            fromOthers,
         } = req.body;
 
         if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
@@ -859,6 +861,23 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
         const order = await orderModel.findById(orderId);
         if (!order) {
             return res.status(404).json({ message: "Order not found" });
+        }
+
+        const fromOthersFlag =
+            fromOthers === true || fromOthers === "true" || fromOthers === "1";
+
+        if (fromOthersFlag && machineType && String(machineType).trim() && machineType !== "Others") {
+            const name = String(machineType).trim();
+            const code = name
+                .replace(/[^a-zA-Z0-9]+/g, "_")
+                .replace(/^_|_$/g, "")
+                .toUpperCase()
+                .slice(0, 64) || "CUSTOM";
+            await CustomMachine.updateOne(
+                { name },
+                { $setOnInsert: { name, code } },
+                { upsert: true }
+            );
         }
 
         let workOrderCopyUrl = "";
@@ -2753,6 +2772,27 @@ export const createOrder = asyncHandler(async (req, res) => {
 
         if (!Array.isArray(parsedServices) || parsedServices.length === 0) {
             throw new ApiError(400, "At least one service is required");
+        }
+
+        const customMachineCodeFromName = (name) => {
+            const slug = String(name)
+                .trim()
+                .replace(/[^a-zA-Z0-9]+/g, "_")
+                .replace(/^_|_$/g, "")
+                .toUpperCase();
+            return slug.slice(0, 64) || "CUSTOM";
+        };
+
+        for (const s of parsedServices) {
+            if (s.fromOthers && s.machineType && String(s.machineType).trim()) {
+                const name = String(s.machineType).trim();
+                const code = customMachineCodeFromName(name);
+                await CustomMachine.updateOne(
+                    { name },
+                    { $setOnInsert: { name, code } },
+                    { upsert: true }
+                );
+            }
         }
 
         // 8. Transform Services – attach correct file URL per service
@@ -7489,4 +7529,104 @@ const getWorkOrderCopy = asyncHandler(async (req, res) => {
     }
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice }
+const customerFeedback = asyncHandler(async (req, res) => {
+    const { orderId, hospitalId } = req.params;
+    const { customerFeedback: feedbackFromBody, feedback } = req.body || {};
+
+    const feedbackText = (feedbackFromBody ?? feedback ?? "").toString().trim();
+
+    // ✅ Validate IDs
+    if (
+        !mongoose.Types.ObjectId.isValid(orderId) ||
+        !mongoose.Types.ObjectId.isValid(hospitalId)
+    ) {
+        return res.status(400).json(
+            new ApiResponse(400, null, "Invalid orderId or hospitalId")
+        );
+    }
+
+    // ✅ Validate feedback
+    if (!feedbackText) {
+        return res.status(400).json(
+            new ApiResponse(400, null, "Customer feedback is required")
+        );
+    }
+
+    // ✅ Find order
+    const order = await orderModel
+        .findOne({ _id: orderId, hospital: hospitalId })
+        .populate({
+            path: "services",
+            populate: {
+                path: "workTypeDetails.QAtest",
+                select: "reportStatus",
+            },
+        });
+
+    // ❌ Order not found
+    if (!order) {
+        return res.status(404).json(
+            new ApiResponse(404, null, "Order not found for the given hospital")
+        );
+    }
+
+    // ✅ Check accepted report
+    const hasAcceptedReport = (order.services || []).some((service) =>
+        (service.workTypeDetails || []).some(
+            (wt) => wt?.QAtest?.reportStatus === "accepted"
+        )
+    );
+
+    if (!hasAcceptedReport) {
+        return res.status(400).json(
+            new ApiResponse(
+                400,
+                null,
+                "Feedback can be submitted only after reportStatus is accepted"
+            )
+        );
+    }
+
+    // ✅ Save feedback
+    order.customerFeedback = feedbackText;
+    await order.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                orderId: order._id,
+                hospitalId: order.hospital,
+                customerFeedback: order.customerFeedback,
+            },
+            "Customer feedback saved successfully"
+        )
+    );
+});
+
+const getCustomerFeedbackByOrderId = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        throw new ApiError(400, "Invalid orderId");
+    }
+
+    const order = await orderModel.findById(orderId).select("_id customerFeedback");
+
+    if (!order) {
+        throw new ApiError(404, "Order not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                orderId: order._id,
+                customerFeedback: order.customerFeedback || "",
+            },
+            "Customer feedback fetched successfully"
+        )
+    );
+});
+
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId }

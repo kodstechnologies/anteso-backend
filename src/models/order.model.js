@@ -74,6 +74,9 @@ const orderSchema = new mongoose.Schema({
     rawPhoto: { type: String },
     customersPDF: {
         type: String
+    },
+    customerFeedback: {
+        type: String
     }
 }, { timestamps: true });
 
