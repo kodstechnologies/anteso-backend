@@ -6,6 +6,30 @@ import { asyncHandler } from '../../../../utils/AsyncHandler.js';
 
 const MACHINE_TYPE = "Mammography";
 
+const parseSurveyDate = (value) => {
+    if (value === undefined || value === null) return null;
+    const raw = String(value).trim();
+    if (!raw) return null;
+
+    // Accept YYYY-MM-DD directly
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const dt = new Date(`${raw}T00:00:00.000Z`);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+
+    // Accept DD-MM-YYYY / DD/MM/YYYY and normalize
+    const ddmmyyyy = raw.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (ddmmyyyy) {
+        const [, dd, mm, yyyy] = ddmmyyyy;
+        const dt = new Date(`${yyyy}-${mm}-${dd}T00:00:00.000Z`);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+    }
+
+    // Fallback parse
+    const dt = new Date(raw);
+    return Number.isNaN(dt.getTime()) ? null : dt;
+};
+
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -66,7 +90,7 @@ const create = asyncHandler(async (req, res) => {
         const testData = {
             serviceId,
             reportId: serviceReport._id,
-            surveyDate: surveyDate ? new Date(surveyDate) : null,
+            surveyDate: parseSurveyDate(surveyDate),
             hasValidCalibration: hasValidCalibration || null,
             appliedCurrent: appliedCurrent || null,
             appliedVoltage: appliedVoltage || null,
@@ -207,7 +231,7 @@ const update = asyncHandler(async (req, res) => {
         };
 
         // Only set fields that are provided
-        if (surveyDate !== undefined) updateData.surveyDate = surveyDate ? new Date(surveyDate) : null;
+        if (surveyDate !== undefined) updateData.surveyDate = parseSurveyDate(surveyDate);
         if (hasValidCalibration !== undefined) updateData.hasValidCalibration = hasValidCalibration;
         if (appliedCurrent !== undefined) updateData.appliedCurrent = appliedCurrent;
         if (appliedVoltage !== undefined) updateData.appliedVoltage = appliedVoltage;

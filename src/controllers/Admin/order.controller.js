@@ -387,7 +387,7 @@ const getAdditionalServicesByOrderId = asyncHandler(async (req, res) => {
             .findById(orderId)
             .populate({
                 path: "additionalServices",
-                select: "name description remark status report updatedBy updatedByModel assignedStaff assignedAt",
+                select: "name description remark status totalAmount report updatedBy updatedByModel assignedStaff assignedAt",
                 populate: [
                     {
                         path: "updatedBy",
@@ -735,6 +735,10 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
 
         const order = await orderModel.findById(orderId)
             .populate({
+                path: "additionalServices",
+                select: "name description totalAmount"
+            })
+            .populate({
                 path: "services",
                 select: "machineType equipmentNo machineModel quantity serialNumber remark workOrderCopy partyCodeOrSysId procNoOrPoNo procExpiryDate workTypeDetails price", // ✅ Include the new fields
                 populate: [
@@ -821,7 +825,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
         });
 
         return res.status(200).json(
-            new ApiResponse(200, { services, leadOwner: order.leadOwner }, "Machine details fetched successfully")
+            new ApiResponse(200, { services, additionalServices: order.additionalServices, leadOwner: order.leadOwner }, "Machine details fetched successfully")
         );
 
     } catch (error) {

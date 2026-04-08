@@ -16,6 +16,13 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
             ref: "ServiceReport",
         },
 
+        // Shared test conditions used by Accuracy of Irradiation Time section
+        testConditions: {
+            fcd: { type: String },
+            kv: { type: String },
+            ma: { type: String },
+        },
+
         // Dynamic test rows
         rows: [
             {

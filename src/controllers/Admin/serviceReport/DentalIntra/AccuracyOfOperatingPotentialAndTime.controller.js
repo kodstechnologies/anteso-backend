@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Intra Oral)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
+  const { testConditions, rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -47,6 +47,7 @@ const create = asyncHandler(async (req, res) => {
 
     if (testRecord) {
       // Update existing
+      if (testConditions !== undefined) testRecord.testConditions = testConditions;
       if (rows !== undefined) testRecord.rows = rows;
       if (kvpToleranceSign !== undefined) testRecord.kvpToleranceSign = kvpToleranceSign;
       if (kvpToleranceValue !== undefined) testRecord.kvpToleranceValue = kvpToleranceValue;
@@ -59,6 +60,7 @@ const create = asyncHandler(async (req, res) => {
       testRecord = new AccuracyOfOperatingPotentialAndTime({
         serviceId,
         reportId: serviceReport._id,
+        testConditions: testConditions || { fcd: "", kv: "", ma: "" },
         rows: rows || [],
         kvpToleranceSign: kvpToleranceSign || "",
         kvpToleranceValue: kvpToleranceValue || "",
@@ -144,7 +146,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
+  const { testConditions, rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -172,6 +174,7 @@ const update = asyncHandler(async (req, res) => {
     }
 
     // Update fields
+    if (testConditions !== undefined) testRecord.testConditions = testConditions;
     if (rows !== undefined) testRecord.rows = rows;
     if (kvpToleranceSign !== undefined) testRecord.kvpToleranceSign = kvpToleranceSign;
     if (kvpToleranceValue !== undefined) testRecord.kvpToleranceValue = kvpToleranceValue;

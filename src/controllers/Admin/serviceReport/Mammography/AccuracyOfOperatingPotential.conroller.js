@@ -7,15 +7,24 @@ import mongoose from "mongoose";
 
 const MACHINE_TYPE = "Mammography"; // Change if needed: "Fluoroscopy", "C-Arm", etc.
 
+const normalizeToleranceSign = (sign) => {
+    const raw = String(sign ?? "").trim().toLowerCase();
+    if (raw === "plus" || raw === "+") return "plus";
+    if (raw === "minus" || raw === "-") return "minus";
+    if (raw === "both" || raw === "±" || raw === "+/-") return "both";
+    return raw;
+};
+
 const create = asyncHandler(async (req, res) => {
     const { table1, table2, toleranceValue, toleranceType, toleranceSign, totalFiltration, filtrationTolerance } = req.body;
+    const normalizedToleranceSign = normalizeToleranceSign(toleranceSign);
     const { serviceId } = req.params;
 
     // === Validation ===
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required in URL" });
     }
-    if (!toleranceValue || !toleranceType || !toleranceSign) {
+    if (!toleranceValue || !toleranceType || !normalizedToleranceSign) {
         return res.status(400).json({ success: false, message: "tolerance (value, type, sign) is required" });
     }
 
@@ -54,7 +63,7 @@ const create = asyncHandler(async (req, res) => {
             if (table2 !== undefined) testRecord.table2 = table2;
             if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
             if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
-            if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
+            if (toleranceSign !== undefined) testRecord.tolerance.sign = normalizedToleranceSign;
             if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
             if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
         } else {
@@ -67,7 +76,7 @@ const create = asyncHandler(async (req, res) => {
                 tolerance: {
                     value: toleranceValue,
                     type: toleranceType,
-                    sign: toleranceSign,
+                    sign: normalizedToleranceSign,
                 },
                 totalFiltration: totalFiltration || {},
                 filtrationTolerance: filtrationTolerance || {},
@@ -105,6 +114,7 @@ const create = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
     const { table1, table2, toleranceValue, toleranceType, toleranceSign, totalFiltration, filtrationTolerance } = req.body;
+    const normalizedToleranceSign = normalizeToleranceSign(toleranceSign);
     const { testId } = req.params;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
@@ -137,7 +147,7 @@ const update = asyncHandler(async (req, res) => {
         if (table2 !== undefined) testRecord.table2 = table2;
         if (toleranceValue !== undefined) testRecord.tolerance.value = toleranceValue;
         if (toleranceType !== undefined) testRecord.tolerance.type = toleranceType;
-        if (toleranceSign !== undefined) testRecord.tolerance.sign = toleranceSign;
+        if (toleranceSign !== undefined) testRecord.tolerance.sign = normalizedToleranceSign;
         if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
         if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
 

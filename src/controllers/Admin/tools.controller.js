@@ -51,8 +51,18 @@ import { uploadToS3 } from "../../utils/s3Upload.js";
 const create = asyncHandler(async (req, res) => {
     console.log("Tool body submitted:", req.body);
 
+    const normalizedBody = { ...req.body };
+    const rawApplicableMachines =
+        normalizedBody.applicableMachines ?? normalizedBody["applicableMachines[]"];
+
+    if (typeof rawApplicableMachines === "string") {
+        normalizedBody.applicableMachines = [rawApplicableMachines];
+    } else if (Array.isArray(rawApplicableMachines)) {
+        normalizedBody.applicableMachines = rawApplicableMachines;
+    }
+
     // ✅ Validate request body
-    const { error, value } = createToolSchema.validate(req.body, { abortEarly: false });
+    const { error, value } = createToolSchema.validate(normalizedBody, { abortEarly: false });
     if (error) {
         throw new ApiError(400, 'Validation Error', error.details.map(e => e.message));
     }
