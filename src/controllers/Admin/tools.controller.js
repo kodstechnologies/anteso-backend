@@ -253,7 +253,7 @@ const allTools = asyncHandler(async (req, res) => {
 //     }
 // });
 
- const updateById = asyncHandler(async (req, res) => {
+const updateById = asyncHandler(async (req, res) => {
     try {
         const { toolId } = req.params;
         const updateData = req.body;
@@ -796,4 +796,40 @@ const getUnassignedTools = asyncHandler(async (req, res) => {
     }
 });
 
-export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory, getUnassignedTools };
+const GetExpiringTools = asyncHandler(async (req, res) => {
+    try {
+        // 1. Get today's date (start of day for accuracy)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // 2. Get date after 7 days
+        const next7Days = new Date();
+        next7Days.setDate(today.getDate() + 7);
+        next7Days.setHours(23, 59, 59, 999);
+
+        // 3. Query DB
+        const tools = await Tools.find({
+            calibrationValidTill: {
+                $gte: today,
+                $lte: next7Days
+            }
+        })
+            .populate("technician", "name email") // optional
+            .sort({ calibrationValidTill: 1 });   // earliest expiry first
+
+        // 4. Response
+        return res.status(200).json({
+            success: true,
+            count: tools.length,
+            data: tools
+        });
+
+    } catch (error) {
+        console.error("Error fetching expiring tools:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch expiring tools"
+        });
+    }
+});
+export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory, getUnassignedTools, GetExpiringTools };

@@ -903,7 +903,7 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
                     price: typeof item === 'string' ? 0 : (item.price || 0),
                     status: 'pending'
                 })) : [];
-                
+
                 // If it's a simple array of strings, use the top-level price
                 if (Array.isArray(parsedWorkTypes) && typeof parsedWorkTypes[0] === 'string') {
                     finalTotalPrice = Number(price) || 0;
@@ -921,7 +921,7 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
                 const parsedTypes = typeof workType === 'string' && workType.startsWith('[')
                     ? JSON.parse(workType)
                     : (Array.isArray(workType) ? workType : [workType]);
-                
+
                 workTypeDetails = parsedTypes.map(wt => ({
                     workType: wt,
                     price: 0,
@@ -7535,6 +7535,8 @@ const getWorkOrderCopy = asyncHandler(async (req, res) => {
 
 const customerFeedback = asyncHandler(async (req, res) => {
     const { orderId, hospitalId } = req.params;
+    console.log("orderId", orderId);
+    console.log("hospitalId", hospitalId);
     const { customerFeedback: feedbackFromBody, feedback } = req.body || {};
 
     const feedbackText = (feedbackFromBody ?? feedback ?? "").toString().trim();
@@ -7573,7 +7575,9 @@ const customerFeedback = asyncHandler(async (req, res) => {
             new ApiResponse(404, null, "Order not found for the given hospital")
         );
     }
-
+    order.services.forEach((service, i) => {
+        console.log("Service", i, service.workTypeDetails);
+    });
     // ✅ Check accepted report
     const hasAcceptedReport = (order.services || []).some((service) =>
         (service.workTypeDetails || []).some(

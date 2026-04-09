@@ -12,6 +12,6 @@ router.delete('/delete-invoice/:id', InvoiceController.deleteInvoice)
 
 //mobile API'S
 router.post("/upload-pdf/:orderId", Upload.single("invoicePdf"), InvoiceController.uploadInvoicePdf);
-router.get("/get-invoice-pdf/:orderId",InvoiceController.getInvoicePdf)
-router.get('/get-dealer-orders',invoiceController.getDealerOrders)
+router.get("/get-invoice-pdf/:orderId", InvoiceController.getInvoicePdf)
+router.get('/get-dealer-orders', invoiceController.getDealerOrders)
 export default router

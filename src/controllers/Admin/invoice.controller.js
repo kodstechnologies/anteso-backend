@@ -1790,7 +1790,7 @@ const getDealerOrders = asyncHandler(async (req, res) => {
       { leadOwner: { $in: leadOwnerIds } },
       { _id: 1, srfNumber: 1, leadOwner: 1 }
     )
-      .sort({ createdAt: -1 }) 
+      .sort({ createdAt: -1 })
       .lean();
 
     const data = orders.map((o) => {

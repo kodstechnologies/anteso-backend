@@ -66,15 +66,7 @@ export const addManufacturer = asyncHandler(async (req, res) => {
         }
 
         // ✅ Handle cost logic
-        let finalCost = undefined;
-        if (travelCost === "Fixed Cost") {
-            if (!cost) {
-                return res
-                    .status(200)
-                    .json(new ApiResponse(400, null, "Cost is required for Fixed Cost"));
-            }
-            finalCost = cost;
-        }
+        let finalCost = cost ? Number(cost) : undefined;
 
         // ✅ Handle qaTests parsing
         let parsedQaTests = [];
