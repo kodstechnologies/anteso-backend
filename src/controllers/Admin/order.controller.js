@@ -841,6 +841,49 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
     }
 });
 
+const recomputeOrderOverallStatus = async (orderId) => {
+    const orderDoc = await orderModel.findById(orderId).select("services");
+    if (!orderDoc) return null;
+
+    const normalizeStatus = (rawStatus) => {
+        const normalized = String(rawStatus || "pending").toLowerCase().trim();
+        if (normalized === "in progress" || normalized === "inprogress") return "inprogress";
+        if (normalized === "complete" || normalized === "completed") return "completed";
+        if (normalized === "generate" || normalized === "generated") return "generated";
+        if (normalized === "paid") return "paid";
+        return "pending";
+    };
+
+    const serviceDocs = await Services.find({
+        _id: { $in: orderDoc.services || [] },
+    }).select("workTypeDetails.status");
+
+    const allWorkStatuses = serviceDocs.flatMap((serviceDoc) =>
+        (serviceDoc?.workTypeDetails || []).map((w) => normalizeStatus(w?.status))
+    );
+
+    let overallStatus = "pending";
+    if (allWorkStatuses.length > 0) {
+        if (allWorkStatuses.includes("pending")) {
+            overallStatus = "pending";
+        } else {
+            const firstStatus = allWorkStatuses[0];
+            const allSameStatus = allWorkStatuses.every((s) => s === firstStatus);
+            overallStatus = allSameStatus ? firstStatus : "inprogress";
+        }
+    }
+
+    const updateOps = { $set: { status: overallStatus } };
+    if (overallStatus === "completed") {
+        updateOps.$set.completedAt = new Date();
+    } else {
+        updateOps.$unset = { completedAt: "" };
+    }
+
+    await orderModel.findByIdAndUpdate(orderId, updateOps, { new: true });
+    return overallStatus;
+};
+
 const addMachineToOrder = asyncHandler(async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -959,6 +1002,7 @@ const addMachineToOrder = asyncHandler(async (req, res) => {
         // if (workOrderCopyUrl) order.workOrderCopy = workOrderCopyUrl;
 
         await order.save();
+        await recomputeOrderOverallStatus(orderId);
 
         return res.status(201).json(
             new ApiResponse(201, { order, service: newService }, "Service added to order successfully")
@@ -1012,6 +1056,7 @@ const deleteMachineByorderId = asyncHandler(async (req, res) => {
 
         // 5. Delete service document
         await Services.findByIdAndDelete(serviceId);
+        await recomputeOrderOverallStatus(orderId);
 
         return res.status(200).json(new ApiResponse(200, null, "Machine deleted successfully from the order"));
     } catch (error) {
@@ -3864,11 +3909,35 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 
 
 
+        const requestedStatus = String(status || "").toLowerCase().trim();
+        const normalizedStatus =
+            requestedStatus === "in progress" || requestedStatus === "inprogress"
+                ? "inprogress"
+                : requestedStatus === "complete" || requestedStatus === "completed"
+                    ? "completed"
+                    : requestedStatus === "generate" || requestedStatus === "generated"
+                        ? "generated"
+                        : requestedStatus === "paid"
+                            ? "paid"
+                            : "pending";
+        const servicePersistStatus =
+            normalizedStatus === "inprogress"
+                ? "in progress"
+                : normalizedStatus === "completed"
+                    ? "complete"
+                    : normalizedStatus;
+        const currentNormalizedStatus =
+            String(workDetail.status || "pending").toLowerCase().trim() === "in progress"
+                ? "inprogress"
+                : String(workDetail.status || "pending").toLowerCase().trim() === "complete"
+                    ? "completed"
+                    : String(workDetail.status || "pending").toLowerCase().trim();
+
         // 6. Update workTypeDetail status + PUSH TO HISTORY
-        if (status && status !== workDetail.status) {
+        if (status && currentNormalizedStatus !== normalizedStatus) {
             const historyEntry = {
                 oldStatus: workDetail.status || "pending",
-                newStatus: status,
+                newStatus: normalizedStatus,
                 updatedBy: {
                     _id: req.user.id,
                     name: req.user.name || req.user.email || "Unknown",
@@ -3883,7 +3952,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
             }
 
             workDetail.statusHistory.push(historyEntry);
-            workDetail.status = status;
+            workDetail.status = servicePersistStatus;
         }
 
         // 7. Save assigned date for office staff in workTypeDetails
@@ -3891,6 +3960,7 @@ const assignOfficeStaffByQATest = asyncHandler(async (req, res) => {
 
         // 8. Save service
         await service.save();
+        await recomputeOrderOverallStatus(orderId);
 
         res.status(200).json({
             message: `Office staff assigned successfully to workType '${workType}'`,
@@ -4864,12 +4934,28 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
                 }
 
                 const oldStatus = work.status || "pending";
-                const newStatus = status.toLowerCase();
+                const requestedStatus = String(status || "").toLowerCase().trim();
+                const normalizedStatus =
+                    requestedStatus === "in progress" || requestedStatus === "inprogress"
+                        ? "inprogress"
+                        : requestedStatus === "complete" || requestedStatus === "completed"
+                            ? "completed"
+                            : requestedStatus === "generate" || requestedStatus === "generated"
+                                ? "generated"
+                                : requestedStatus === "paid"
+                                    ? "paid"
+                                    : "pending";
+                const servicePersistStatus =
+                    normalizedStatus === "inprogress"
+                        ? "in progress"
+                        : normalizedStatus === "completed"
+                            ? "complete"
+                            : normalizedStatus;
 
                 // ✅ Update status (Always update status now)
-                work.status = newStatus;
+                work.status = servicePersistStatus;
 
-                if (["completed", "generated"].includes(newStatus)) {
+                if (["completed", "generated"].includes(normalizedStatus)) {
                     work.completedAt = new Date();
                 }
 
@@ -4895,7 +4981,7 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                 work.statusHistory.push({
                     oldStatus,
-                    newStatus,
+                    newStatus: normalizedStatus,
                     updatedBy, // ✅ OBJECT, not ObjectId
                     updatedAt: new Date()
                 });
@@ -4908,7 +4994,7 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                         if (existingReport.reportStatus === "rejected") {
                             updateData.reportStatus = "reuploaded";
-                        } else if (newStatus === "completed") {
+                        } else if (normalizedStatus === "completed") {
                             updateData.reportStatus = "pending";
                         }
 
@@ -4960,18 +5046,10 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
         await service.save();
 
-        // 🕒 Order completion
-        if (status.toLowerCase() === "completed") {
-            await orderModel.findByIdAndUpdate(orderId, {
-                completedAt: new Date(),
-            });
-        }
-
-        // 💰 Paid update
         if (status.toLowerCase() === "paid") {
-            await orderModel.findByIdAndUpdate(orderId, {
-                status: "paid",
-            });
+            await orderModel.findByIdAndUpdate(orderId, { status: "paid" });
+        } else {
+            await recomputeOrderOverallStatus(orderId);
         }
 
         return res.status(200).json({

@@ -1902,18 +1902,43 @@ export const rejectQuotation = asyncHandler(async (req, res) => {
             });
         }
 
+        // Idempotency guard: if already rejected, don't create another history row.
+        if (quotation.quotationStatus === "Rejected") {
+            return res.status(200).json({
+                message: "Quotation already rejected",
+                quotation,
+            });
+        }
+
         quotation.quotationStatus = "Rejected";
         quotation.rejectionRemark = rejectionRemark;
         await quotation.save();
 
         // 🧩 Create quotation history record
-        await QuotationHistory.create({
+        const historyPdfUrl = quotation.customersPDF || quotation.pdfUrl;
+        const latestRejectedHistory = await QuotationHistory.findOne({
             quotation: quotation._id,
             status: "Rejected",
-            pdfUrl: quotation.customersPDF || quotation.pdfUrl,
-            remark: rejectionRemark,
-            date: new Date(),
-        });
+            pdfUrl: historyPdfUrl,
+        })
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Avoid duplicate entries from near-simultaneous repeat calls.
+        const recentlyCreated =
+            latestRejectedHistory &&
+            latestRejectedHistory.createdAt &&
+            Date.now() - new Date(latestRejectedHistory.createdAt).getTime() < 2 * 60 * 1000;
+
+        if (!recentlyCreated) {
+            await QuotationHistory.create({
+                quotation: quotation._id,
+                status: "Rejected",
+                pdfUrl: historyPdfUrl,
+                remark: rejectionRemark,
+                date: new Date(),
+            });
+        }
 
         const enquiry = await Enquiry.findOne({
             _id: enquiryId,
@@ -2348,12 +2373,23 @@ export const getQuotationHistory = asyncHandler(async (req, res) => {
         }
 
         // 3️⃣ Map data into a clean array
-        const formattedHistory = historyRecords.map((record) => ({
+        const formattedHistoryRaw = historyRecords.map((record) => ({
             quotationNumber: quotation.quotationId,
             status: record.status,
             pdfUrl: record.pdfUrl,
             date: record.date,
         }));
+
+        // 3.1️⃣ De-duplicate only rejected rows in response:
+        // keep latest row for same (Rejected + pdfUrl), keep all other statuses as-is.
+        const seenRejectedKeys = new Set();
+        const formattedHistory = formattedHistoryRaw.filter((row) => {
+            if (row.status !== "Rejected") return true;
+            const key = `Rejected::${row.pdfUrl || "no-pdf"}`;
+            if (seenRejectedKeys.has(key)) return false;
+            seenRejectedKeys.add(key);
+            return true;
+        });
 
         // 4️⃣ Send response
         res.status(200).json({
