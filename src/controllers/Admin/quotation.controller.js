@@ -1700,6 +1700,10 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         const { hospitalId, enquiryId, quotationId } = req.params;
         let pdfFile = req.file;
 
+        if (pdfFile && pdfFile.size >= 6 * 1024 * 1024) {
+            return res.status(400).json({ message: "File size must be less than 6 MB" });
+        }
+
         // 1) Load quotation + assignedEmployee (name only)
         const quotation = await Quotation.findOne({
             _id: quotationId,
@@ -1939,6 +1943,10 @@ const acceptQuotationPDF = asyncHandler(async (req, res) => {
 
         if (!file) {
             return res.status(400).json({ message: "No PDF file uploaded" });
+        }
+
+        if (file.size >= 6 * 1024 * 1024) {
+            return res.status(400).json({ message: "File size must be less than 6 MB" });
         }
 
         // Upload file to AWS S3
