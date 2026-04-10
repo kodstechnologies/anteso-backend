@@ -1006,52 +1006,56 @@ const getTotalAmount = asyncHandler(async (req, res) => {
         return res.status(404).json({ success: false, message: "Order not found" });
     }
 
-    let totalAmount = 0;
-
-    // 1. Try to get total from quotation
-    if (order.quotation && order.quotation.total) {
-        totalAmount = order.quotation.total;
-    } else {
-        let pricing = null;
-        if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
-            const u = await User.findById(order.leadOwner).select("role qaTests services").lean();
-            if (u && (u.role === "Dealer" || u.role === "Manufacturer")) {
-                pricing = {
-                    type: u.role,
-                    qaTests: u.qaTests || [],
-                    services: u.role === "Manufacturer" ? u.services || [] : [],
-                };
-            }
+    let pricing = null;
+    let isDealerOrManufacturerLead = false;
+    if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+        const u = await User.findById(order.leadOwner).select("role qaTests services").lean();
+        if (u && (u.role === "Dealer" || u.role === "Manufacturer")) {
+            isDealerOrManufacturerLead = true;
+            pricing = {
+                type: u.role,
+                qaTests: u.qaTests || [],
+                services: u.role === "Manufacturer" ? u.services || [] : [],
+            };
         }
+    }
 
-        const q = order.quotation;
+    const q = order.quotation;
 
-        // 2. Fallback: Sum up service prices and additional service prices (quotation.items or enquiry.services like View.tsx)
-        const servicesTotal = (order.services || []).reduce((sum, s) => {
-            let line = q ? quotationLinkedAmountForMachine(q, s.machineType) : null;
-            if (line == null) {
-                line = Number(s.totalAmount) || 0;
-            }
-            if (!line && s.price != null) {
-                const unit = Number(s.price) || 0;
-                const qty = Number(s.quantity) > 0 ? Number(s.quantity) : 1;
-                line = unit * qty;
-            }
-            if (!line && pricing) {
-                line = resolvePrivilegedServiceLineAmount(s, pricing);
-            }
-            return sum + (Number(line) || 0);
-        }, 0);
+    const servicesTotal = (order.services || []).reduce((sum, s) => {
+        let line = q ? quotationLinkedAmountForMachine(q, s.machineType) : null;
+        if (line == null) {
+            line = Number(s.totalAmount) || 0;
+        }
+        if (!line && s.price != null) {
+            const unit = Number(s.price) || 0;
+            const qty = Number(s.quantity) > 0 ? Number(s.quantity) : 1;
+            line = unit * qty;
+        }
+        if (!line && pricing) {
+            line = resolvePrivilegedServiceLineAmount(s, pricing);
+        }
+        return sum + (Number(line) || 0);
+    }, 0);
 
-        const additionalTotal = (order.additionalServices || []).reduce((sum, s) => {
-            let line = q ? quotationLinkedAmountForAdditional(q, s.name) : null;
-            if (line == null) {
-                line = Number(s.totalAmount) || 0;
-            }
-            return sum + (Number(line) || 0);
-        }, 0);
+    const additionalTotal = (order.additionalServices || []).reduce((sum, s) => {
+        let line = q ? quotationLinkedAmountForAdditional(q, s.name) : null;
+        if (line == null) {
+            line = Number(s.totalAmount) || 0;
+        }
+        return sum + (Number(line) || 0);
+    }, 0);
 
-        totalAmount = servicesTotal + additionalTotal;
+    const computedFromLines = servicesTotal + additionalTotal;
+
+    let totalAmount = computedFromLines;
+    if (order.quotation && order.quotation.total != null && order.quotation.total !== "") {
+        const quotTotal = Number(order.quotation.total) || 0;
+        if (isDealerOrManufacturerLead) {
+            totalAmount = Math.max(quotTotal, computedFromLines);
+        } else {
+            totalAmount = quotTotal;
+        }
     }
 
     res.json({
