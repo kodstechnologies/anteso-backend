@@ -636,6 +636,10 @@ const saveReportHeader = async (req, res) => {
         condition,
         testingProcedureNumber,
         engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
         pages,
         testDate,
         testDueDate,
@@ -703,6 +707,7 @@ const saveReportHeader = async (req, res) => {
         })) || [];
 
         // UPDATE ONLY HEADER FIELDS (NO TEST ID LOOKUP)
+        const resolvedRpId = rpId || rpid || rpID || RPId || "";
         Object.assign(report, {
             customerName,
             address,
@@ -718,6 +723,7 @@ const saveReportHeader = async (req, res) => {
             condition,
             testingProcedureNumber,
             engineerNameRPId,
+            rpId: resolvedRpId,
             pages,
             testDate: testDate ? new Date(testDate) : null,
             testDueDate: testDueDate ? new Date(testDueDate) : null,
@@ -878,6 +884,8 @@ const getReportHeader = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId,
+                pages: report.pages,
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -1087,6 +1095,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -1174,6 +1183,7 @@ export const getReportHeaderOPG = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,

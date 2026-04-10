@@ -83,6 +83,9 @@ const serviceReportSchema = new mongoose.Schema({
     engineerNameRPId: {
         type: String
     },
+    rpId: {
+        type: String
+    },
     pages: {
         type: String
     },

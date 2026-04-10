@@ -1776,7 +1776,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
 
         // 7) Create order with the correct leadOwner
         const order = await orderModel.create({
-            leadOwner: emp._id, // <-- from assignedEmployee
+            leadOwner: enquiry.customer, // <-- mapped to customer
             hospital: hospitalId,
             hospitalName: enquiry.hospitalName,
             fullAddress: enquiry.fullAddress,
