@@ -60,7 +60,7 @@ const create = asyncHandler(async (req, res) => {
         mAStations: mAStations || [],
         measurements: measurements || [],
         tolerance: tolerance || { sign: "±", value: "" },
-        totalFiltration: totalFiltration || { measured: "", required: "" },
+        totalFiltration: totalFiltration || { measured: "", required: "", atKvp: "" },
         ffd: ffd || "",
       });
     }

@@ -42,7 +42,8 @@ const AccuracyOfOperatingPotentialSchema = new Schema({
     // Table 2: Total Filtration
     totalFiltration: {
         measured: { type: String },  // mm Al
-        required: { type: String },  // mm Al
+        required: { type: String },  // mm Al (measured HVL / value used in UI)
+        atKvp: { type: String }, // kVp at which total filtration is assessed ("Total Filtration is (at …)")
     },
 
     reportId: {
