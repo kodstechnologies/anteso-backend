@@ -222,17 +222,43 @@ const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
         }
 
         // Fetch order with only basic details needed
-        const order = await orderModel.findById(orderId).select(
-            'srfNumber leadOwner hospitalName fullAddress city district state pinCode branchName contactPersonName emailAddress contactNumber designation'
-        );
+        const order = await orderModel
+            .findById(orderId)
+            .select(
+                'srfNumber leadOwner hospitalName fullAddress city district state pinCode branchName contactPersonName emailAddress contactNumber designation'
+            )
+            .populate({
+                path: "leadOwner",
+                select: "name role email _id",
+            });
 
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
 
+        const orderData = order.toObject();
+
+        // In some records leadOwner may remain an ObjectId/string even after populate.
+        let leadOwnerDoc = orderData?.leadOwner;
+        if (
+            leadOwnerDoc &&
+            (typeof leadOwnerDoc === "string" || leadOwnerDoc instanceof mongoose.Types.ObjectId)
+        ) {
+            leadOwnerDoc = await User.findById(leadOwnerDoc).select("name role email _id").lean();
+        }
+
+        if (leadOwnerDoc && typeof leadOwnerDoc === "object") {
+            orderData.leadOwner = leadOwnerDoc;
+        }
+
+        const leadOwnerRole = String(leadOwnerDoc?.role || "").trim().toLowerCase();
+        if (leadOwnerRole === "manufacturer") {
+            orderData.manufacturerName = leadOwnerDoc?.name || "";
+        }
+
         res.status(200).json({
             message: 'Order basic details fetched successfully',
-            data: order
+            data: orderData
         });
 
     } catch (error) {

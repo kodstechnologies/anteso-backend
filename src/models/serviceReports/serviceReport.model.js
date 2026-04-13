@@ -56,6 +56,15 @@ const serviceReportSchema = new mongoose.Schema({
     srfDate: {
         type: Date
     },
+    reportULRNumber: {
+        type: String
+    },
+    leadOwner: {
+        type: String
+    },
+    manufacturerName: {
+        type: String
+    },
     testReportNumber: {
         type: String
     },
@@ -66,6 +75,9 @@ const serviceReportSchema = new mongoose.Schema({
         type: String
     },
     make: {
+        type: String
+    },
+    category: {
         type: String
     },
     model: {

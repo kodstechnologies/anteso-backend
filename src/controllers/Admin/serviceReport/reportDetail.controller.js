@@ -172,7 +172,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
         // 1️⃣ Find the order that contains this serviceId
         const order = await orderModel
             .findOne({ services: serviceId })
-            .select("hospitalName fullAddress srfNumber createdAt")
+            .select("hospitalName fullAddress city srfNumber createdAt")
             .lean();
 
         if (!order) {
@@ -229,6 +229,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
             data: {
                 hospitalName: order.hospitalName,
                 hospitalAddress: order.fullAddress,
+                city: order.city || "",
                 srfNumber: order.srfNumber,
                 machineType: service.machineType,
                 machineModel: service.machineModel || "N/A",
@@ -626,6 +627,7 @@ const saveReportHeader = async (req, res) => {
         address,
         srfNumber,
         srfDate,
+        reportULRNumber,
         testReportNumber,
         issueDate,
         nomenclature,
@@ -640,6 +642,7 @@ const saveReportHeader = async (req, res) => {
         rpid,
         rpID,
         RPId,
+        RPID,
         pages,
         testDate,
         testDueDate,
@@ -648,6 +651,9 @@ const saveReportHeader = async (req, res) => {
         humidity,
         toolsUsed,
         notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
     } = req.body;
 
     try {
@@ -707,12 +713,13 @@ const saveReportHeader = async (req, res) => {
         })) || [];
 
         // UPDATE ONLY HEADER FIELDS (NO TEST ID LOOKUP)
-        const resolvedRpId = rpId || rpid || rpID || RPId || "";
+        const resolvedRpId = rpId || rpid || rpID || RPId || RPID || "";
         Object.assign(report, {
             customerName,
             address,
             srfNumber,
             srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
             testReportNumber,
             issueDate: issueDate ? new Date(issueDate) : null,
             nomenclature,
@@ -730,6 +737,8 @@ const saveReportHeader = async (req, res) => {
             location,
             temperature,
             humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
             notes: formattedNotes,
         });
@@ -874,6 +883,7 @@ const getReportHeader = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -891,6 +901,8 @@ const getReportHeader = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1086,6 +1098,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -1101,6 +1114,8 @@ export const getReportHeaderCBCT = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1270,6 +1285,7 @@ export const getReportHeaderDentalIntra = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
