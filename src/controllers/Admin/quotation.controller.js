@@ -7,6 +7,7 @@ import orderModel from "../../models/order.model.js";
 import mongoose from "mongoose";
 import Services from "../../models/Services.js";
 import AdditionalService from '../../models/additionalService.model.js'
+import User from "../../models/user.model.js";
 import { uploadToS3 } from "../../utils/s3Upload.js";
 import counterModel from "../../models/counter.model.js";
 import QuotationHistory from "../../routes/allRoutes/Admin/quotationHistory.model.js";
@@ -1464,9 +1465,32 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
             throw new ApiError(404, 'Quotation not found for this enquiry');
         }
 
+        const leadOwnerRaw = String(quotation?.enquiry?.leadOwner || "").trim();
+        let leadOwnerId = null;
+        let leadOwnerName = null;
+
+        if (leadOwnerRaw) {
+            if (mongoose.Types.ObjectId.isValid(leadOwnerRaw)) {
+                const leadOwnerUser = await User.findById(leadOwnerRaw).select("name");
+                leadOwnerId = leadOwnerRaw;
+                leadOwnerName = leadOwnerUser?.name || null;
+            } else {
+                leadOwnerName = leadOwnerRaw;
+            }
+        }
+
+        const quotationObject = quotation.toObject();
+        quotationObject.enquiry = {
+            ...quotationObject.enquiry,
+            leadOwner: {
+                id: leadOwnerId,
+                name: leadOwnerName,
+            },
+        };
+
         return res
             .status(200)
-            .json(new ApiResponse(200, quotation, 'Quotation fetched successfully'));
+            .json(new ApiResponse(200, quotationObject, 'Quotation fetched successfully'));
     } catch (error) {
         console.error("Error fetching quotation:", error);
         throw new ApiError(500, 'Failed to fetch quotation', [error.message]);
