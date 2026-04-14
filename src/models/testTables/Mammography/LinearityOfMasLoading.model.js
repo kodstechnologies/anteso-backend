@@ -59,6 +59,11 @@ const LinearityOfMasLLoadingSchema = new mongoose.Schema({
     required: true,
     default: "0.1",
   },
+  toleranceOperator: {
+    type: String,
+    default: "<=",
+    trim: true,
+  },
 
   // Metadata
   createdAt: {

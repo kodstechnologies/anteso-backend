@@ -19,7 +19,7 @@ const Table1RowSchema = new Schema({
   }, // kV
   time: { 
     type: String, 
-    required: true, 
+    required: false, 
     trim: true,
     default: '' 
   }, // Time in seconds

@@ -6,8 +6,34 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "Mammography";
 
+/** CoV limit as decimal (e.g. 0.05 max). Values >1 interpreted as percent (5 → 0.05). */
+const parseToleranceToDecimal = (tolerance) => {
+    const t = parseFloat(tolerance);
+    if (isNaN(t) || t < 0) return 0.05;
+    if (t <= 1) return t;
+    return t / 100;
+};
+
+const compareCoVToTolerance = (cov, tolDecimal, operator = '<=') => {
+    const tol = tolDecimal;
+    switch (String(operator || '<=')) {
+        case '<':
+            return cov < tol;
+        case '>':
+            return cov > tol;
+        case '<=':
+            return cov <= tol;
+        case '>=':
+            return cov >= tol;
+        case '=':
+            return Math.abs(cov - tol) < 1e-6;
+        default:
+            return cov <= tol;
+    }
+};
+
 // Helper function to calculate CV and remark for a row
-const calculateCVAndRemark = (outputs, tolerance) => {
+const calculateCVAndRemark = (outputs, tolerance, toleranceOperator = '<=') => {
     const nums = outputs
         .filter((v) => v && v.trim() !== '')
         .map((v) => parseFloat(v))
@@ -28,12 +54,8 @@ const calculateCVAndRemark = (outputs, tolerance) => {
         cov = mean > 0 ? stdDev / mean : 0; // CoV as decimal
     }
 
-    // Tolerance is stored as percentage (e.g., "5.0" for 5%)
-    const tolValuePercent = parseFloat(tolerance) || 5.0;
-    const tolValueDecimal = tolValuePercent / 100; // Convert to decimal
-
-    // Compare CoV (decimal) with tolerance (decimal)
-    const passes = cov <= tolValueDecimal;
+    const tolDecimal = parseToleranceToDecimal(tolerance);
+    const passes = compareCoVToTolerance(cov, tolDecimal, toleranceOperator);
 
     return {
         avg: mean.toFixed(4),
@@ -45,7 +67,8 @@ const calculateCVAndRemark = (outputs, tolerance) => {
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { outputRows, tolerance, fdd } = req.body;
+    const { outputRows, tolerance, toleranceOperator, fdd } = req.body;
+    const tolOp = toleranceOperator != null && toleranceOperator !== '' ? String(toleranceOperator) : '<=';
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -78,7 +101,7 @@ const create = asyncHandler(async (req, res) => {
 
         // Process outputRows to calculate avg, cov, and remark
         const processedRows = (outputRows || []).map(row => {
-            const calc = calculateCVAndRemark(row.outputs || [], tolerance || '5.0');
+            const calc = calculateCVAndRemark(row.outputs || [], tolerance || '0.05', tolOp);
             return {
                 kv: row.kv || '',
                 mas: row.mas || '',
@@ -94,7 +117,8 @@ const create = asyncHandler(async (req, res) => {
 
         if (testRecord) {
             testRecord.outputRows = processedRows;
-            testRecord.tolerance = tolerance || '5.0';
+            testRecord.tolerance = tolerance != null && tolerance !== '' ? String(tolerance) : '0.05';
+            testRecord.toleranceOperator = tolOp;
             if (fdd !== undefined) testRecord.fdd = fdd == null ? '' : String(fdd);
             testRecord.updatedAt = Date.now();
         } else {
@@ -103,7 +127,8 @@ const create = asyncHandler(async (req, res) => {
                 reportId: serviceReport._id,
                 fdd: fdd == null ? '' : String(fdd),
                 outputRows: processedRows,
-                tolerance: tolerance || '5.0',
+                tolerance: tolerance != null && tolerance !== '' ? String(tolerance) : '0.05',
+                toleranceOperator: tolOp,
             });
         }
 
@@ -189,10 +214,17 @@ const update = asyncHandler(async (req, res) => {
     delete updateData.serviceId;
     delete updateData.createdAt;
 
+    const updateTolOp =
+        updateData.toleranceOperator != null && updateData.toleranceOperator !== ''
+            ? String(updateData.toleranceOperator)
+            : null;
+
     // Process outputRows to recalculate avg, cov, and remark if provided
     if (updateData.outputRows && Array.isArray(updateData.outputRows)) {
+        const tolForCalc = updateData.tolerance != null && updateData.tolerance !== '' ? String(updateData.tolerance) : '0.05';
+        const opForCalc = updateTolOp || '<=';
         updateData.outputRows = updateData.outputRows.map(row => {
-            const calc = calculateCVAndRemark(row.outputs || [], updateData.tolerance || '5.0');
+            const calc = calculateCVAndRemark(row.outputs || [], tolForCalc, opForCalc);
             return {
                 kv: row.kv || '',
                 mas: row.mas || '',
@@ -202,6 +234,10 @@ const update = asyncHandler(async (req, res) => {
                 remark: calc.remark,
             };
         });
+    }
+
+    if (updateTolOp) {
+        updateData.toleranceOperator = updateTolOp;
     }
 
     const session = await mongoose.startSession();

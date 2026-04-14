@@ -28,6 +28,7 @@ const LinearityOfMasLoadingSchema = new Schema({
     table2: [Table2RowSchema],
 
     tolerance: { type: String, default: '0.1', trim: true },
+    toleranceOperator: { type: String, default: '<=', trim: true },
     testId: { type: String, unique: true, sparse: true },
 }, { timestamps: true });
 

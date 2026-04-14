@@ -15,7 +15,8 @@ const create = asyncHandler(async (req, res) => {
         exposureCondition,
         measurementHeaders,
         measurements,
-        tolerance
+        tolerance,
+        toleranceOperator
     } = req.body;
     const { serviceId } = req.params;
 
@@ -48,6 +49,7 @@ const create = asyncHandler(async (req, res) => {
             testRecord.measurementHeaders = measurementHeaders || testRecord.measurementHeaders;
             testRecord.measurements = measurements || testRecord.measurements;
             testRecord.tolerance = tolerance || testRecord.tolerance;
+            testRecord.toleranceOperator = toleranceOperator || testRecord.toleranceOperator || "<=";
         } else {
             // Create new
             testRecord = new LinearityOfMasLLoadingMammography({
@@ -60,6 +62,7 @@ const create = asyncHandler(async (req, res) => {
                 measurementHeaders: measurementHeaders || ["Meas 1", "Meas 2", "Meas 3"],
                 measurements: measurements || [],
                 tolerance: tolerance || "0.1",
+                toleranceOperator: toleranceOperator || "<=",
             });
         }
 
@@ -97,7 +100,8 @@ const update = asyncHandler(async (req, res) => {
         exposureCondition,
         measurementHeaders,
         measurements,
-        tolerance
+        tolerance,
+        toleranceOperator
     } = req.body;
     const { testId } = req.params;
 
@@ -136,6 +140,7 @@ const update = asyncHandler(async (req, res) => {
             remarks: m.remarks || "",
         }));
         testRecord.tolerance = tolerance || testRecord.tolerance;
+        testRecord.toleranceOperator = toleranceOperator || testRecord.toleranceOperator || "<=";
 
         await testRecord.save({ session });
         await session.commitTransaction();

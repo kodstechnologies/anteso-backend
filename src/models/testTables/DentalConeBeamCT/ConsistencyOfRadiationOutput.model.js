@@ -48,6 +48,11 @@ const outputConsistencySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    toleranceOperator: {
+      type: String,
+      trim: true,
+      default: "<=",
+    },
 
     finalRemark: {
       type: String,

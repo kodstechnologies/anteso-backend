@@ -2239,6 +2239,21 @@ const getEnquiryDetailsById = async (req, res) => {
             return res.status(404).json({ message: "Enquiry not found" });
         }
 
+        const leadOwnerRaw = String(enquiry.leadOwner || "").trim();
+        let leadOwnerId = null;
+        let leadOwnerName = null;
+
+        if (leadOwnerRaw) {
+            if (mongoose.Types.ObjectId.isValid(leadOwnerRaw)) {
+                const leadOwnerUser = await User.findById(leadOwnerRaw).select("name");
+                leadOwnerId = leadOwnerRaw;
+                leadOwnerName = leadOwnerUser?.name || null;
+            } else {
+                // Some historical records store lead owner as plain text.
+                leadOwnerName = leadOwnerRaw;
+            }
+        }
+
         let attachmentSignedUrl = null;
         if (enquiry.attachment) {
             const urlParts = enquiry.attachment.split(".com/");
@@ -2271,6 +2286,10 @@ const getEnquiryDetailsById = async (req, res) => {
             enquiryStatus: enquiry.enquiryStatus,
             enquiryStatusDates: enquiry.enquiryStatusDates,
             quotationStatus: enquiry.quotationStatus,
+            leadOwner: {
+                id: leadOwnerId,
+                name: leadOwnerName,
+            },
             createdAt: enquiry.createdAt,
         });
     } catch (err) {

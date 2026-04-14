@@ -713,7 +713,13 @@ const saveReportHeader = async (req, res) => {
         })) || [];
 
         // UPDATE ONLY HEADER FIELDS (NO TEST ID LOOKUP)
-        const resolvedRpId = rpId || rpid || rpID || RPId || RPID || "";
+        // Preserve existing rpId when request does not provide a non-empty value.
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
         Object.assign(report, {
             customerName,
             address,
@@ -1389,6 +1395,7 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -1584,6 +1591,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -1680,6 +1688,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,

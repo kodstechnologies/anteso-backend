@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Intra Oral)";
 // CREATE or UPDATE (Upsert) by serviceId
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { table1, table2, tolerance } = req.body;
+    const { table1, table2, tolerance, toleranceOperator } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -42,6 +42,7 @@ const create = asyncHandler(async (req, res) => {
             if (table1 !== undefined) testRecord.table1 = table1;
             if (table2 !== undefined) testRecord.table2 = table2;
             if (tolerance !== undefined) testRecord.tolerance = tolerance;
+            if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
         } else {
             testRecord = new LinearityOfMasLoading({
                 serviceId,
@@ -49,6 +50,7 @@ const create = asyncHandler(async (req, res) => {
                 table1: table1 || { fcd: "", kv: "", time: "" },
                 table2: table2 || [],
                 tolerance: tolerance || "0.1",
+                toleranceOperator: toleranceOperator || "<=",
             });
         }
 
@@ -93,7 +95,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const { table1, table2, tolerance } = req.body;
+    const { table1, table2, tolerance, toleranceOperator } = req.body;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -101,7 +103,7 @@ const update = asyncHandler(async (req, res) => {
 
     const testRecord = await LinearityOfMasLoading.findByIdAndUpdate(
         testId,
-        { table1, table2, tolerance },
+        { table1, table2, tolerance, toleranceOperator },
         { new: true, runValidators: true }
     );
 

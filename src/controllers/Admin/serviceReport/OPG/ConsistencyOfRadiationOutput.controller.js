@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Ortho Pantomography (OPG)";
 // CREATE (with transaction)
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { ffd, outputRows, measurementHeaders, tolerance, finalRemark } = req.body;
+  const { ffd, outputRows, measurementHeaders, tolerance, toleranceOperator, finalRemark } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
       existing.outputRows = outputRows !== undefined ? outputRows : existing.outputRows;
       existing.measurementHeaders = measurementHeaders !== undefined ? measurementHeaders : existing.measurementHeaders;
       existing.tolerance = tolerance !== undefined ? tolerance : existing.tolerance;
+      existing.toleranceOperator = toleranceOperator !== undefined ? toleranceOperator : existing.toleranceOperator;
       existing.finalRemark = finalRemark !== undefined ? finalRemark : existing.finalRemark;
       testRecord = existing;
     } else {
@@ -62,6 +63,7 @@ const create = asyncHandler(async (req, res) => {
         outputRows: outputRows || [],
         measurementHeaders: measurementHeaders || ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
         tolerance: tolerance || "",
+        toleranceOperator: toleranceOperator || "<=",
         finalRemark: finalRemark || "",
       });
     }
@@ -118,7 +120,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { ffd, outputRows, measurementHeaders, tolerance, finalRemark } = req.body;
+  const { ffd, outputRows, measurementHeaders, tolerance, toleranceOperator, finalRemark } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -150,6 +152,7 @@ const update = asyncHandler(async (req, res) => {
     if (outputRows !== undefined) testRecord.outputRows = outputRows;
     if (measurementHeaders !== undefined) testRecord.measurementHeaders = measurementHeaders;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
     if (finalRemark !== undefined) testRecord.finalRemark = finalRemark;
 
     await testRecord.save({ session });

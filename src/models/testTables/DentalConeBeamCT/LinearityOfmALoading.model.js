@@ -19,7 +19,7 @@ const Table1RowSchema = new Schema({
   }, // kV
   time: { 
     type: String, 
-    required: true, 
+    required: false, 
     trim: true,
     default: '' 
   }, // Time in seconds
@@ -69,6 +69,11 @@ const LinearityOfMaLoadingSchema = new Schema(
     tolerance: {
       type: String,
       default: '0.1',
+      trim: true,
+    },
+    toleranceOperator: {
+      type: String,
+      default: '<=',
       trim: true,
     },
 
