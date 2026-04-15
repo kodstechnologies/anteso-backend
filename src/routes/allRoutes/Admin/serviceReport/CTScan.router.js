@@ -110,4 +110,5 @@ router.get('/gantry-tilt-by-serviceId/:serviceId', GantryTiltController.getBySer
 
 // Report Header
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderForCTScan);
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForCTScan);
 export default router

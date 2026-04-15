@@ -11,7 +11,7 @@ import LinearityOfMasLoadingStationController from "../../../../controllers/Admi
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCArm);
-
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderCArm);
 
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)
 router.get('/accuracy-of-irradiation-time-by-service/:serviceId', AccuracyOfIrradiationTimeController.getByServiceId)

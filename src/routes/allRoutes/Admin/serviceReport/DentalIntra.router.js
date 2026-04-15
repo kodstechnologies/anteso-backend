@@ -10,6 +10,7 @@ import RadiationLeakagelevelController from "../../../../controllers/Admin/servi
 import * as RadiationProtectionSurveyController from "../../../../controllers/Admin/serviceReport/DentalIntra/RadiationProtectionSurvey.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderDentalIntra)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderDentalIntra)
 
 router.post('/accuracy-of-operating-potential-and-time/:serviceId', AccuracyOfOperatingPotentialAndTimeController.create)
 router.get('/accuracy-of-operating-potential-and-time-by-service/:serviceId', AccuracyOfOperatingPotentialAndTimeController.getByServiceId)

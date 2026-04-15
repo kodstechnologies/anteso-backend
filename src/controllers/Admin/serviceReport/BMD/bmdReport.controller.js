@@ -15,6 +15,7 @@ export const saveReportHeader = async (req, res) => {
         address,
         srfNumber,
         srfDate,
+        reportULRNumber,
         testReportNumber,
         issueDate,
         nomenclature,
@@ -25,6 +26,11 @@ export const saveReportHeader = async (req, res) => {
         condition,
         testingProcedureNumber,
         engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
         pages,
         testDate,
         testDueDate,
@@ -97,12 +103,20 @@ export const saveReportHeader = async (req, res) => {
             TotalFilteration.findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
 
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
         // UPDATE REPORT
         Object.assign(report, {
             customerName,
             address,
             srfNumber,
             srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
             testReportNumber,
             issueDate: issueDate ? new Date(issueDate) : null,
             nomenclature,
@@ -113,6 +127,7 @@ export const saveReportHeader = async (req, res) => {
             condition,
             testingProcedureNumber,
             engineerNameRPId,
+            rpId: resolvedRpId,
             pages,
             testDate: testDate ? new Date(testDate) : null,
             testDueDate: testDueDate ? new Date(testDueDate) : null,
@@ -173,6 +188,7 @@ export const getReportHeader = async (req, res) => {
                 address: report.address || "",
                 srfNumber: report.srfNumber || "",
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber || "",
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature || "",
@@ -183,6 +199,7 @@ export const getReportHeader = async (req, res) => {
                 condition: report.condition || "OK",
                 testingProcedureNumber: report.testingProcedureNumber || "",
                 engineerNameRPId: report.engineerNameRPId || "",
+                rpId: report.rpId || "",
                 pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
@@ -203,8 +220,6 @@ export const getReportHeader = async (req, res) => {
                     certificate: t.certificate || "",
                     uncertainity: t.uncertainity || "",
                 })),
-                notes: report.notes || [],
-
                 notes: report.notes || [],
 
                 // Populated BMD test data with fallbacks

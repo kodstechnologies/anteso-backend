@@ -56,6 +56,9 @@ const leadApronServiceReportSchema = new mongoose.Schema({
     srfDate: {
         type: Date
     },
+    reportULRNumber: {
+        type: String
+    },
     testReportNumber: {
         type: String
     },
@@ -81,6 +84,9 @@ const leadApronServiceReportSchema = new mongoose.Schema({
         type: String
     },
     engineerNameRPId: {
+        type: String
+    },
+    rpId: {
         type: String
     },
     pages: {

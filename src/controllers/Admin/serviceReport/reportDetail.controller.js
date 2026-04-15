@@ -19,6 +19,9 @@ import LowContrastResolutionForCTScan from "../../../models/testTables/CTScan/Lo
 import HighContrastResolutionForCTScan from "../../../models/testTables/CTScan/HighContrasrResolutionForCTScan.model.js";
 import LinearityOfMasLoadingCTScan from "../../../models/testTables/CTScan/LinearityOfMasLoading.model.js";
 import RadiationProtectionSurveyCTScan from "../../../models/testTables/CTScan/RadiationProtectionSurvey.model.js";
+import AlignmentOfTableGantryCTScan from "../../../models/testTables/CTScan/AlignmentOfTableGantry.model.js";
+import TablePositionCTScanModel from "../../../models/testTables/CTScan/TablePosition.model.js";
+import GantryTiltCTScanModel from "../../../models/testTables/CTScan/GantryTilt.model.js";
 // import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
 import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
@@ -100,6 +103,7 @@ import "../../../models/testTables/CArm/OutputConsisitency.model.js";
 import "../../../models/testTables/CArm/TotalFilteration.model.js";
 import "../../../models/testTables/CArm/TubeHousingLeakage.model.js";
 import "../../../models/testTables/CArm/LinearityOfMasLoadingStation.model.js";
+import "../../../models/testTables/CArm/AccuracyOfIrradiationTime.model.js";
 // Import OArm models to ensure they're registered with Mongoose
 import "../../../models/testTables/OArm/ExposureRateTableTop.model.js";
 import "../../../models/testTables/OArm/HighContrastResolution.model.js";
@@ -890,6 +894,7 @@ const getReportHeader = async (req, res) => {
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
                 reportULRNumber: report.reportULRNumber || "",
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -907,6 +912,10 @@ const getReportHeader = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
+                pages: report.pages || "",
+                notes: report.notes || [],
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -969,6 +978,168 @@ const getReportHeader = async (req, res) => {
     } catch (error) {
         console.error("Get report header error:", error);
         res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const saveReportHeaderFixedRadioFluro = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOperatingPotential,
+            outputConsistency,
+            lowContrast,
+            highContrast,
+            exposureRate,
+            linearityMas,
+            tubeHousing,
+            accuracyIrradiation,
+            congruence,
+            centralBeam,
+            radiationProtection,
+            effectiveFocalSpot,
+            totalFiltration,
+        ] = await Promise.all([
+            mongoose.model("accuracyOfOperatingPotentialFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("OutputConsistencyForFixedRadioFlouro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LowContrastResolutionFixedRadioFlouro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("HighContrastResolutionFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ExposureRateTableTopFixedRadioFlouro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageFixedRadioFlouro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfIrradiationTimeFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationForRadioFluro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentForRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotForFixedRadioFlouro").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationForFixedRadioFluoro").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            accuracyOfOperatingPotentialFixedRadioFluoro: accuracyOperatingPotential?._id || null,
+            OutputConsistencyForFixedRadioFlouro: outputConsistency?._id || null,
+            LowContrastResolutionFixedRadioFlouro: lowContrast?._id || null,
+            HighContrastResolutionFixedRadioFluoro: highContrast?._id || null,
+            ExposureRateTableTopFixedRadioFlouro: exposureRate?._id || null,
+            LinearityOfmAsLoadingFixedRadioFluoro: linearityMas?._id || null,
+            TubeHousingLeakageFixedRadioFlouro: tubeHousing?._id || null,
+            AccuracyOfIrradiationTimeFixedRadioFluoro: accuracyIrradiation?._id || null,
+            CongruenceOfRadiationForRadioFluro: congruence?._id || null,
+            CentralBeamAlignmentForRadioFluoro: centralBeam?._id || null,
+            RadiationProtectionSurvey: radiationProtection?._id || null,
+            EffectiveFocalSpotForRadiographyFixedAndMobile: effectiveFocalSpot?._id || null,
+            TotalFilterationRadiographyFixed: totalFiltration?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Fixed Radio Flouro report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Fixed Radio Flouro):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -1110,6 +1281,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 nomenclature: report.nomenclature,
                 make: report.make,
                 model: report.model,
+                category: report.category,
                 slNumber: report.slNumber,
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
@@ -1122,6 +1294,8 @@ export const getReportHeaderCBCT = async (req, res) => {
                 humidity: report.humidity,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
+                pages: report.pages || "",
+                notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1150,6 +1324,147 @@ export const getReportHeaderCBCT = async (req, res) => {
     } catch (error) {
         console.error("Get report header error (CBCT):", error);
         res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const saveReportHeaderForCBCT = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyIrradiation,
+            accuracyOperatingPotential,
+            outputConsistency,
+            linearityOfMaLoading,
+            radiationLeakage,
+            radiationProtection,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfOperatingPotentialCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("OutputConsistencyForCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMaLoadingCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageTestCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyCBCT").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeCBCT: accuracyIrradiation?._id || null,
+            AccuracyOfOperatingPotentialCBCT: accuracyOperatingPotential?._id || null,
+            OutputConsistencyForCBCT: outputConsistency?._id || null,
+            LinearityOfMaLoadingCBCT: linearityOfMaLoading?._id || null,
+            RadiationLeakageTestCBCT: radiationLeakage?._id || null,
+            RadiationProtectionSurveyCBCT: radiationProtection?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Dental Cone Beam CT report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (CBCT):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -1195,11 +1510,13 @@ export const getReportHeaderOPG = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
                 make: report.make,
                 model: report.model,
+                category: report.category,
                 slNumber: report.slNumber,
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
@@ -1210,6 +1527,10 @@ export const getReportHeaderOPG = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
+                pages: report.pages || "",
+                notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1351,6 +1672,295 @@ export const getReportHeaderDentalIntra = async (req, res) => {
     }
 };
 
+export const saveReportHeaderForOPG = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOfIrradiationTime,
+            accuracyOfOperatingPotential,
+            outputConsistency,
+            linearityOfMaLoading,
+            radiationLeakage,
+            radiationProtection,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfOperatingPotentialOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("OutputConsistencyForOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMaLoadingOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageTestOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyOPG").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeOPG: pickRef(accuracyOfIrradiationTime, report.AccuracyOfIrradiationTimeOPG),
+            AccuracyOfOperatingPotentialOPG: pickRef(accuracyOfOperatingPotential, report.AccuracyOfOperatingPotentialOPG),
+            OutputConsistencyForOPG: pickRef(outputConsistency, report.OutputConsistencyForOPG),
+            LinearityOfMaLoadingOPG: pickRef(linearityOfMaLoading, report.LinearityOfMaLoadingOPG),
+            RadiationLeakageTestOPG: pickRef(radiationLeakage, report.RadiationLeakageTestOPG),
+            RadiationProtectionSurveyOPG: pickRef(radiationProtection, report.RadiationProtectionSurveyOPG),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "OPG report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (OPG):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export const saveReportHeaderDentalIntra = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOperatingAndTime,
+            linearityOfTime,
+            linearityOfMasLoading,
+            reproducibilityOutput,
+            tubeHousingLeakage,
+            radiationLeakage,
+            radiationProtection,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfTimeDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMasLoadingDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ReproducibilityOfRadiationOutputDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageTestDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfOperatingPotentialAndTimeDentalIntra: accuracyOperatingAndTime?._id || null,
+            LinearityOfTimeDentalIntra: linearityOfTime?._id || null,
+            LinearityOfmAsLoadingDentalIntra: linearityOfMasLoading?._id || null,
+            ReproducibilityOfRadiationOutputDentalIntra: reproducibilityOutput?._id || null,
+            TubeHousingLeakageDentalIntra: tubeHousingLeakage?._id || null,
+            RadiationLeakageTestDentalIntra: radiationLeakage?._id || null,
+            RadiationLeakageLevelDentalIntra: radiationLeakage?._id || null,
+            RadiationProtectionSurveyDentalIntra: radiationProtection?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Dental Intra report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Dental Intra):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 
 export const getReportHeaderDentalHandHeld = async (req, res) => {
     const { serviceId } = req.params;
@@ -1448,10 +2058,13 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
 export const saveReportHeaderDentalHandHeld = async (req, res) => {
     const { serviceId } = req.params;
     const {
-        customerName, address, srfNumber, srfDate, testReportNumber, issueDate,
+        customerName, address, srfNumber, srfDate, reportULRNumber, testReportNumber, issueDate,
         nomenclature, make, model, category, slNumber, condition,
-        testingProcedureNumber, engineerNameRPId, testDate, testDueDate,
-        location, temperature, humidity, toolsUsed, notes, csvFileUrl
+        testingProcedureNumber, engineerNameRPId,
+        rpId, rpid, rpID, RPId, RPID,
+        pages, testDate, testDueDate,
+        location, temperature, humidity, toolsUsed, notes, csvFileUrl,
+        leadOwner, leadowner, manufacturerName
     } = req.body;
 
     try {
@@ -1504,17 +2117,29 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             mongoose.model("RadiationProtectionSurveyDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
 
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
         // Update fields
         Object.assign(report, {
             customerName, address, srfNumber,
             srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
             testReportNumber,
             issueDate: issueDate ? new Date(issueDate) : null,
             nomenclature, make, model, category, slNumber, condition,
             testingProcedureNumber, engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
             testDate: testDate ? new Date(testDate) : null,
             testDueDate: testDueDate ? new Date(testDueDate) : null,
             location, temperature, humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
             notes: formattedNotes,
             csvFileUrl,
@@ -1634,6 +2259,159 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
     }
 };
 
+export const saveReportHeaderRadiographyFixed = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyIrradiation,
+            accuracyOp,
+            totalFiltration,
+            centralBeam,
+            congruence,
+            effectiveFocal,
+            linearityMas,
+            outputConsistency,
+            radiationLeakage,
+            radiationProtection,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("accuracyOfOperatingPotentialRadigraphyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationForRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationRadioGraphyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputFixedRadiography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyRadiographyFixed").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeRadiographyFixed: accuracyIrradiation?._id || null,
+            accuracyOfOperatingPotentialRadigraphyFixed: accuracyOp?._id || null,
+            TotalFilterationRadiographyFixed: totalFiltration?._id || null,
+            CentralBeamAlignmentRadiographyFixed: centralBeam?._id || null,
+            CongruenceOfRadiationRadioGraphyFixed: congruence?._id || null,
+            EffectiveFocalSpotRadiographyFixed: effectiveFocal?._id || null,
+            LinearityOfmAsLoadingRadiographyFixed: linearityMas?._id || null,
+            ConsistencyOfRadiationOutputFixedRadiography: outputConsistency?._id || null,
+            RadiationLeakageLevelRadiographyFixed: radiationLeakage?._id || null,
+            RadiationProtectionSurveyRadiographyFixed: radiationProtection?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Radiography Fixed report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Radiography Fixed):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 
 export const getReportHeaderRadiographyMobileHT = async (req, res) => {
     const { serviceId } = req.params;
@@ -1734,6 +2512,161 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
 
 
 
+export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOfIrradiationTime,
+            accuracyOfOperatingPotential,
+            centralBeamAlignment,
+            congruence,
+            effectiveFocalSpot,
+            linearityOfMasLoading,
+            outputConsistency,
+            radiationLeakageLevel,
+            radiationProtectionSurvey,
+            totalFiltration,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("accuracyOfOperatingPotentialRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationRadiographyMobileHT").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeRadiographyMobileHT: pickRef(accuracyOfIrradiationTime, report.AccuracyOfIrradiationTimeRadiographyMobileHT),
+            accuracyOfOperatingPotentialRadiographyMobileHT: pickRef(accuracyOfOperatingPotential, report.accuracyOfOperatingPotentialRadiographyMobileHT),
+            CentralBeamAlignmentRadiographyMobileHT: pickRef(centralBeamAlignment, report.CentralBeamAlignmentRadiographyMobileHT),
+            CongruenceOfRadiationRadiographyMobileHT: pickRef(congruence, report.CongruenceOfRadiationRadiographyMobileHT),
+            EffectiveFocalSpotRadiographyMobileHT: pickRef(effectiveFocalSpot, report.EffectiveFocalSpotRadiographyMobileHT),
+            LinearityOfmAsLoadingRadiographyMobileHT: pickRef(linearityOfMasLoading, report.LinearityOfmAsLoadingRadiographyMobileHT),
+            ConsistencyOfRadiationOutputRadiographyMobileHT: pickRef(outputConsistency, report.ConsistencyOfRadiationOutputRadiographyMobileHT),
+            RadiationLeakageLevelRadiographyMobileHT: pickRef(radiationLeakageLevel, report.RadiationLeakageLevelRadiographyMobileHT),
+            RadiationProtectionSurveyRadiographyMobileHT: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyRadiographyMobileHT),
+            TotalFilterationRadiographyMobileHT: pickRef(totalFiltration, report.TotalFilterationRadiographyMobileHT),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Radiography Mobile HT report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Radiography Mobile HT):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 export const getReportHeaderRadiographyPortable = async (req, res) => {
     const { serviceId } = req.params;
 
@@ -1766,6 +2699,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -1776,11 +2710,15 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
+                pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1818,6 +2756,155 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
 
 
 
+export const saveReportHeaderForRadiographyPortable = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOfIrradiationTime,
+            accuracyOfOperatingPotential,
+            centralBeamAlignment,
+            congruenceOfRadiation,
+            effectiveFocalSpot,
+            linearityOfMasLoading,
+            consistencyOfRadiationOutput,
+            radiationLeakageLevel,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("accuracyOfOperatingPotentialRadigraphyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationRadioGraphyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelRadiographyPortable").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeRadiographyPortable: pickRef(accuracyOfIrradiationTime, report.AccuracyOfIrradiationTimeRadiographyPortable),
+            accuracyOfOperatingPotentialRadigraphyPortable: pickRef(accuracyOfOperatingPotential, report.accuracyOfOperatingPotentialRadigraphyPortable),
+            CentralBeamAlignmentRadiographyPortable: pickRef(centralBeamAlignment, report.CentralBeamAlignmentRadiographyPortable),
+            CongruenceOfRadiationRadioGraphyPortable: pickRef(congruenceOfRadiation, report.CongruenceOfRadiationRadioGraphyPortable),
+            EffectiveFocalSpotRadiographyPortable: pickRef(effectiveFocalSpot, report.EffectiveFocalSpotRadiographyPortable),
+            LinearityOfmAsLoadingRadiographyPortable: pickRef(linearityOfMasLoading, report.LinearityOfmAsLoadingRadiographyPortable),
+            ConsistencyOfRadiationOutputRadiographyPortable: pickRef(consistencyOfRadiationOutput, report.ConsistencyOfRadiationOutputRadiographyPortable),
+            RadiationLeakageLevelRadiographyPortable: pickRef(radiationLeakageLevel, report.RadiationLeakageLevelRadiographyPortable),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Radiography Portable report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Radiography Portable):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 export const getReportHeaderRadiographyMobile = async (req, res) => {
     const { serviceId } = req.params;
 
@@ -1850,6 +2937,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -1860,11 +2948,15 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
+                pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1900,7 +2992,154 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
     }
 };
 
+export const saveReportHeaderForRadiographyMobile = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
 
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOfIrradiationTime,
+            accuracyOfOperatingPotential,
+            centralBeamAlignment,
+            congruenceOfRadiation,
+            effectiveFocalSpot,
+            linearityOfMasLoading,
+            consistencyOfRadiationOutput,
+            radiationLeakageLevel,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfIrradiationTimeRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("accuracyOfOperatingPotentialRadigraphyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationRadioGraphyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelRadiographyMobile").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfIrradiationTimeRadiographyMobile: pickRef(accuracyOfIrradiationTime, report.AccuracyOfIrradiationTimeRadiographyMobile),
+            accuracyOfOperatingPotentialRadigraphyMobile: pickRef(accuracyOfOperatingPotential, report.accuracyOfOperatingPotentialRadigraphyMobile),
+            CentralBeamAlignmentRadiographyMobile: pickRef(centralBeamAlignment, report.CentralBeamAlignmentRadiographyMobile),
+            CongruenceOfRadiationRadioGraphyMobile: pickRef(congruenceOfRadiation, report.CongruenceOfRadiationRadioGraphyMobile),
+            EffectiveFocalSpotRadiographyMobile: pickRef(effectiveFocalSpot, report.EffectiveFocalSpotRadiographyMobile),
+            LinearityOfmAsLoadingRadiographyMobile: pickRef(linearityOfMasLoading, report.LinearityOfmAsLoadingRadiographyMobile),
+            ConsistencyOfRadiationOutputRadiographyMobile: pickRef(consistencyOfRadiationOutput, report.ConsistencyOfRadiationOutputRadiographyMobile),
+            RadiationLeakageLevelRadiographyMobile: pickRef(radiationLeakageLevel, report.RadiationLeakageLevelRadiographyMobile),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Radiography Mobile report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Radiography Mobile):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
 
 export const getReportHeaderCArm = async (req, res) => {
     const { serviceId } = req.params;
@@ -1935,6 +3174,7 @@ export const getReportHeaderCArm = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -1945,11 +3185,16 @@ export const getReportHeaderCArm = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
+                pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
+                notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1980,6 +3225,156 @@ export const getReportHeaderCArm = async (req, res) => {
     } catch (error) {
         console.error("Get report header error (C-Arm):", error);
         res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const saveReportHeaderCArm = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            exposureRate,
+            highContrast,
+            lowContrast,
+            outputConsistency,
+            totalFiltration,
+            tubeHousing,
+            linearityMas,
+            accuracyIrradiation,
+        ] = await Promise.all([
+            mongoose.model("ExposureRateTableTopCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("HighContrastResolutionCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LowContrastResolutionCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("OutputConsistencyForCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationForCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfmAsLoadingCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfIrradiationTimeCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const linearityId = linearityMas?._id || null;
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            ExposureRateTableTopCArm: exposureRate?._id || null,
+            HighContrastResolutionCArm: highContrast?._id || null,
+            LowContrastResolutionCArm: lowContrast?._id || null,
+            OutputConsistencyForCArm: outputConsistency?._id || null,
+            TotalFilterationForCArm: totalFiltration?._id || null,
+            TubeHousingLeakageCArm: tubeHousing?._id || null,
+            LinearityOfmAsLoadingCArm: linearityId,
+            LinearityOfMaLoadingCArm: linearityId,
+            AccuracyOfIrradiationTimeCArm: accuracyIrradiation?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "C-Arm report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (C-Arm):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -2109,6 +3504,183 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
     }
 };
 
+export const saveReportHeaderForInventionalRadiology = async (req, res) => {
+    const { serviceId } = req.params;
+    const { tubeId } = req.query;
+
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    let tubeIdValue = null;
+    if (tubeId !== undefined && tubeId !== null) {
+        if (tubeId === "null" || tubeId === "") {
+            tubeIdValue = null;
+        } else if (tubeId === "frontal" || tubeId === "lateral") {
+            tubeIdValue = tubeId;
+        } else {
+            tubeIdValue = null;
+        }
+    }
+
+    const query = { serviceId, tubeId: tubeIdValue };
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            centralBeamAlignment,
+            effectiveFocalSpot,
+            accuracyOfIrradiationTime,
+            totalFilteration,
+            consistencyOfRadiationOutput,
+            lowContrastResolution,
+            highContrastResolution,
+            exposureRateTableTop,
+            tubeHousingLeakage,
+            timerAccuracy,
+            measurementOfMaLinearity,
+        ] = await Promise.all([
+            mongoose.model("CentralBeamAlignmentInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfIrradiationTimeInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationForInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("ConsistencyOfRadiationOutputInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("LowContrastResolutionInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("HighContrastResolutionInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("ExposureRateTableTopInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("TimerAccuracyInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+            mongoose.model("MeasurementOfMaLinearityInventionalRadiology").findOne(query).sort({ createdAt: -1 }),
+        ]);
+
+        const radiationProtectionSurvey = await mongoose.model("RadiationProtectionSurveyInventionalRadiology")
+            .findOne({ serviceId, tubeId: null })
+            .sort({ createdAt: -1 });
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            CentralBeamAlignmentInventionalRadiology: pickRef(centralBeamAlignment, report.CentralBeamAlignmentInventionalRadiology),
+            EffectiveFocalSpotInventionalRadiology: pickRef(effectiveFocalSpot, report.EffectiveFocalSpotInventionalRadiology),
+            AccuracyOfIrradiationTimeInventionalRadiology: pickRef(accuracyOfIrradiationTime, report.AccuracyOfIrradiationTimeInventionalRadiology),
+            TotalFilterationForInventionalRadiology: pickRef(totalFilteration, report.TotalFilterationForInventionalRadiology),
+            ConsistencyOfRadiationOutputInventionalRadiology: pickRef(consistencyOfRadiationOutput, report.ConsistencyOfRadiationOutputInventionalRadiology),
+            LowContrastResolutionInventionalRadiology: pickRef(lowContrastResolution, report.LowContrastResolutionInventionalRadiology),
+            HighContrastResolutionInventionalRadiology: pickRef(highContrastResolution, report.HighContrastResolutionInventionalRadiology),
+            ExposureRateTableTopInventionalRadiology: pickRef(exposureRateTableTop, report.ExposureRateTableTopInventionalRadiology),
+            TubeHousingLeakageInventionalRadiology: pickRef(tubeHousingLeakage, report.TubeHousingLeakageInventionalRadiology),
+            TimerAccuracyInventionalRadiology: pickRef(timerAccuracy, report.TimerAccuracyInventionalRadiology),
+            MeasurementOfMaLinearityInventionalRadiology: pickRef(measurementOfMaLinearity, report.MeasurementOfMaLinearityInventionalRadiology),
+            RadiationProtectionSurveyInventionalRadiology: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyInventionalRadiology),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Interventional Radiology report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Interventional Radiology):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
 
 export const getReportHeaderLeadApron = async (req, res) => {
     const { serviceId } = req.params;
@@ -2142,6 +3714,8 @@ export const getReportHeaderLeadApron = async (req, res) => {
                 address: report.address || "",
                 srfNumber: report.srfNumber || "",
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
+                ulrNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber || "",
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature || "",
@@ -2152,11 +3726,14 @@ export const getReportHeaderLeadApron = async (req, res) => {
                 condition: report.condition || "OK",
                 testingProcedureNumber: report.testingProcedureNumber || "",
                 engineerNameRPId: report.engineerNameRPId || "",
+                rpId: report.rpId || "",
+                pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location || "",
                 temperature: report.temperature || "",
                 humidity: report.humidity || "",
+                notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2191,6 +3768,8 @@ export const saveReportHeaderLeadApron = async (req, res) => {
         address,
         srfNumber,
         srfDate,
+        reportULRNumber,
+        ulrNumber,
         testReportNumber,
         issueDate,
         nomenclature,
@@ -2201,6 +3780,11 @@ export const saveReportHeaderLeadApron = async (req, res) => {
         condition,
         testingProcedureNumber,
         engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
         pages,
         testDate,
         testDueDate,
@@ -2238,12 +3822,20 @@ export const saveReportHeaderLeadApron = async (req, res) => {
             text: n.text,
         })) || [];
 
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
         // UPDATE HEADER FIELDS
         Object.assign(report, {
             customerName,
             address,
             srfNumber,
             srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber: reportULRNumber || ulrNumber || "",
             testReportNumber,
             issueDate: issueDate ? new Date(issueDate) : null,
             nomenclature,
@@ -2254,6 +3846,7 @@ export const saveReportHeaderLeadApron = async (req, res) => {
             condition,
             testingProcedureNumber,
             engineerNameRPId,
+            rpId: resolvedRpId,
             pages,
             testDate: testDate ? new Date(testDate) : null,
             testDueDate: testDueDate ? new Date(testDueDate) : null,
@@ -2438,6 +4031,7 @@ export const getReportHeaderForCTScan = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
@@ -2448,11 +4042,14 @@ export const getReportHeaderForCTScan = async (req, res) => {
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2495,6 +4092,194 @@ export const getReportHeaderForCTScan = async (req, res) => {
     } catch (error) {
         console.error("Get report header error (CT Scan):", error);
         res.status(500).json({ exists: false, message: "Server error" });
+    }
+};
+
+export const saveReportHeaderForCTScan = async (req, res) => {
+    const { serviceId } = req.params;
+    const { tubeId } = req.query;
+
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    let tubeIdValue = null;
+    if (tubeId !== undefined && tubeId !== null) {
+        if (tubeId === "null" || tubeId === "") {
+            tubeIdValue = null;
+        } else if (tubeId === "A" || tubeId === "B") {
+            tubeIdValue = tubeId;
+        } else {
+            tubeIdValue = null;
+        }
+    }
+
+    const query = { serviceId, tubeId: tubeIdValue };
+
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            radiationProfileWidth,
+            measurementOfOperatingPotential,
+            timerAccuracy,
+            measurementOfMaLinearity,
+            measurementOfCTDI,
+            totalFilteration,
+            radiationLeakageLevel,
+            measureMaxRadiationLevel,
+            outputConsistency,
+            lowContrastResolution,
+            highContrastResolution,
+            linearityOfMasLoading,
+            radiationProtectionSurvey,
+            alignmentOfTableGantry,
+            tablePosition,
+            gantryTilt,
+        ] = await Promise.all([
+            RadiationProfileWidth.findOne(query).sort({ createdAt: -1 }),
+            MeasurementOfOperatingPotential.findOne(query).sort({ createdAt: -1 }),
+            TimerAccuracy.findOne(query).sort({ createdAt: -1 }),
+            MeasurementOfMaLinearity.findOne(query).sort({ createdAt: -1 }),
+            MeasurementOfCTDI.findOne(query).sort({ createdAt: -1 }),
+            TotalFilterationForCTScan.findOne(query).sort({ createdAt: -1 }),
+            RadiationLeakageLeveFromXRayTube.findOne(query).sort({ createdAt: -1 }),
+            MeasureMaxRadiationLevel.findOne(query).sort({ createdAt: -1 }),
+            OutputConsistency.findOne(query).sort({ createdAt: -1 }),
+            LowContrastResolutionForCTScan.findOne(query).sort({ createdAt: -1 }),
+            HighContrastResolutionForCTScan.findOne(query).sort({ createdAt: -1 }),
+            LinearityOfMasLoadingCTScan.findOne(query).sort({ createdAt: -1 }),
+            RadiationProtectionSurveyCTScan.findOne(query).sort({ createdAt: -1 }),
+            AlignmentOfTableGantryCTScan.findOne({ serviceId }).sort({ createdAt: -1 }),
+            TablePositionCTScanModel.findOne({ serviceId }).sort({ createdAt: -1 }),
+            GantryTiltCTScanModel.findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            RadiationProfileWidthForCTScan: pickRef(radiationProfileWidth, report.RadiationProfileWidthForCTScan),
+            MeasurementOfOperatingPotential: pickRef(measurementOfOperatingPotential, report.MeasurementOfOperatingPotential),
+            TimerAccuracy: pickRef(timerAccuracy, report.TimerAccuracy),
+            MeasurementOfMaLinearity: pickRef(measurementOfMaLinearity, report.MeasurementOfMaLinearity),
+            MeasurementOfCTDI: pickRef(measurementOfCTDI, report.MeasurementOfCTDI),
+            TotalFilterationForCTScan: pickRef(totalFilteration, report.TotalFilterationForCTScan),
+            RadiationLeakageLevel: pickRef(radiationLeakageLevel, report.RadiationLeakageLevel),
+            MeasureMaxRadiationLevel: pickRef(measureMaxRadiationLevel, report.MeasureMaxRadiationLevel),
+            OutputConsistency: pickRef(outputConsistency, report.OutputConsistency),
+            lowContrastResolutionForCTScan: pickRef(lowContrastResolution, report.lowContrastResolutionForCTScan),
+            HighContrastResolutionForCTScan: pickRef(highContrastResolution, report.HighContrastResolutionForCTScan),
+            LinearityOfMasLoadingCTScan: pickRef(linearityOfMasLoading, report.LinearityOfMasLoadingCTScan),
+            RadiationProtectionSurveyCTScan: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyCTScan),
+            AlignmentOfTableGantryCTScan: pickRef(alignmentOfTableGantry, report.AlignmentOfTableGantryCTScan),
+            TablePositionCTScan: pickRef(tablePosition, report.TablePositionCTScan),
+            GantryTiltCTScan: pickRef(gantryTilt, report.GantryTiltCTScan),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "CT Scan report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (CT Scan):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 
@@ -2552,20 +4337,26 @@ export const getReportHeaderOBI = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
                 make: report.make,
                 model: report.model,
+                category: report.category,
                 slNumber: report.slNumber,
                 condition: report.condition,
                 testingProcedureNumber: report.testingProcedureNumber,
                 engineerNameRPId: report.engineerNameRPId,
+                rpId: report.rpId || "",
+                pages: report.pages || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                leadOwner: report.leadOwner || "",
+                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2580,6 +4371,7 @@ export const getReportHeaderOBI = async (req, res) => {
                     certificate: t.certificate,
                     uncertainity: t.uncertainity,
                 })),
+                notes: report.notes || [],
 
                 // ⭐ OBI TEST RESULTS (POPULATED)
                 AlignmentTestOBI: report.AlignmentTestOBI,
@@ -2700,5 +4492,325 @@ export const getReportHeaderMammography = async (req, res) => {
     }
 };
 
+export const saveReportHeaderForMammography = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
 
-export default { getCustomerDetails, getTools, getReportHeader, getReportHeaderCBCT, getReportHeaderOPG, getReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, getReportHeaderRadiographyPortable, getReportHeaderRadiographyMobile, getReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, getReportHeaderMammography, getReportHeaderInventionalRadiology }
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            accuracyOfOperatingPotential,
+            totalFiltration,
+            imagingPhantom,
+            reproducibility,
+            radiationLeakage,
+            radiationProtection,
+            equipmentSetting,
+            maximumRadiationLevel,
+            linearityOfMasLoading,
+            accuracyOfIrradiationTime,
+            linearityOfMaLoadingStations,
+        ] = await Promise.all([
+            mongoose.model("AccuracyOfOperatingPotentialMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TotalFilterationAndAlluminiumMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ImagingPhantomMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("ReproducibilityOfOutputMmmography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationLeakageLevelMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("DetailsOfRadiationProtectionMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EquipmentSettingForMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("MaximumRadiationLevelMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMasLLoadingMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("AccuracyOfIrradiationTimeMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMasLoadingStationsMammography").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AccuracyOfOperatingPotentialMammography: accuracyOfOperatingPotential?._id || null,
+            TotalFilterationAndAlluminiumMammography: totalFiltration?._id || null,
+            ImagingPhantomMammography: imagingPhantom?._id || null,
+            ReproducibilityOfRadiationOutputMammography: reproducibility?._id || null,
+            RadiationLeakageLevelMammography: radiationLeakage?._id || null,
+            DetailsOfRadiationProtectionMammography: radiationProtection?._id || null,
+            EquipmentSettingMammography: equipmentSetting?._id || null,
+            MaximumRadiationLevelMammography: maximumRadiationLevel?._id || null,
+            LinearityOfMasLoadingMammography: linearityOfMasLoading?._id || null,
+            AccuracyOfIrradiationTimeMammography: accuracyOfIrradiationTime?._id || null,
+            LinearityOfMaLoadingStationsMammography: linearityOfMaLoadingStations?._id || null,
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "Mammography report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (Mammography):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
+export const saveReportHeaderForOBI = async (req, res) => {
+    const { serviceId } = req.params;
+    const {
+        customerName,
+        address,
+        srfNumber,
+        srfDate,
+        reportULRNumber,
+        testReportNumber,
+        issueDate,
+        nomenclature,
+        make,
+        model,
+        category,
+        slNumber,
+        condition,
+        testingProcedureNumber,
+        engineerNameRPId,
+        rpId,
+        rpid,
+        rpID,
+        RPId,
+        RPID,
+        pages,
+        testDate,
+        testDueDate,
+        location,
+        temperature,
+        humidity,
+        toolsUsed,
+        notes,
+        leadOwner,
+        leadowner,
+        manufacturerName,
+    } = req.body;
+
+    const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
+
+    try {
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            return res.status(404).json({
+                message: "ServiceReport not found. Please generate the test report first.",
+            });
+        }
+
+        const formattedTools = toolsUsed?.map((tool) => {
+            let toolId = null;
+            if (tool.toolId) {
+                if (mongoose.Types.ObjectId.isValid(tool.toolId) && typeof tool.toolId === "string" && tool.toolId.length === 24) {
+                    toolId = tool.toolId;
+                }
+            }
+            return {
+                tool: toolId,
+                SrNo: tool.SrNo,
+                nomenclature: tool.nomenclature,
+                make: tool.make,
+                model: tool.model,
+                range: tool.range,
+                calibrationCertificateNo: tool.calibrationCertificateNo,
+                calibrationValidTill: tool.calibrationValidTill,
+                certificate: tool.certificate,
+                uncertainity: tool.uncertainity,
+            };
+        }) || [];
+
+        const formattedNotes = notes?.map((n) => ({
+            slNo: n.slNo,
+            text: n.text,
+        })) || [];
+
+        const [
+            alignmentTest,
+            accuracyOfOperatingPotential,
+            centralBeamAlignment,
+            congruenceOfRadiation,
+            effectiveFocalSpot,
+            highContrastSensitivity,
+            linearityOfMasLoadingStations,
+            linearityOfTime,
+            lowContrastSensitivity,
+            outputConsistency,
+            radiationProtectionSurvey,
+            timerTest,
+            tubeHousingLeakage,
+        ] = await Promise.all([
+            mongoose.model("AlignmentTestOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("accuracyOfOperatingPotentialOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CentralBeamAlignmentOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("CongruenceOfRadiationOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("EffectiveFocalSpotOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("HighContrastSensitivityOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMasLoadingStationsOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfTimeOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LowContrastSensitivityOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("OutputConsistencyOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("RadiationProtectionSurveyOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TimerTestOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("TubeHousingLeakageOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+        ]);
+
+        const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
+            .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
+            .filter((v) => v.length > 0);
+        const resolvedRpId = normalizedRpCandidates.length > 0
+            ? normalizedRpCandidates[0]
+            : (report.rpId || "");
+
+        Object.assign(report, {
+            customerName,
+            address,
+            srfNumber,
+            srfDate: srfDate ? new Date(srfDate) : null,
+            reportULRNumber,
+            testReportNumber,
+            issueDate: issueDate ? new Date(issueDate) : null,
+            nomenclature,
+            make,
+            model,
+            category,
+            slNumber,
+            condition,
+            testingProcedureNumber,
+            engineerNameRPId,
+            rpId: resolvedRpId,
+            pages,
+            testDate: testDate ? new Date(testDate) : null,
+            testDueDate: testDueDate ? new Date(testDueDate) : null,
+            location,
+            temperature,
+            humidity,
+            leadOwner: leadOwner || leadowner || "",
+            manufacturerName: manufacturerName || "",
+            toolsUsed: formattedTools,
+            notes: formattedNotes,
+
+            AlignmentTestOBI: pickRef(alignmentTest, report.AlignmentTestOBI),
+            accuracyOfOperatingPotentialOBI: pickRef(accuracyOfOperatingPotential, report.accuracyOfOperatingPotentialOBI),
+            CentralBeamAlignmentOBI: pickRef(centralBeamAlignment, report.CentralBeamAlignmentOBI),
+            CongruenceOfRadiationOBI: pickRef(congruenceOfRadiation, report.CongruenceOfRadiationOBI),
+            EffectiveFocalSpotOBI: pickRef(effectiveFocalSpot, report.EffectiveFocalSpotOBI),
+            HighContrastSensitivityOBI: pickRef(highContrastSensitivity, report.HighContrastSensitivityOBI),
+            LinearityOfMasLoadingStationsOBI: pickRef(linearityOfMasLoadingStations, report.LinearityOfMasLoadingStationsOBI),
+            LinearityOfTimeOBI: pickRef(linearityOfTime, report.LinearityOfTimeOBI),
+            LowContrastSensitivityOBI: pickRef(lowContrastSensitivity, report.LowContrastSensitivityOBI),
+            OutputConsistencyOBI: pickRef(outputConsistency, report.OutputConsistencyOBI),
+            RadiationProtectionSurveyOBI: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyOBI),
+            TimerTestOBI: pickRef(timerTest, report.TimerTestOBI),
+            TubeHousingLeakageOBI: pickRef(tubeHousingLeakage, report.TubeHousingLeakageOBI),
+        });
+
+        await report.save();
+
+        return res.status(200).json({
+            message: "OBI report header saved successfully!",
+            report,
+        });
+    } catch (error) {
+        console.error("Save report header error (OBI):", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+export default { getCustomerDetails, getTools, getReportHeader, saveReportHeaderFixedRadioFluro, getReportHeaderCBCT, saveReportHeaderForCBCT, getReportHeaderOPG, saveReportHeaderForOPG, getReportHeaderDentalIntra, saveReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, saveReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, saveReportHeaderForRadiographyMobileHT, getReportHeaderRadiographyPortable, saveReportHeaderForRadiographyPortable, getReportHeaderRadiographyMobile, saveReportHeaderForRadiographyMobile, getReportHeaderCArm, saveReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, saveReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, saveReportHeaderForOBI, getReportHeaderMammography, saveReportHeaderForMammography, getReportHeaderInventionalRadiology, saveReportHeaderForInventionalRadiology }

@@ -9,6 +9,7 @@ import RadiationProtectionSurveyController from "../../../../controllers/Admin/s
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderCBCT)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForCBCT)
 
 // 1. Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create)

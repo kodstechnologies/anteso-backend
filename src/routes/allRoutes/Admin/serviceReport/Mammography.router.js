@@ -15,6 +15,7 @@ import reportDetailController from "../../../../controllers/Admin/serviceReport/
 
 // router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderMammography);
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForMammography);
 
 
 router.post('/total-filteration/:serviceId', TotalFilteration.create)

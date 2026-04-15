@@ -16,6 +16,7 @@ import RadiationProtectionSurveyController from "../../../../controllers/Admin/s
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderFixedRadioFluro)
 
 
 // Accuracy of Operating Potential

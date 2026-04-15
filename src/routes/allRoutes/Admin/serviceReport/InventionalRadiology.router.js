@@ -17,6 +17,7 @@ import TimerAccuracyController from "../../../../controllers/Admin/serviceReport
 import MeasurementOfMaLinearityController from "../../../../controllers/Admin/serviceReport/InventionalRadiology/measurementOfMaLinearity.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderInventionalRadiology)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForInventionalRadiology)
 
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTime.create)
 router.get('/accuracy-of-irradiation-time/:testId', AccuracyOfIrradiationTime.getById)

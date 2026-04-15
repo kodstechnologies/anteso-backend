@@ -12,6 +12,7 @@ import reportDetailController from "../../../../controllers/Admin/serviceReport/
 
 // Report Header
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyMobile);
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForRadiographyMobile);
 
 // Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);

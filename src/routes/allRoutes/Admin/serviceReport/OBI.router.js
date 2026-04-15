@@ -16,6 +16,7 @@ import LowContrastSensitivityController from "../../../../controllers/Admin/serv
 import reportDetailController from "../../../../controllers/Admin/serviceReport/reportDetail.controller.js";
 
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderOBI)
+router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderForOBI)
 
 // 1. Alignment Test
 router.post('/alignment-test/:serviceId', AlignmentTestController.create)
