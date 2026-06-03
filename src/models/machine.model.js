@@ -3,32 +3,32 @@ import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
 // Hardcoded list of machine types
-const MACHINE_TYPES = [
-    "Radiography (Fixed)",
-    "Radiography (Mobile)",
-    "Radiography (Portable)",
-    "Radiography and Fluoroscopy",
-    "Interventional Radiology",
-    "C-Arm",
-    "O-Arm",
-    "Computed Tomography",
-    "Mammography",  
-    "Dental Cone Beam CT",
-    "Ortho Pantomography (OPG)",
-    "Dental (Intra Oral)",
-    "Dental (Hand-held)",
-    "Bone Densitometer (BMD)",
-    "KV Imaging (OBI)",
-    "Radiography (Mobile) with HT",
-    "Lead Apron/Thyroid Shield/Gonad Shield",
-    "Others",
-];
+// const MACHINE_TYPES = [
+//     "Radiography (Fixed)",
+//     "Radiography (Mobile)",
+//     "Radiography (Portable)",
+//     "Radiography and Fluoroscopy",
+//     "Interventional Radiology",
+//     "C-Arm",
+//     "O-Arm",
+//     "Computed Tomography",
+//     "Mammography",  
+//     "Dental Cone Beam CT",
+//     "Ortho Pantomography (OPG)",
+//     "Dental (Intra Oral)",
+//     "Dental (Hand-held)",
+//     "Bone Densitometer (BMD)",
+//     "KV Imaging (OBI)",
+//     "Radiography (Mobile) with HT",
+//     "Lead Apron/Thyroid Shield/Gonad Shield",
+//     "Others",
+// ];
 
 const machineSchema = new Schema(
     {
         machineType: {
             type: String,
-            enum: MACHINE_TYPES,
+            // enum: MACHINE_TYPES,
             required: true,
         },
         make: {
