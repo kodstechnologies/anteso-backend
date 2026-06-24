@@ -119,7 +119,7 @@ router.put('/assign-staff-by-elora/:orderId/:serviceId/:officeStaffId/:workType/
 //mobile APIs
 router.get('/get-qa-report/:technicianId', orderController.getQaReportsByTechnician)
 router.get('/get-report-by-id/:orderId/:serviceId/:qaReportId', orderController.getReportById)
-router.patch('/accept-report/:orderId/:serviceId/:qaReportId', orderController.acceptQAReport)
+router.patch('/accept-report/:orderId/:serviceId/:qaReportId', upload.single('qrCode'), orderController.acceptQAReport)
 router.patch('/reject-report/:orderId/:serviceId/:qaReportId', orderController.rejectQAReport)
 
 router.get('/get-elora-report/:orderId/:serviceId/:eloraId', orderController.getEloraReport)

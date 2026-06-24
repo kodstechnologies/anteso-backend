@@ -80,6 +80,16 @@ const orderSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+orderSchema.index({ srfNumber: 1 }, { unique: true });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ hospital: 1, createdAt: -1 });
+orderSchema.index({ leadOwner: 1, createdAt: -1 });
+orderSchema.index({ customer: 1 });
+orderSchema.index({ services: 1 });
+orderSchema.index({ quotation: 1 });
+orderSchema.index({ payment: 1 });
+orderSchema.index({ createdAt: -1 });
+
 orderSchema.pre('save', async function (next) {
     if (!this.srfNumber) {
         this.srfNumber = await genarateSRFNumber();

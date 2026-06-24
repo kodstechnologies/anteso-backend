@@ -129,6 +129,9 @@ const serviceReportSchema = new mongoose.Schema({
             { slNo: "5.7", text: "Name, Address & Contact detail is provided by Customer." }
         ]
     },
+    qrCode:{
+        type:String
+    },
     // accuracyOfOperatingPotentialModel: {
     //     type: mongoose.Schema.Types.ObjectId,
     //     ref: "AccuracyOfOperatingPotential",

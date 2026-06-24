@@ -16,6 +16,7 @@ import AdditionalService from "../../models/additionalService.model.js";
 import { CustomMachine } from "../../models/customeMachine.model.js";
 import QATest from "../../models/QATest.model.js";
 import Elora from "../../models/elora.model.js";
+import ServiceReport from "../../models/serviceReports/serviceReport.model.js";
 import Attendance from "../../models/attendanceSchema.model.js"
 import Invoice from "../../models/invoice.model.js";
 
@@ -7011,13 +7012,45 @@ const acceptQAReport = asyncHandler(async (req, res) => {
         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
     }
 
+    let qrCodeUrl = null;
+
+    if (req.file) {
+        const uploaded = await uploadToS3(req.file);
+        qrCodeUrl = uploaded.url;
+    } else if (req.body?.qrCode) {
+        const qrCode = req.body.qrCode;
+
+        if (typeof qrCode === "string" && (qrCode.startsWith("http://") || qrCode.startsWith("https://"))) {
+            qrCodeUrl = qrCode;
+        } else if (typeof qrCode === "string") {
+            const dataUrlMatch = qrCode.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+            const base64Data = dataUrlMatch ? dataUrlMatch[2] : qrCode;
+            const mimeType = dataUrlMatch ? dataUrlMatch[1] : "image/png";
+            const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "png";
+
+            const uploaded = await uploadToS3({
+                buffer: Buffer.from(base64Data, "base64"),
+                originalname: `qr-code-${Date.now()}.${ext}`,
+                mimetype: mimeType,
+            });
+            qrCodeUrl = uploaded.url;
+        }
+    }
+
+    if (!qrCodeUrl) {
+        return res.status(400).json({
+            success: false,
+            message: "QR code image is required. Send it as 'qrCode' file or in request body.",
+        });
+    }
+
     // Find order with services and QA report populated
     const order = await orderModel.findById(orderId)
         .populate({
             path: "services",
             populate: { path: "workTypeDetails.QAtest" },
         })
-        .populate("hospital"); // ✅ populate hospital directly
+        .populate("hospital");
 
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
@@ -7029,14 +7062,25 @@ const acceptQAReport = asyncHandler(async (req, res) => {
     );
     if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
 
-    // ✅ Update QA Report status
+    const serviceReport = await ServiceReport.findOneAndUpdate(
+        { serviceId },
+        { qrCode: qrCodeUrl },
+        { new: true }
+    );
+
+    if (!serviceReport) {
+        return res.status(404).json({
+            success: false,
+            message: "Service report not found for this service",
+        });
+    }
+
     wt.QAtest.reportStatus = "accepted";
     await wt.QAtest.save();
 
-    // ✅ Store this report in the hospital
     if (order.hospital) {
         await Hospital.findByIdAndUpdate(order.hospital._id, {
-            $addToSet: { qaReports: wt.QAtest._id }, // prevent duplicates
+            $addToSet: { qaReports: wt.QAtest._id },
         });
     }
 
@@ -7044,6 +7088,7 @@ const acceptQAReport = asyncHandler(async (req, res) => {
         success: true,
         message: "QA Report accepted and stored in hospital",
         report: wt.QAtest,
+        qrCode: serviceReport.qrCode,
     });
 });
 
