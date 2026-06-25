@@ -1997,14 +1997,37 @@ const addByHospitalId = asyncHandler(async (req, res) => {
 
 const getAll = asyncHandler(async (req, res) => {
     try {
-        const enquiries = await Enquiry.aggregate([
+        const { city, district, pinCode, branch, emailAddress, contactNumber } = req.query;
+
+        const match = {};
+        const addExactFilter = (field, value) => {
+            const trimmed = String(value || "").trim();
+            if (trimmed) {
+                match[field] = trimmed;
+            }
+        };
+
+        addExactFilter("city", city);
+        addExactFilter("district", district);
+        addExactFilter("pinCode", pinCode);
+        addExactFilter("branch", branch);
+        addExactFilter("emailAddress", emailAddress);
+        addExactFilter("contactNumber", contactNumber);
+
+        const pipeline = [];
+
+        if (Object.keys(match).length) {
+            pipeline.push({ $match: match });
+        }
+
+        pipeline.push(
             {
                 $lookup: {
-                    from: "quotations",            // collection name
+                    from: "quotations",
                     localField: "_id",
                     foreignField: "enquiry",
-                    as: "quotation"
-                }
+                    as: "quotation",
+                },
             },
             {
                 $project: {
@@ -2027,38 +2050,61 @@ const getAll = asyncHandler(async (req, res) => {
                     discount: 1,
                     grandTotal: 1,
                     subtotalAmount: 1,
-                    // only keep rejectionRemark from quotation
                     quotation: {
-                        rejectionRemark: { $arrayElemAt: ["$quotation.rejectionRemark", 0] }
-                    }
-                }
+                        rejectionRemark: { $arrayElemAt: ["$quotation.rejectionRemark", 0] },
+                    },
+                },
             },
-            { $sort: { createdAt: -1 } }
-        ]);
+            { $sort: { createdAt: -1 } },
+        );
 
-        // populates the customer info
+        const enquiries = await Enquiry.aggregate(pipeline);
+
         if (!enquiries || enquiries.length === 0) {
             return res
                 .status(200)
                 .json(new ApiResponse(200, [], "No enquiries found"));
         }
-        const createdQuotations = await Quotation.find({ quotationStatus: "Created" })
-            .populate("enquiry")
-            .populate("from"); // Optional, if you want user info
 
-        // Log for debugging
-        // console.log("Created Quotations:", createdQuotations);
-        console.log(enquiries.map(e => ({
-            enquiryId: e.enquiryId,
-            quotationStatus: e.quotationStatus || 'No quotation linked',
-            rejectionRemark: e.rejectionRemark
-        })));
         return res
             .status(200)
             .json(new ApiResponse(200, enquiries, "All enquiries fetched"));
     } catch (error) {
         console.error("Get All Enquiries Error:", error);
         throw new ApiError(500, "Failed to fetch enquiries", [error.message]);
+    }
+});
+
+const getEnquiryFilterOptions = asyncHandler(async (req, res) => {
+    try {
+        const sortValues = (values = []) =>
+            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+                .map((value) => String(value).trim())
+                .sort((a, b) => a.localeCompare(b));
+
+        const [cities, districts, pinCodes, branches, emailAddresses, contactNumbers] = await Promise.all([
+            Enquiry.distinct("city"),
+            Enquiry.distinct("district"),
+            Enquiry.distinct("pinCode"),
+            Enquiry.distinct("branch"),
+            Enquiry.distinct("emailAddress"),
+            Enquiry.distinct("contactNumber"),
+        ]);
+
+        res.status(200).json({
+            success: true,
+            filters: {
+                cities: sortValues(cities),
+                districts: sortValues(districts),
+                pinCodes: sortValues(pinCodes),
+                branches: sortValues(branches),
+                emailAddresses: sortValues(emailAddresses),
+                contactNumbers: sortValues(contactNumbers),
+            },
+        });
+    } catch (error) {
+        console.error("Error in getEnquiryFilterOptions:", error);
+        throw new ApiError(500, "Failed to fetch enquiry filter options", [error.message]);
     }
 });
 const getById = asyncHandler(async (req, res) => {
@@ -2654,4 +2700,4 @@ const getStaffEnquiries = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getById, deleteById, updateById, getAll, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId, getStaffEnquiries };
+export default { add, getById, deleteById, updateById, getAll, getEnquiryFilterOptions, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId, getStaffEnquiries };

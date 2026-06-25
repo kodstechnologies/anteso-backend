@@ -1974,20 +1974,56 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
 
 const getAllInvoices = asyncHandler(async (req, res) => {
   try {
-    // Fetch all invoices, populate 'enquiry' and 'payment' to get paymentType
-    const invoices = await Invoice.find()
+    const { state, branchName } = req.query;
+
+    const query = {};
+    if (state && String(state).trim()) {
+      query.state = String(state).trim();
+    }
+
+    if (branchName && String(branchName).trim()) {
+      const trimmedBranch = String(branchName).trim();
+      const [matchingOrders, matchingEnquiries] = await Promise.all([
+        Order.find({ branchName: trimmedBranch }).select("_id").lean(),
+        Enquiry.find({ branch: trimmedBranch }).select("_id").lean(),
+      ]);
+
+      const orderIds = matchingOrders.map((o) => o._id);
+      const enquiryIds = matchingEnquiries.map((e) => e._id);
+
+      query.$or = [
+        { order: { $in: orderIds } },
+        { enquiry: { $in: enquiryIds } }
+      ];
+    }
+
+    // Fetch matching invoices, populate 'enquiry', 'order' and 'payment'
+    const invoices = await Invoice.find(query)
       .sort({ createdAt: -1 }) // latest first
       .populate("enquiry") // populate enquiry if needed
+      .populate({
+        path: "order",
+        select: "branchName", // select branchName from order
+      })
       .populate({
         path: "payment",
         select: "paymentType paymentAmount paymentStatus utrNumber", // select the fields you need
       });
-    console.log("🚀 ~ invoices:", invoices)
+
+    const invoicesWithBranch = invoices.map((invoice) => {
+      const invObj = invoice.toObject();
+      return {
+        ...invObj,
+        branchName: invObj.order?.branchName || invObj.enquiry?.branch || null,
+      };
+    });
+
+    console.log("🚀 ~ invoices:", invoicesWithBranch);
 
     res.status(200).json({
       success: true,
-      data: invoices,
-      count: invoices.length,
+      data: invoicesWithBranch,
+      count: invoicesWithBranch.length,
     });
   } catch (error) {
     console.error("Error fetching invoices:", error);

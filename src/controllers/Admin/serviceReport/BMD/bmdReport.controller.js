@@ -201,6 +201,7 @@ export const getReportHeader = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId || "",
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location || "",

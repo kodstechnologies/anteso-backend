@@ -6,6 +6,7 @@ router.post('/add-machine-in-order/:orderId', upload.single('workOrderCopy'), or
 router.patch('/update-price/:orderId/:serviceId', orderController.updateServicePrice)
 router.delete('/delete-machine-in-order/:orderId/:serviceId', orderController.deleteMachineByorderId)
 router.get('/get-all', orderController.getAllOrders)
+router.get('/filter-options', orderController.getOrderFilterOptions)
 router.get('/basic-details-by-orderId/:orderId', orderController.getBasicDetailsByOrderId)
 router.put('/update-details-by-orderId/:orderId', orderController.updateBasicDetailsByOrderId)
 

@@ -487,6 +487,7 @@ const getTools = asyncHandler(async (req, res) => {
 //                     certificate: t.certificate || '',
 //                     uncertainity: t.uncertainity || '',
 //                 })),
+//                 qrCode: report.qrCode || "",
 //                 notes: report.notes || [], // will use defaults on frontend if empty
 //             },
 //         });
@@ -817,7 +818,8 @@ const saveReportHeader = async (req, res) => {
 //                     certificate: t.certificate || '',
 //                     uncertainity: t.uncertainity || '',
 //                 })),
-//                 notes: report.notes || [],
+//                 qrCode: report.qrCode || "",
+// notes: report.notes || [],
 
 //                 // THIS IS THE FINAL FIX — SUPPORT BOTH OLD & NEW FIELD NAMES
 //                 // radiationProfileWidthId: report.radiationProfileWidthId || report.RadiationProfileWidthForCTScan || null,
@@ -915,6 +917,7 @@ const getReportHeader = async (req, res) => {
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -1295,6 +1298,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
@@ -1530,6 +1534,7 @@ export const getReportHeaderOPG = async (req, res) => {
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
@@ -2237,6 +2242,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -2487,6 +2493,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -2712,6 +2719,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId,
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -2734,6 +2742,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -2950,6 +2959,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId,
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -2972,6 +2982,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -3187,6 +3198,7 @@ export const getReportHeaderCArm = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId,
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -3481,6 +3493,7 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
 
                 // ⭐ INTERVENTIONAL RADIOLOGY TEST RESULTS
@@ -3699,6 +3712,7 @@ export const getReportHeaderLeadApron = async (req, res) => {
         });
 
         const report = await query.lean();
+        const mainServiceReport = await serviceReportModel.findOne({ serviceId }).select("qrCode").lean();
 
         if (!report) {
             return res.status(200).json({ exists: false });
@@ -3728,6 +3742,7 @@ export const getReportHeaderLeadApron = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId || "",
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || mainServiceReport?.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location || "",
@@ -3932,6 +3947,7 @@ export const getReportHeaderOArm = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -4065,6 +4081,7 @@ export const getReportHeaderForCTScan = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
                 pages: report.pages || "",
 
@@ -4350,6 +4367,7 @@ export const getReportHeaderOBI = async (req, res) => {
                 engineerNameRPId: report.engineerNameRPId,
                 rpId: report.rpId || "",
                 pages: report.pages || "",
+                qrCode: report.qrCode || "",
                 testDate: format(report.testDate),
                 testDueDate: format(report.testDueDate),
                 location: report.location,
@@ -4470,6 +4488,7 @@ export const getReportHeaderMammography = async (req, res) => {
                     uncertainity: t.uncertainity,
                 })),
 
+                qrCode: report.qrCode || "",
                 notes: report.notes || [],
 
                 // ⭐ MAMMOGRAPHY TEST RESULTS (POPULATED OR NULL IF NOT AVAILABLE)

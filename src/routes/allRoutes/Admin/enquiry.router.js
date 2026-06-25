@@ -6,6 +6,7 @@ const router = Router();
 //enquiry creation by open form
 // router.post("/add", upload.single("attachment"), EnquiryController.add);
 router.get('/get-all', EnquiryController.getAll)
+router.get('/filter-options', EnquiryController.getEnquiryFilterOptions)
 // router.get("/all-states", EnquiryController.getAllStates)
 
 //enquiry creation after choosing leadowner

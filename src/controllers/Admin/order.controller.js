@@ -153,8 +153,24 @@ import Invoice from "../../models/invoice.model.js";
 
 const getAllOrders = asyncHandler(async (req, res) => {
     try {
+        const { branchName, city, district, emailAddress, contactNumber } = req.query;
+
+        const filter = {};
+        const addExactFilter = (field, value) => {
+            const trimmed = String(value || "").trim();
+            if (trimmed) {
+                filter[field] = trimmed;
+            }
+        };
+
+        addExactFilter("branchName", branchName);
+        addExactFilter("city", city);
+        addExactFilter("district", district);
+        addExactFilter("emailAddress", emailAddress);
+        addExactFilter("contactNumber", contactNumber);
+
         let orders = await orderModel
-            .find({})
+            .find(filter)
             .populate({
                 path: "services",
                 select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId"
@@ -207,6 +223,38 @@ const getAllOrders = asyncHandler(async (req, res) => {
 
     } catch (error) {
         console.error("Error in getAllOrders:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+
+const getOrderFilterOptions = asyncHandler(async (req, res) => {
+    try {
+        const sortValues = (values = []) =>
+            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+                .map((value) => String(value).trim())
+                .sort((a, b) => a.localeCompare(b));
+
+        const [branchNames, cities, districts, emailAddresses, contactNumbers] = await Promise.all([
+            orderModel.distinct("branchName"),
+            orderModel.distinct("city"),
+            orderModel.distinct("district"),
+            orderModel.distinct("emailAddress"),
+            orderModel.distinct("contactNumber"),
+        ]);
+
+        res.status(200).json({
+            success: true,
+            filters: {
+                branchNames: sortValues(branchNames),
+                cities: sortValues(cities),
+                districts: sortValues(districts),
+                emailAddresses: sortValues(emailAddresses),
+                contactNumbers: sortValues(contactNumbers),
+            },
+        });
+    } catch (error) {
+        console.error("Error in getOrderFilterOptions:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
@@ -7062,16 +7110,22 @@ const acceptQAReport = asyncHandler(async (req, res) => {
     );
     if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
 
-    const serviceReport = await ServiceReport.findOneAndUpdate(
-        { serviceId },
-        { qrCode: qrCodeUrl },
-        { new: true }
-    );
+    const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
 
-    if (!serviceReport) {
-        return res.status(404).json({
-            success: false,
-            message: "Service report not found for this service",
+    let serviceReport = await ServiceReport.findOne({
+        $or: [{ serviceId: serviceObjectId }, { serviceId }],
+    });
+
+    if (serviceReport) {
+        serviceReport.qrCode = qrCodeUrl;
+        if (serviceReport.serviceId?.toString() !== serviceObjectId.toString()) {
+            serviceReport.serviceId = serviceObjectId;
+        }
+        await serviceReport.save();
+    } else {
+        serviceReport = await ServiceReport.create({
+            serviceId: serviceObjectId,
+            qrCode: qrCodeUrl,
         });
     }
 
@@ -7786,4 +7840,4 @@ const getCustomerFeedbackByOrderId = asyncHandler(async (req, res) => {
     );
 });
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId }
+export default { getAllOrders, getOrderFilterOptions, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId }

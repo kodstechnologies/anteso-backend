@@ -1066,10 +1066,27 @@ const getTotalAmount = asyncHandler(async (req, res) => {
 
 const getAllPayments = asyncHandler(async (req, res) => {
     try {
-        const payments = await Payment.find()
+        const { paymentType, paymentMode, branchName } = req.query;
+
+        const query = {};
+        if (paymentType && String(paymentType).trim()) {
+            query.paymentType = String(paymentType).trim();
+        }
+        if (paymentMode && String(paymentMode).trim()) {
+            query.paymentMode = String(paymentMode).trim();
+        }
+
+        if (branchName && String(branchName).trim()) {
+            const trimmedBranch = String(branchName).trim();
+            const matchingOrders = await Order.find({ branchName: trimmedBranch }).select("_id").lean();
+            const orderIds = matchingOrders.map((o) => o._id);
+            query.orderId = { $in: orderIds };
+        }
+
+        const payments = await Payment.find(query)
             .populate({
                 path: "orderId",
-                select: "srfNumber hospitalName", // ✅ Added hospitalName
+                select: "srfNumber hospitalName branchName", // ✅ Added hospitalName
             })
             .sort({ createdAt: -1 });
 
@@ -1089,6 +1106,7 @@ const getAllPayments = asyncHandler(async (req, res) => {
             screenshot: payment.screenshot,
             createdAt: payment.createdAt,
             updatedAt: payment.updatedAt,
+            branchName: payment.orderId?.branchName || "N/A",
         }));
 
         res.status(200).json({
