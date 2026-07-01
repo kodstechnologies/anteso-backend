@@ -7015,36 +7015,6 @@ const getReportById = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, report: foundReport });
 });
 
-// const acceptQAReport = asyncHandler(async (req, res) => {
-//     const { orderId, serviceId, qaReportId } = req.params;
-
-//     // Validate ObjectIds
-//     if (!mongoose.Types.ObjectId.isValid(orderId) ||
-//         !mongoose.Types.ObjectId.isValid(serviceId) ||
-//         !mongoose.Types.ObjectId.isValid(qaReportId)) {
-//         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
-//     }
-
-//     const order = await orderModel.findById(orderId).populate({
-//         path: "services",
-//         populate: {
-//             path: "workTypeDetails.QAtest",
-//         },
-//     });
-
-//     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-
-//     const service = order.services.find(s => s._id.toString() === serviceId);
-//     if (!service) return res.status(404).json({ success: false, message: "Service not found" });
-
-//     const wt = service.workTypeDetails.find(w => w.QAtest && w.QAtest._id.toString() === qaReportId);
-//     if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
-
-//     wt.QAtest.reportStatus = "accepted";
-//     await wt.QAtest.save();
-
-//     res.status(200).json({ success: true, message: "QA Report accepted", report: wt.QAtest });
-// });
 
 
 
@@ -7147,49 +7117,11 @@ const acceptQAReport = asyncHandler(async (req, res) => {
 });
 
 
-// const rejectQAReport = asyncHandler(async (req, res) => {
-//     const { orderId, serviceId, qaReportId } = req.params;
-
-//     // Validate ObjectIds
-//     if (!mongoose.Types.ObjectId.isValid(orderId) ||
-//         !mongoose.Types.ObjectId.isValid(serviceId) ||
-//         !mongoose.Types.ObjectId.isValid(qaReportId)) {
-//         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
-//     }
-
-//     const order = await orderModel.findById(orderId).populate({
-//         path: "services",
-//         populate: {
-//             path: "workTypeDetails.QAtest",
-//         },
-//     });
-
-//     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
-
-//     const service = order.services.find(s => s._id.toString() === serviceId);
-//     if (!service) return res.status(404).json({ success: false, message: "Service not found" });
-
-//     const wt = service.workTypeDetails.find(w => w.QAtest && w.QAtest._id.toString() === qaReportId);
-//     if (!wt) return res.status(404).json({ success: false, message: "QA Report not found" });
-
-//     // Check if already accepted
-//     if (wt.QAtest.reportStatus === "accepted") {
-//         return res.status(400).json({ success: false, message: "Cannot reject. QA Report is already accepted." });
-//     }
-
-//     // Update status to rejected
-//     wt.QAtest.reportStatus = "rejected";
-//     await wt.QAtest.save();
-
-//     res.status(200).json({ success: true, message: "QA Report rejected", report: wt.QAtest });
-// });
-
-
 const rejectQAReport = asyncHandler(async (req, res) => {
     const { orderId, serviceId, qaReportId } = req.params;
     const remark = req.body?.remark; // ✅ Safe access
 
-    // ✅ Validate ObjectIds
+  
     if (
         !mongoose.Types.ObjectId.isValid(orderId) ||
         !mongoose.Types.ObjectId.isValid(serviceId) ||
@@ -7310,45 +7242,6 @@ const getReportStatus = async (req, res) => {
     }
 }
 
-// const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
-//     try {
-//         const { orderId } = req.params;
-
-//         // 1️⃣ Validate orderId
-//         if (!orderId) {
-//             return res.status(400).json({ message: "Order ID is required" });
-//         }
-
-//         // 2️⃣ Find the order and populate its quotation
-//         const order = await orderModel.findById(orderId).populate("quotation");
-
-//         if (!order) {
-//             return res.status(404).json({ message: "Order not found" });
-//         }
-
-//         if (!order.quotation) {
-//             return res.status(404).json({ message: "No quotation linked with this order" });
-//         }
-
-//         // 3️⃣ Get customer PDF from the linked quotation
-//         const quotation = order.quotation;
-
-//         if (!quotation.customersPDF) {
-//             return res.status(404).json({ message: "Customer PDF not found " });
-//         }
-
-//         // 4️⃣ Return PDF details
-//         res.status(200).json({
-//             message: "Customer PDF retrieved successfully",
-//             quotationId: quotation._id,
-//             quotationNumber: quotation.quotationId,
-//             pdfUrl: quotation.customersPDF,
-//         });
-//     } catch (error) {
-//         console.error("Error fetching customer PDF:", error);
-//         res.status(500).json({ message: "Internal server error" });
-//     }
-// });
 
 
 const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
@@ -7385,138 +7278,6 @@ const getPdfForAcceptQuotation = asyncHandler(async (req, res) => {
 });
 
 
-
-// const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
-//     try {
-//         const staffId = req.user.id;
-
-//         // Step 1: Populate all services -> workTypeDetails -> QATest
-//         const orders = await orderModel.find({})
-//             .populate({
-//                 path: "services",
-//                 populate: {
-//                     path: "workTypeDetails.QAtest",
-//                     populate: { path: "officeStaff", select: "name email _id" }
-//                 }
-//             })
-//             .populate("customer hospital payment courierDetails quotation additionalServices");
-
-//         // Step 2: Filter orders where the logged-in staff is assigned in QATest
-//         const filteredOrders = orders
-//             .map(order => {
-//                 const filteredServices = order.services.map(service => {
-//                     const filteredWorkTypeDetails = service.workTypeDetails.filter(
-//                         wt => wt.QAtest && wt.QAtest.officeStaff && wt.QAtest.officeStaff._id.toString() === staffId
-//                     );
-//                     return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
-//                 }).filter(s => s.workTypeDetails.length > 0); // keep only services with matching QATest
-
-//                 return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
-//             })
-//             .filter(o => o !== null);
-
-//         res.status(200).json({ success: true, orders: filteredOrders });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ success: false, message: "Server Error", error: error.message });
-//     }
-// });
-
-
-
-// const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
-//     try {
-//         const staffId = req.user.id;
-
-//         // Step 1: Populate all required references including services → workTypeDetails → QATest
-//         let orders = await orderModel.find({})
-//             .populate({
-//                 path: "services",
-//                 populate: {
-//                     path: "workTypeDetails.QAtest",
-//                     populate: { path: "officeStaff", select: "name email _id" }
-//                 }
-//             })
-//             .populate("customer hospital payment courierDetails quotation additionalServices");
-
-//         // Step 2: Filter only those orders where the logged-in staff is assigned in QATest
-//         orders = orders
-//             .map(order => {
-//                 const filteredServices = order.services.map(service => {
-//                     const filteredWorkTypeDetails = service.workTypeDetails.filter(
-//                         wt =>
-//                             wt.QAtest &&
-//                             wt.QAtest.officeStaff &&
-//                             wt.QAtest.officeStaff._id.toString() === staffId
-//                     );
-//                     return { ...service.toObject(), workTypeDetails: filteredWorkTypeDetails };
-//                 }).filter(s => s.workTypeDetails.length > 0);
-
-//                 return filteredServices.length > 0 ? { ...order.toObject(), services: filteredServices } : null;
-//             })
-//             .filter(o => o !== null);
-
-//         // Step 3: Enrich each order with leadOwnerName & leadOwnerType (same as getAllOrders)
-//         orders = await Promise.all(
-//             orders.map(async (order) => {
-//                 let leadOwnerName = "N/A";
-//                 let leadOwnerType = "N/A";
-
-//                 // Try Lead Owner first
-//                 if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
-//                     const user = await User.findById(order.leadOwner).select("name role");
-//                     if (user) {
-//                         leadOwnerName = user.name;
-//                         leadOwnerType = user.role;
-//                     }
-//                 }
-
-//                 // Fallback to Customer
-//                 if (
-//                     (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
-//                     order.customer &&
-//                     mongoose.Types.ObjectId.isValid(order.customer)
-//                 ) {
-//                     const customer = await User.findById(order.customer).select("name role");
-//                     if (customer) {
-//                         leadOwnerName = customer.name;
-//                         leadOwnerType = customer.role;
-//                     }
-//                 }
-
-//                 return {
-//                     ...order,
-//                     leadOwner: leadOwnerName,
-//                     leadOwnerType,
-//                 };
-//             })
-//         );
-
-//         // Step 4: Return response
-//         if (!orders || orders.length === 0) {
-//             return res.status(200).json({
-//                 success: true,
-//                 count: 0,
-//                 orders: [],
-//                 message: "No assigned orders found",
-//             });
-//         }
-
-//         res.status(200).json({
-//             success: true,
-//             count: orders.length,
-//             message: "Assigned orders fetched successfully",
-//             orders,
-//         });
-//     } catch (error) {
-//         console.error("Error in getAssignedOrdersForStaff:", error);
-//         res.status(500).json({
-//             success: false,
-//             message: "Server Error",
-//             error: error.message,
-//         });
-//     }
-// });
 
 
 const getAssignedOrdersForStaff = asyncHandler(async (req, res) => {
