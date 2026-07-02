@@ -1452,9 +1452,7 @@ const getQuotationByEnquiryId = asyncHandler(async (req, res) => {
             .populate('from', 'name email')
             .populate({
                 path: 'assignedEmployee',
-                select: 'name phone role', // Add fields you need
-                // Explicitly allow Dealer & Manufacturer
-                match: { role: { $in: ['Employee', 'Dealer', 'Manufacturer'] } }
+                select: 'name phone role',
             })
             .exec();
         console.log("🚀 ~ quotation:", quotation)

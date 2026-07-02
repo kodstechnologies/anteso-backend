@@ -1,11 +1,11 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors';
-import connectToDb from './src/db/index.js';
+import connectToDb, { connectToDbWithRetry, getDbStatus, setupDbEventHandlers } from './src/db/index.js';
 import mainRouter from './src/routes/index.js'
 import cookieParser from 'cookie-parser';
-import { asyncHandler } from './src/utils/AsyncHandler.js';
 import errorHandler from './src/middlewares/errorHandler.js';
+import dbHealthMiddleware from './src/middlewares/dbHealthMiddleware.js';
 dotenv.config();
 
 const port = process.env.PORT
@@ -28,23 +28,42 @@ app.get('/', (req, res) => {
     res.send("tesst route")
 })
 
+app.get('/health', (req, res) => {
+    const dbStatus = getDbStatus();
+    res.status(dbStatus.connected ? 200 : 503).json({
+        success: dbStatus.connected,
+        message: dbStatus.connected ? 'API is healthy' : 'API is up but database is unavailable',
+        db: dbStatus,
+    });
+});
+
 //test push
 app.use((req, res, next) => {
     console.log("👉 Incoming request:", req.method, req.originalUrl);
     next();
 });
 
+app.use(dbHealthMiddleware);
 app.use('/anteso', mainRouter)
 console.log("calling this after the update-------------------------------------------")
 app.use(errorHandler);
 const startServer = async () => {
     try {
-        await connectToDb()
+        setupDbEventHandlers();
+
+        try {
+            await connectToDbWithRetry(3, 2000);
+        } catch (error) {
+            console.error('MongoDB initial connection failed after retries:', error.message);
+            console.warn('Server will start in degraded mode until database reconnects.');
+        }
+
         app.listen(port, () => {
             console.log(`server running on ${port}`);
-        })
+            console.log(`health check: http://localhost:${port}/health`);
+        });
     } catch (error) {
-        console.log("MONGO db connection failed !!! ", error);
+        console.log("Server failed to start:", error);
     }
 }
 

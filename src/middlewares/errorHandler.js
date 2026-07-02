@@ -15,6 +15,22 @@ const errorHandler = (error, req, res, next) => {
     return res.status(status).json(data);
   }
 
+  if (
+    error.name === 'MongooseError' &&
+    typeof error.message === 'string' &&
+    error.message.includes('buffering timed out')
+  ) {
+    status = 503;
+    data.message = 'Database unavailable. Please try again in a few seconds.';
+    return res.status(status).json(data);
+  }
+
+  if (error.name === 'MongoServerSelectionError' || error.name === 'MongoNetworkError') {
+    status = 503;
+    data.message = 'Database unavailable. Please try again in a few seconds.';
+    return res.status(status).json(data);
+  }
+
   if (error.status) {
     status = error.status;
   }
