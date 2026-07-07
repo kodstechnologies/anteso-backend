@@ -24,6 +24,12 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
         // Dynamic rows of kV/mAs + measurements
         outputRows: [OutputRowSchema],
 
+        // Custom measurement column headers
+        headers: {
+            type: [String],
+            default: ['Meas 1', 'Meas 2', 'Meas 3', 'Meas 4', 'Meas 5'],
+        },
+
         // Tolerance (e.g. "5.0" %)
         tolerance: {
             operator: { type: String, trim: true, default: "<=" },

@@ -288,17 +288,87 @@ const deleteManufacturer = async (req, res) => {
     }
 };
 
+const sortValues = (values = []) =>
+    [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+        .map((value) => String(value).trim())
+        .sort((a, b) => a.localeCompare(b));
+
+const sortMouValidities = (values = []) => {
+    const unique = new Set();
+    values.forEach((value) => {
+        if (!value) return;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return;
+        unique.add(date.toISOString().split("T")[0]);
+    });
+    return [...unique].sort((a, b) => a.localeCompare(b));
+};
+
+const getManufacturerFilterOptions = asyncHandler(async (req, res) => {
+    try {
+        const manufacturers = await Manufacturer.find().select("manufacturerId name pincode branch mouValidity").lean();
+        const manufacturerIds = [];
+        const names = [];
+        const pincodes = [];
+        const branches = [];
+        const mouValidities = [];
+
+        manufacturers.forEach((item) => {
+            if (item.manufacturerId) manufacturerIds.push(item.manufacturerId);
+            if (item.name) names.push(item.name);
+            if (item.pincode) pincodes.push(item.pincode);
+            if (item.branch) branches.push(item.branch);
+            if (item.mouValidity) mouValidities.push(item.mouValidity);
+        });
+
+        return res.status(200).json({
+            success: true,
+            filters: {
+                manufacturerIds: sortValues(manufacturerIds),
+                names: sortValues(names),
+                pincodes: sortValues(pincodes),
+                branches: sortValues(branches),
+                mouValidities: sortMouValidities(mouValidities),
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching manufacturer filter options:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Failed to fetch manufacturer filter options",
+        });
+    }
+});
+
 const getAllManufacturers = async (req, res) => {
     try {
-        // Fetch all manufacturers
-        const manufacturers = await Manufacturer.find().sort({ createdAt: -1 });;
+        const { manufacturerId, name, pincode, branch, mouValidity } = req.query;
 
-        if (!manufacturers || manufacturers.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "No manufacturers found",
-            });
+        const filter = {};
+        const addExactFilter = (field, value) => {
+            const trimmed = String(value || "").trim();
+            if (trimmed) {
+                filter[field] = trimmed;
+            }
+        };
+
+        addExactFilter("manufacturerId", manufacturerId);
+        addExactFilter("name", name);
+        addExactFilter("pincode", pincode);
+        addExactFilter("branch", branch);
+
+        if (mouValidity) {
+            const date = new Date(String(mouValidity).trim());
+            if (!Number.isNaN(date.getTime())) {
+                const start = new Date(date);
+                start.setHours(0, 0, 0, 0);
+                const end = new Date(date);
+                end.setHours(23, 59, 59, 999);
+                filter.mouValidity = { $gte: start, $lte: end };
+            }
         }
+
+        const manufacturers = await Manufacturer.find(filter).sort({ createdAt: -1 });
 
         return res.status(200).json({
             success: true,
@@ -315,4 +385,11 @@ const getAllManufacturers = async (req, res) => {
     }
 };
 
-export default { addManufacturer, getManufacturerById, editManufacturer, deleteManufacturer, getAllManufacturers }
+export default {
+    addManufacturer,
+    getManufacturerById,
+    editManufacturer,
+    deleteManufacturer,
+    getAllManufacturers,
+    getManufacturerFilterOptions,
+}

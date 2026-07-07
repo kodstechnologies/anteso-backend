@@ -10,7 +10,7 @@ const MACHINE_TYPE = "KV Imaging (OBI)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, headers } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -50,6 +50,7 @@ const create = asyncHandler(async (req, res) => {
       if (ffd !== undefined) testRecord.ffd = ffd;
       if (outputRows !== undefined) testRecord.outputRows = outputRows;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (headers !== undefined) testRecord.headers = headers;
     } else {
       // Create new
       testRecord = new OutputConsistency({
@@ -58,6 +59,7 @@ const create = asyncHandler(async (req, res) => {
         ffd: ffd || { value: "" },
         outputRows: outputRows || [],
         tolerance: tolerance || { operator: "<=", value: "" },
+        headers: headers || ['Meas 1', 'Meas 2', 'Meas 3', 'Meas 4', 'Meas 5'],
       });
     }
 
@@ -126,7 +128,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, headers } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -157,6 +159,7 @@ const update = asyncHandler(async (req, res) => {
     if (ffd !== undefined) testRecord.ffd = ffd;
     if (outputRows !== undefined) testRecord.outputRows = outputRows;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (headers !== undefined) testRecord.headers = headers;
 
     await testRecord.save({ session });
     await session.commitTransaction();
