@@ -6,7 +6,7 @@ import MeasurementOfMaLinearity from "../../../../models/testTables/CTScan/measu
 
 
 const create = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, measurementHeaders, tolerance, tubeId } = req.body;
   const { serviceId } = req.params;
 
   // === Validate Input ===
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
     const payload = {
       table1,
       table2,
+      measurementHeaders: Array.isArray(measurementHeaders) ? measurementHeaders : undefined,
       tolerance: tolerance?.toString().trim() || "0.1",
       serviceId,
       serviceReportId: serviceReport._id,
@@ -127,7 +128,7 @@ const getById = asyncHandler(async (req, res) => {
 
 // ====================== UPDATE BY TEST ID ======================
 const update = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, measurementHeaders, tolerance, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -168,6 +169,7 @@ const update = asyncHandler(async (req, res) => {
     // Update
     testRecord.table1 = table1;
     testRecord.table2 = table2;
+    if (Array.isArray(measurementHeaders)) testRecord.measurementHeaders = measurementHeaders;
     testRecord.tolerance = tolerance?.toString().trim() || "0.1";
     if (tubeId !== undefined) testRecord.tubeId = tubeId || null;
     await testRecord.save({ session });

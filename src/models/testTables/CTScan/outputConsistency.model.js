@@ -22,6 +22,10 @@ const OutputConsistencySchema = new Schema(
     {
         parameters: parametersSchema,
         outputRows: [outputRowSchema],
+        measurementHeaders: {
+            type: [String],
+            default: [],
+        },
         tolerance: {
             operator: { 
                 type: String, 

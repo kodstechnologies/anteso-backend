@@ -27,6 +27,7 @@ const MeasurementOfMaLinearitySchema = new Schema(
     {
         table1: [Table1RowSchema],
         table2: [Table2RowSchema],
+        measurementHeaders: [{ type: String, trim: true }],
         tolerance: { type: String, default: '0.1', trim: true },
         serviceReportId: {
             type: Schema.Types.ObjectId,

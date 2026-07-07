@@ -191,7 +191,7 @@ import OutputConsistency from "../../../../models/testTables/CTScan/outputConsis
 import mongoose from "mongoose";
 
 const create = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, tolerance, tubeId } = req.body;
+    const { parameters, outputRows, tolerance, measurementHeaders, tubeId } = req.body;
   const { serviceId } = req.params;
 
   // === Validate Input ===
@@ -237,6 +237,7 @@ const create = asyncHandler(async (req, res) => {
     const payload = {
       parameters,
       outputRows,
+      measurementHeaders: Array.isArray(measurementHeaders) ? measurementHeaders : [],
       tolerance: {
         operator: tolerance?.operator || '<=',
         value: tolerance?.value?.toString().trim() || (typeof tolerance === 'string' ? tolerance.trim() : ""),
@@ -312,7 +313,7 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-  const { parameters, outputRows, tolerance, tubeId } = req.body;
+    const { parameters, outputRows, tolerance, measurementHeaders, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -356,6 +357,9 @@ const update = asyncHandler(async (req, res) => {
     // Update fields
     testRecord.parameters = parameters;
     testRecord.outputRows = outputRows;
+    if (Array.isArray(measurementHeaders)) {
+      testRecord.measurementHeaders = measurementHeaders;
+    }
     testRecord.tolerance = {
       operator: tolerance?.operator || '<=',
       value: tolerance?.value?.toString().trim() || (typeof tolerance === 'string' ? tolerance.trim() : ""),
