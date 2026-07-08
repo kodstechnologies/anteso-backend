@@ -368,12 +368,36 @@ const getAllManufacturers = async (req, res) => {
             }
         }
 
-        const manufacturers = await Manufacturer.find(filter).sort({ createdAt: -1 });
+        const [manufacturers, allManufacturers] = await Promise.all([
+            Manufacturer.find(filter).sort({ createdAt: -1 }),
+            Manufacturer.find().select("manufacturerId name pincode branch mouValidity").lean(),
+        ]);
+
+        const manufacturerIds = [];
+        const names = [];
+        const pincodes = [];
+        const branches = [];
+        const mouValidities = [];
+
+        allManufacturers.forEach((item) => {
+            if (item.manufacturerId) manufacturerIds.push(item.manufacturerId);
+            if (item.name) names.push(item.name);
+            if (item.pincode) pincodes.push(item.pincode);
+            if (item.branch) branches.push(item.branch);
+            if (item.mouValidity) mouValidities.push(item.mouValidity);
+        });
 
         return res.status(200).json({
             success: true,
             count: manufacturers.length,
             data: manufacturers,
+            filters: {
+                manufacturerIds: sortValues(manufacturerIds),
+                names: sortValues(names),
+                pincodes: sortValues(pincodes),
+                branches: sortValues(branches),
+                mouValidities: sortMouValidities(mouValidities),
+            },
         });
     } catch (error) {
         console.error("Error fetching manufacturers:", error);

@@ -207,12 +207,24 @@ const getAll = asyncHandler(async (req, res) => {
         addExactFilter("pincode", pincode);
         addExactFilter("branch", branch);
 
-        const dealers = await Dealer.find(filter).sort({ createdAt: -1 });
+        const [dealers, dealerIds, names, pincodes, branches] = await Promise.all([
+            Dealer.find(filter).sort({ createdAt: -1 }),
+            Dealer.distinct("dealerId"),
+            Dealer.distinct("name"),
+            Dealer.distinct("pincode"),
+            Dealer.distinct("branch"),
+        ]);
 
         res.status(200).json({
             success: true,
             count: dealers.length,
             dealers,
+            filters: {
+                dealerIds: sortValues(dealerIds),
+                names: sortValues(names),
+                pincodes: sortValues(pincodes),
+                branches: sortValues(branches),
+            },
         });
     } catch (error) {
         res.status(500).json({

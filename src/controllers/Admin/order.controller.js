@@ -169,13 +169,25 @@ const getAllOrders = asyncHandler(async (req, res) => {
         addExactFilter("emailAddress", emailAddress);
         addExactFilter("contactNumber", contactNumber);
 
-        let orders = await orderModel
-            .find(filter)
-            .populate({
-                path: "services",
-                select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId"
-            })
-            .sort({ createdAt: -1 });
+        const sortValues = (values = []) =>
+            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+                .map((value) => String(value).trim())
+                .sort((a, b) => a.localeCompare(b));
+
+        let [orders, branchNames, cities, districts, emailAddresses, contactNumbers] = await Promise.all([
+            orderModel
+                .find(filter)
+                .populate({
+                    path: "services",
+                    select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId"
+                })
+                .sort({ createdAt: -1 }),
+            orderModel.distinct("branchName"),
+            orderModel.distinct("city"),
+            orderModel.distinct("district"),
+            orderModel.distinct("emailAddress"),
+            orderModel.distinct("contactNumber"),
+        ]);
 
         orders = await Promise.all(
             orders.map(async (order) => {
@@ -219,32 +231,6 @@ const getAllOrders = asyncHandler(async (req, res) => {
             message: "Orders fetched successfully",
             count: orders.length,
             orders,
-        });
-
-    } catch (error) {
-        console.error("Error in getAllOrders:", error);
-        res.status(500).json({ message: "Server error", error: error.message });
-    }
-});
-
-
-const getOrderFilterOptions = asyncHandler(async (req, res) => {
-    try {
-        const sortValues = (values = []) =>
-            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
-                .map((value) => String(value).trim())
-                .sort((a, b) => a.localeCompare(b));
-
-        const [branchNames, cities, districts, emailAddresses, contactNumbers] = await Promise.all([
-            orderModel.distinct("branchName"),
-            orderModel.distinct("city"),
-            orderModel.distinct("district"),
-            orderModel.distinct("emailAddress"),
-            orderModel.distinct("contactNumber"),
-        ]);
-
-        res.status(200).json({
-            success: true,
             filters: {
                 branchNames: sortValues(branchNames),
                 cities: sortValues(cities),
@@ -253,8 +239,9 @@ const getOrderFilterOptions = asyncHandler(async (req, res) => {
                 contactNumbers: sortValues(contactNumbers),
             },
         });
+
     } catch (error) {
-        console.error("Error in getOrderFilterOptions:", error);
+        console.error("Error in getAllOrders:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 });
@@ -7653,4 +7640,4 @@ const getPaymentStatusByOrderId = asyncHandler(async (req, res) => {
 });
 
 
-export default { getAllOrders, getOrderFilterOptions, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId, getPaymentStatusByOrderId }
+export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId, getPaymentStatusByOrderId }

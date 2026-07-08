@@ -2058,31 +2058,13 @@ const getAll = asyncHandler(async (req, res) => {
             { $sort: { createdAt: -1 } },
         );
 
-        const enquiries = await Enquiry.aggregate(pipeline);
-
-        if (!enquiries || enquiries.length === 0) {
-            return res
-                .status(200)
-                .json(new ApiResponse(200, [], "No enquiries found"));
-        }
-
-        return res
-            .status(200)
-            .json(new ApiResponse(200, enquiries, "All enquiries fetched"));
-    } catch (error) {
-        console.error("Get All Enquiries Error:", error);
-        throw new ApiError(500, "Failed to fetch enquiries", [error.message]);
-    }
-});
-
-const getEnquiryFilterOptions = asyncHandler(async (req, res) => {
-    try {
         const sortValues = (values = []) =>
             [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
                 .map((value) => String(value).trim())
                 .sort((a, b) => a.localeCompare(b));
 
-        const [cities, districts, pinCodes, branches, emailAddresses, contactNumbers] = await Promise.all([
+        const [enquiries, cities, districts, pinCodes, branches, emailAddresses, contactNumbers] = await Promise.all([
+            Enquiry.aggregate(pipeline),
             Enquiry.distinct("city"),
             Enquiry.distinct("district"),
             Enquiry.distinct("pinCode"),
@@ -2091,22 +2073,38 @@ const getEnquiryFilterOptions = asyncHandler(async (req, res) => {
             Enquiry.distinct("contactNumber"),
         ]);
 
-        res.status(200).json({
+        const filters = {
+            cities: sortValues(cities),
+            districts: sortValues(districts),
+            pinCodes: sortValues(pinCodes),
+            branches: sortValues(branches),
+            emailAddresses: sortValues(emailAddresses),
+            contactNumbers: sortValues(contactNumbers),
+        };
+
+        if (!enquiries || enquiries.length === 0) {
+            return res.status(200).json({
+                statusCode: 200,
+                data: [],
+                filters,
+                message: "No enquiries found",
+                success: true,
+            });
+        }
+
+        return res.status(200).json({
+            statusCode: 200,
+            data: enquiries,
+            filters,
+            message: "All enquiries fetched",
             success: true,
-            filters: {
-                cities: sortValues(cities),
-                districts: sortValues(districts),
-                pinCodes: sortValues(pinCodes),
-                branches: sortValues(branches),
-                emailAddresses: sortValues(emailAddresses),
-                contactNumbers: sortValues(contactNumbers),
-            },
         });
     } catch (error) {
-        console.error("Error in getEnquiryFilterOptions:", error);
-        throw new ApiError(500, "Failed to fetch enquiry filter options", [error.message]);
+        console.error("Get All Enquiries Error:", error);
+        throw new ApiError(500, "Failed to fetch enquiries", [error.message]);
     }
 });
+
 const getById = asyncHandler(async (req, res) => {
     try {
         const { id } = req.params;
@@ -2700,4 +2698,4 @@ const getStaffEnquiries = asyncHandler(async (req, res) => {
     }
 });
 
-export default { add, getById, deleteById, updateById, getAll, getEnquiryFilterOptions, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId, getStaffEnquiries };
+export default { add, getById, deleteById, updateById, getAll, getEnquiryDetailsById, addByHospitalId, getByHospitalIdEnquiryId, createDirectOrder, getAllStates, getAllEnquiriesByHospitalId, getStaffEnquiries };

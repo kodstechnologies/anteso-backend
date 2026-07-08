@@ -73,21 +73,6 @@ const getAllLeaves = asyncHandler(async (req, res) => {
 });
 
 
-// const updateLeaveById = asyncHandler(async (req, res) => {
-//     const { id } = req.params;
-//     const updatedLeave = await Leave.findByIdAndUpdate(
-//         id,
-//         { $set: req.body },
-//         { new: true, runValidators: true }
-//     );
-//     if (!updatedLeave) {
-//         throw new ApiError(404, "Leave not found");
-//     }
-//     res.status(200).json(new ApiResponse(200, updatedLeave, "Leave updated successfully"));
-// });
-
-
-
 const updateLeaveById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
