@@ -61,7 +61,7 @@ const quotationSchema = new Schema(
                 id: { type: Number, required: true },
                 text: { type: String, required: true }
             }
-        ]
+        ]   
         ,
         pdfUrl: {
             type: String,

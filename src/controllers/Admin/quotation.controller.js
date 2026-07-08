@@ -13,552 +13,6 @@ import counterModel from "../../models/counter.model.js";
 import QuotationHistory from "../../routes/allRoutes/Admin/quotationHistory.model.js";
 
 
-// export const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     const { enquiryId } = req.params;
-
-//     // Fetch enquiry using the ObjectId
-//     const enquiry = await Enquiry.findById(enquiryId);
-
-//     if (!enquiry) {
-//         throw new ApiError(404, "Enquiry not found");
-//     }
-
-//     // You may customize discount, terms, total, etc. from req.body
-//     const { discount = 0, total, from, termsAndConditions = [] } = req.body;
-
-//     if (!total || !from) {
-//         throw new ApiError(400, "Total and From (user ID) are required");
-//     }
-
-//     // Create new quotation
-//     const newQuotation = await Quotation.create({
-//         enquiry: enquiry._id,
-//         from,
-//         discount,
-//         total,
-//         termsAndConditions,
-//         quotationStatus: "Created", // or 'Create' if you want to edit later
-//     });
-
-//     // Optional: Update enquiry's quotationStatus field with reference
-//     enquiry.quotationStatus = newQuotation._id;
-//     enquiry.enquiryStatus = 'Quotation Sent';
-//     enquiry.enquiryStatusDates.quotationSentOn = new Date();
-//     await enquiry.save();
-
-//     res.status(201).json(
-//         new ApiResponse(201, newQuotation, "Quotation created successfully")
-//     );
-// });
-
-
-// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         console.log("Incoming Quotation Payload:----->", req.body)
-
-//         console.log("🚀 ~ enquiryId:", id)
-//         const {
-//             date,
-//             quotationNumber,
-//             expiryDate,
-//             customer,
-//             assignedEmployee,
-//             termsAndConditions,
-//             calculations,
-//             items,
-//         } = req.body;
-//         console.log("🚀 ~ customer-------------->:", customer)
-
-//         if (!assignedEmployee || !calculations || !items) {
-//             throw new ApiError(400, 'Missing required fields');
-//         }
-
-//         // Now directly fetch by enquiry ID
-//         const enquiry = await Enquiry.findById(id).populate("customer");
-//         console.log("enquiry.customer:", enquiry.customer);
-
-//         if (!enquiry) throw new ApiError(404, "Enquiry not found");
-//         if (!enquiry.customer || !enquiry.customer._id)
-//             throw new ApiError(400, "Customer info missing in enquiry");
-//         console.log("Terms to be saved:", termsAndConditions);
-
-//         const quotation = await Quotation.create({
-//             date,
-//             quotationId: quotationNumber,
-//             enquiry: enquiry._id,
-//             from: enquiry.customer._id,
-//             discount: calculations.discount,
-//             total: calculations.totalAmount,
-//             quotationStatus: 'Created',
-//             termsAndConditions,
-//         });
-
-//         console.log("Created Quotation:", quotation);
-//         await Enquiry.findByIdAndUpdate(enquiry._id, {
-//             quotationStatus: quotation.quotationStatus,
-//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-//         });
-//         return res
-//             .status(201)
-//             .json(new ApiResponse(201, quotation, 'Quotation created successfully'));
-//     } catch (error) {
-//         console.error("Error creating quotation:", error);
-//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
-//     }
-// });
-// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const {
-//             date,
-//             quotationNumber,
-//             customer,
-//             assignedEmployee,
-//             items,
-//             calculations,
-//             termsAndConditions,
-//             bankDetails,
-//             companyDetails,
-//         } = req.body;
-
-//         console.log("🚀 ~ req.body:", req.body);
-
-//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
-
-//         // Fetch enquiry to check if it exists
-//         const enquiry = await Enquiry.findById(id).populate('customer');
-//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
-//         if (!enquiry.customer || !enquiry.customer._id)
-//             throw new ApiError(400, 'Customer info missing in enquiry');
-
-//         // Create quotation using frontend-calculated values
-//         const quotation = await Quotation.create({
-//             date,
-//             quotationId: quotationNumber,
-//             enquiry: enquiry._id,
-//             from: enquiry.customer._id,
-//             customer,
-//             assignedEmployee,
-//             items,
-//             calculations,
-//             bankDetails,
-//             companyDetails,
-//             discount: calculations?.discountAmount || 0,
-//             total: calculations?.totalAmount || 0,
-//             quotationStatus: 'Created',
-//             termsAndConditions,
-//         });
-
-//         // Update enquiry with quotation status and date
-//         await Enquiry.findByIdAndUpdate(enquiry._id, {
-//             quotationStatus: quotation.quotationStatus,
-//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-//             subtotalAmount: calculations?.subtotal || 0,
-//             discount: calculations?.discountAmount || 0,
-//             grandTotal: calculations?.totalAmount || 0
-//         });
-
-//         return res.status(201).json(
-//             new ApiResponse(201, quotation, 'Quotation created successfully')
-//         );
-
-//     } catch (error) {
-//         console.error("Error creating quotation:", error);
-//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
-//     }
-// });
-// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const {
-//             date,
-//             quotationNumber,
-//             customer,
-//             assignedEmployee,
-//             items,
-//             calculations,
-//             termsAndConditions,
-//             bankDetails,
-//             companyDetails,
-//         } = req.body;
-
-//         console.log("🚀 ~ req.body:", req.body);
-
-//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
-
-//         // Fetch enquiry and populate services/additional services
-//         const enquiry = await Enquiry.findById(id)
-//             .populate('services')
-//             .populate('additionalServices')
-//             .populate('customer');
-//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
-//         if (!enquiry.customer || !enquiry.customer._id)
-//             throw new ApiError(400, 'Customer info missing in enquiry');
-//         // Create snapshots of services with totalAmount
-//         // const serviceSnapshots = items.services.map(s => ({
-//         //     id: s.id,
-//         //     machineType: s.machineType,
-//         //     equipmentNo: s.equipmentNo,
-//         //     machineModel: s.machineModel,
-//         //     serialNumber: s.serialNumber,
-//         //     remark: s.remark,
-//         //     totalAmount: s.totalAmount, // directly from frontend
-//         // }));
-
-//         const serviceSnapshots = items.services.map(s => ({
-//             id: s.id, // frontend sends real ObjectId
-//             machineType: s.machineType,
-//             equipmentNo: s.equipmentNo,
-//             machineModel: s.machineModel,
-//             serialNumber: s.serialNumber,
-//             remark: s.remark,
-//             totalAmount: s.totalAmount, //  directly from frontend
-//         }));
-//         console.log("Service snapshots for DB update:", serviceSnapshots);
-
-
-//         const additionalServiceSnapshots = items.additionalServices.map(s => ({
-//             id: s.id,
-//             name: s.name,
-//             description: s.description,
-//             totalAmount: s.totalAmount, // directly from frontend
-//         }));
-
-
-//         // Create quotation with service snapshots and other data
-//         const quotation = await Quotation.create({
-//             date,
-//             quotationId: quotationNumber,
-//             enquiry: enquiry._id,
-//             from: enquiry.customer._id,
-//             customer,
-//             assignedEmployee,
-//             items: {
-//                 services: serviceSnapshots,
-//                 additionalServices: additionalServiceSnapshots,
-//             },
-//             calculations,
-//             bankDetails,
-//             companyDetails,
-//             discount: calculations?.discountAmount || 0,
-//             total: calculations?.totalAmount || 0,
-//             quotationStatus: 'Created',
-//             termsAndConditions,
-//         });
-
-//         // **Update the actual Service and AdditionalService totals in DB**
-//         // Update the actual Service and AdditionalService totals in DB
-
-//         await Promise.all(serviceSnapshots
-//             .filter(s => mongoose.Types.ObjectId.isValid(s.id)) // ✅ only update valid ids
-//             .map(s => Services.findByIdAndUpdate(
-//                 s.id,
-//                 { $set: { totalAmount: s.totalAmount } },
-//                 { new: true }
-//             ))
-//         );
-
-
-//         await Promise.all(additionalServiceSnapshots
-//             .filter(s => s.id) // ✅ same for additional services
-//             .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
-//         );
-
-
-//         // Update enquiry with totals and quotation status
-//         await Enquiry.findByIdAndUpdate(enquiry._id, {
-//             quotationStatus: quotation.quotationStatus,
-//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-//             subtotalAmount: calculations?.subtotal || 0,
-//             discount: calculations?.discountAmount || 0,
-//             grandTotal: calculations?.totalAmount || 0,
-//         });
-
-//         // Return response
-//         return res.status(201).json(
-//             new ApiResponse(201, quotation, 'Quotation created successfully')
-//         );
-
-
-//     } catch (error) {
-//         console.error("Error creating quotation:", error);
-//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
-//     }
-// });
-
-
-// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const {
-//             date,
-//             quotationNumber,
-//             customer,
-//             assignedEmployee,
-//             items,
-//             calculations,
-//             termsAndConditions,
-//             bankDetails,
-//             companyDetails,
-//         } = req.body;
-
-//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
-
-//         // Fetch enquiry
-//         const enquiry = await Enquiry.findById(id)
-//             .populate('services')
-//             .populate('additionalServices')
-//             .populate('customer');
-//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
-//         if (!enquiry.customer || !enquiry.customer._id)
-//             throw new ApiError(400, 'Customer info missing in enquiry');
-
-//         // Service snapshots
-//         const serviceSnapshots = items.services.map(s => ({
-//             id: s.id,
-//             machineType: s.machineType,
-//             equipmentNo: s.equipmentNo,
-//             machineModel: s.machineModel,
-//             serialNumber: s.serialNumber,
-//             remark: s.remark,
-//             totalAmount: s.totalAmount,
-//         }));
-
-//         const additionalServiceSnapshots = items.additionalServices.map(s => ({
-//             id: s.id,
-//             name: s.name,
-//             description: s.description,
-//             totalAmount: s.totalAmount,
-//         }));
-
-//         // 🧮 GST Calculations
-//         const subtotal = Number(calculations?.subtotal || 0);
-//         const discount = Number(calculations?.discountAmount || 0);
-//         const gstRate = 18;
-//         const gstAmount = ((subtotal - discount) * gstRate) / 100;
-//         const total = subtotal - discount + gstAmount;
-
-//         // 🧾 Create quotation
-//         // const quotation = await Quotation.create({
-//         //     date,
-//         //     quotationId: quotationNumber,
-//         //     enquiry: enquiry._id,
-//         //     // from: enquiry.customer._id,
-//         //     from: enquiry.hospital._id,
-
-//         //     customer,
-//         //     assignedEmployee,
-//         //     items: {
-//         //         services: serviceSnapshots,
-//         //         additionalServices: additionalServiceSnapshots,
-//         //     },
-//         //     subtotal,
-//         //     discount,
-//         //     gstRate,
-//         //     gstAmount,
-//         //     total,
-//         //     bankDetails,
-//         //     companyDetails,
-//         //     quotationStatus: 'Created',
-//         //     termsAndConditions,
-//         // });
-//         const quotation = await Quotation.create({
-//             date,
-//             quotationId: quotationNumber,
-//             enquiry: enquiry._id,
-//             from: enquiry.hospital._id,
-//             customer,
-//             assignedEmployee: assignedEmployee.id || assignedEmployee, // only the ObjectId
-//             items: {
-//                 services: serviceSnapshots,
-//                 additionalServices: additionalServiceSnapshots,
-//             },
-//             subtotal,
-//             discount,
-//             gstRate,
-//             gstAmount,
-//             total,
-//             bankDetails,
-//             companyDetails,
-//             quotationStatus: 'Created',
-//             termsAndConditions,
-//         });
-
-
-//         console.log("🚀 ~ quotation:", quotation)
-
-//         // Update totals in DB
-//         await Promise.all(serviceSnapshots
-//             .filter(s => mongoose.Types.ObjectId.isValid(s.id))
-//             .map(s => Services.findByIdAndUpdate(
-//                 s.id,
-//                 { $set: { totalAmount: s.totalAmount } },
-//                 { new: true }
-//             ))
-//         );
-
-//         await Promise.all(additionalServiceSnapshots
-//             .filter(s => s.id)
-//             .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
-//         );
-
-//         // 🧩 Update enquiry with totals and GST details
-//         await Enquiry.findByIdAndUpdate(enquiry._id, {
-//             quotationStatus: quotation.quotationStatus,
-//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-//             subtotalAmount: subtotal,
-//             discount: discount,
-//             grandTotal: total,
-//         });
-
-//         return res.status(201).json(
-//             new ApiResponse(201, quotation, 'Quotation created successfully')
-//         );
-
-//     } catch (error) {
-//         console.error("Error creating quotation:", error);
-//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
-//     }
-// });
-
-// const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const {
-//             date,
-//             customer,
-//             assignedEmployee,
-//             items,
-//             calculations,
-//             termsAndConditions,
-//             bankDetails,
-//             companyDetails,
-//         } = req.body;
-
-//         if (!assignedEmployee) throw new ApiError(400, 'Assigned employee is required');
-
-//         // Fetch enquiry
-//         const enquiry = await Enquiry.findById(id)
-//             .populate('services')
-//             .populate('additionalServices')
-//             .populate('customer');
-//         if (!enquiry) throw new ApiError(404, 'Enquiry not found');
-//         if (!enquiry.customer || !enquiry.customer._id)
-//             throw new ApiError(400, 'Customer info missing in enquiry');
-
-//         // Service snapshots
-//         const serviceSnapshots = items.services.map(s => ({
-//             id: s.id,
-//             machineType: s.machineType,
-//             equipmentNo: s.equipmentNo,
-//             machineModel: s.machineModel,
-//             serialNumber: s.serialNumber,
-//             remark: s.remark,
-//             totalAmount: s.totalAmount,
-//         }));
-
-//         const additionalServiceSnapshots = items.additionalServices.map(s => ({
-//             id: s.id,
-//             name: s.name,
-//             description: s.description,
-//             totalAmount: s.totalAmount,
-//         }));
-
-//         // 🧮 GST Calculations
-//         const subtotal = Number(calculations?.subtotal || 0);
-//         const discount = Number(calculations?.discountAmount || 0);
-//         const gstRate = 18;
-//         const gstAmount = ((subtotal - discount) * gstRate) / 100;
-//         const total = subtotal - discount + gstAmount;
-
-//         // 🔢 Generate quotation number sequentially
-//         let lastQuotation = await Quotation.findOne({})
-//             .sort({ createdAt: -1 })
-//             .select("quotationId")
-//             .lean();
-
-//         let lastNumber = 0;
-
-//         if (lastQuotation && lastQuotation.quotationId) {
-//             // Extract the last sequence number from the previous quotationId
-//             // Assuming format: QU + 4-digit random + 2-digit sequence
-//             const seqPart = lastQuotation.quotationId.slice(-2);
-//             lastNumber = parseInt(seqPart, 10);
-//         }
-
-//         // Increment sequence
-//         const nextSequence = lastNumber + 1;
-
-//         // Pad sequence to 2 digits
-//         const paddedSequence = nextSequence.toString().padStart(2, "0");
-
-//         // Generate random 4-digit part
-//         const randomPart = Math.floor(1000 + Math.random() * 9000);
-
-//         // Final quotation number
-//         const quotationNumber = `QU${randomPart}${paddedSequence}`;
-
-//         // 🧾 Create quotation
-//         const quotation = await Quotation.create({
-//             date,
-//             quotationId: quotationNumber,
-//             enquiry: enquiry._id,
-//             from: enquiry.hospital._id,
-//             customer,
-//             assignedEmployee: assignedEmployee.id || assignedEmployee,
-//             items: {
-//                 services: serviceSnapshots,
-//                 additionalServices: additionalServiceSnapshots,
-//             },
-//             subtotal,
-//             discount,
-//             gstRate,
-//             gstAmount,
-//             total,
-//             bankDetails,
-//             companyDetails,
-//             quotationStatus: 'Created',
-//             termsAndConditions,
-//         });
-
-//         console.log("🚀 ~ quotation:", quotation)
-
-//         // Update totals in DB
-//         await Promise.all(serviceSnapshots
-//             .filter(s => mongoose.Types.ObjectId.isValid(s.id))
-//             .map(s => Services.findByIdAndUpdate(
-//                 s.id,
-//                 { $set: { totalAmount: s.totalAmount } },
-//                 { new: true }
-//             ))
-//         );
-
-//         await Promise.all(additionalServiceSnapshots
-//             .filter(s => s.id)
-//             .map(s => AdditionalService.findByIdAndUpdate(s.id, { totalAmount: s.totalAmount }))
-//         );
-
-//         // 🧩 Update enquiry with totals and GST details
-//         await Enquiry.findByIdAndUpdate(enquiry._id, {
-//             quotationStatus: quotation.quotationStatus,
-//             "enquiryStatusDates.quotationSentOn": quotation.date || new Date(),
-//             subtotalAmount: subtotal,
-//             discount: discount,
-//             grandTotal: total,
-//         });
-
-//         return res.status(201).json(
-//             new ApiResponse(201, quotation, 'Quotation created successfully')
-//         );
-
-//     } catch (error) {
-//         console.error("Error creating quotation:", error);
-//         throw new ApiError(500, 'Failed to create quotation', [error.message]);
-//     }
-// });
-
-
 
 
 const createQuotationByEnquiryId = asyncHandler(async (req, res) => {
@@ -1331,6 +785,15 @@ const updateQuotationById = asyncHandler(async (req, res) => {
         }
 
         // Update quotation data and force quotationStatus to "Created"
+        const nextSubtotal = Number(calculations?.subtotal ?? quotation.subtotal ?? 0);
+        const discountPercentage = Number(discount ?? quotation.discount ?? 0);
+        const discountAmount = Number(
+            calculations?.discountAmount ?? (nextSubtotal * discountPercentage) / 100
+        );
+        const gstRate = Number(quotation.gstRate ?? 18);
+        const nextGstAmount = Number((((nextSubtotal - discountAmount) * gstRate) / 100).toFixed(2));
+        const nextTotal = Number(calculations?.totalAmount ?? (nextSubtotal - discountAmount + nextGstAmount));
+
         const updatedQuotation = await Quotation.findByIdAndUpdate(
             quotation._id,
             {
@@ -1343,8 +806,11 @@ const updateQuotationById = asyncHandler(async (req, res) => {
                 calculations: calculations || quotation.calculations,
                 bankDetails: bankDetails || quotation.bankDetails,
                 companyDetails: companyDetails || quotation.companyDetails,
-                discount: discount || quotation.discount, // ✅ Use percentage from body
-                total: calculations?.totalAmount || quotation.total,
+                subtotal: nextSubtotal,
+                discount: discountPercentage,
+                gstRate,
+                gstAmount: nextGstAmount,
+                total: nextTotal,
                 quotationStatus: "Created", // ✅ Force to "Created"
                 rejectionRemark: rejectionRemark || quotation.rejectionRemark,
                 termsAndConditions: termsAndConditions || quotation.termsAndConditions,
@@ -1357,9 +823,9 @@ const updateQuotationById = asyncHandler(async (req, res) => {
             enquiryStatus: "Quotation Sent",
             "enquiryStatusDates.quotationSentOn": new Date(),
             quotationStatus: updatedQuotation.quotationStatus,
-            subtotalAmount: calculations?.subtotal || quotation.enquiry.subtotalAmount,
-            discount: discount || quotation.enquiry.discount, // ✅ Use percentage from body
-            grandTotal: calculations?.totalAmount || quotation.enquiry.grandTotal,
+            subtotalAmount: nextSubtotal,
+            discount: discountPercentage,
+            grandTotal: nextTotal,
         });
 
         return res
@@ -1754,7 +1220,7 @@ export const acceptQuotation = asyncHandler(async (req, res) => {
         await QuotationHistory.create({
             quotation: quotation._id,
             status: "Accepted",
-            pdfUrl: quotation.customersPDF || quotation.pdfUrl,
+            pdfUrl: quotation.pdfUrl,
             date: new Date(),
         });
 
@@ -1937,7 +1403,7 @@ export const rejectQuotation = asyncHandler(async (req, res) => {
         await quotation.save();
 
         // 🧩 Create quotation history record
-        const historyPdfUrl = quotation.customersPDF || quotation.pdfUrl;
+        const historyPdfUrl = quotation.pdfUrl;
         const latestRejectedHistory = await QuotationHistory.findOne({
             quotation: quotation._id,
             status: "Rejected",
@@ -2377,7 +1843,7 @@ export const getQuotationHistory = asyncHandler(async (req, res) => {
         }
 
         // 1️⃣ Find the main quotation to get its readable ID
-        const quotation = await Quotation.findById(quotationId).select("quotationId");
+        const quotation = await Quotation.findById(quotationId).select("quotationId pdfUrl customersPDF");
         if (!quotation) {
             return res.status(404).json({ message: "Quotation not found" });
         }
@@ -2394,11 +1860,22 @@ export const getQuotationHistory = asyncHandler(async (req, res) => {
             });
         }
 
+        const resolveHistoryPdfUrl = (recordPdfUrl) => {
+            if (
+                quotation.customersPDF &&
+                recordPdfUrl === quotation.customersPDF &&
+                quotation.pdfUrl
+            ) {
+                return quotation.pdfUrl;
+            }
+            return recordPdfUrl;
+        };
+
         // 3️⃣ Map data into a clean array
         const formattedHistoryRaw = historyRecords.map((record) => ({
             quotationNumber: quotation.quotationId,
             status: record.status,
-            pdfUrl: record.pdfUrl,
+            pdfUrl: resolveHistoryPdfUrl(record.pdfUrl),
             date: record.date,
         }));
 
