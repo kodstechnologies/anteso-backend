@@ -7601,4 +7601,56 @@ const getCustomerFeedbackByOrderId = asyncHandler(async (req, res) => {
     );
 });
 
-export default { getAllOrders, getOrderFilterOptions, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId }
+
+const getPaymentStatusByOrderId = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+        throw new ApiError(400, "Invalid orderId");
+    }
+
+    const order = await orderModel.findById(orderId).select("_id");
+    if (!order) {
+        throw new ApiError(404, "Order not found");
+    }
+
+    const payments = await Payment.find({ orderId })
+        .select("paymentType")
+        .sort({ createdAt: -1 })
+        .lean();
+
+    if (!payments.length) {
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    orderId: order._id,
+                    paymentType: null,
+                    paymentStatus: "pending",
+                    latestPayment: null,
+                    payments: [],
+                },
+                "No payment found for this order"
+            )
+        );
+    }
+
+    const latestPayment = payments[0];
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                orderId: order._id,
+                paymentType: latestPayment.paymentType || null,
+                paymentStatus: latestPayment.paymentStatus || "pending",
+                latestPayment,
+                payments,
+            },
+            "Payment status fetched successfully"
+        )
+    );
+});
+
+
+export default { getAllOrders, getOrderFilterOptions, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId, getPaymentStatusByOrderId }

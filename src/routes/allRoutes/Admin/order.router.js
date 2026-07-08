@@ -130,5 +130,8 @@ router.delete('/delete-order/:orderId', orderController.deleteOrderAndReports)
 router.get('/get-work-order-copy/:orderId', orderController.getWorkOrderCopy)
 router.post('/customer-feedback/:orderId/:hospitalId', orderController.customerFeedback)
 router.get('/customer-feedback/:orderId', orderController.getCustomerFeedbackByOrderId)
+router.get('/payment-status/:orderId', orderController.getPaymentStatusByOrderId)
+
+
 
 export default router
