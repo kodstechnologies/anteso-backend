@@ -1,28 +1,3 @@
-// import mongoose from 'mongoose';
-// import User from './user.model.js';
-
-// const { Schema } = mongoose;
-
-// const technicianSchema = new Schema({
-//     status: {
-//         type: String,
-//         enum: ['active', 'inactive'],
-//         default: 'active',
-//     },
-//     technicianType: {
-//         type: String,
-//         enum: ['office-staff', 'engineer'],
-//         required: true,
-//     },
-//     tools: [{
-//         type: Schema.Types.ObjectId,
-//         ref: 'Tool',
-//     }],
-// });
-
-// const Technician = User.discriminator('Technician', technicianSchema);
-
-// export default Technician;
 
 import mongoose from 'mongoose';
 import User from './user.model.js';
