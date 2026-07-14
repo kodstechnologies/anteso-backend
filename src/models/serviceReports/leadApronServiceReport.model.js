@@ -107,6 +107,10 @@ const leadApronServiceReportSchema = new mongoose.Schema({
     humidity: {
         type: String
     },
+    authorizedSignatory: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "AuthorizedSignatory"
+    },
     toolsUsed: [toolDetailsSchema],
     notes: {
         type: [noteSchema],

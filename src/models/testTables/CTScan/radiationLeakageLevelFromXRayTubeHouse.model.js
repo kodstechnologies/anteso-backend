@@ -61,8 +61,8 @@ const RadiationLeakageTestSchema = new Schema(
         toleranceValue: { type: String, default: '' },
         toleranceOperator: {
             type: String,
-            enum: ['less than or equal to', 'greater than or equal to', '='],
-            default: 'less than or equal to',
+            enum: ['>', '<', '='],
+            default: '<',
         },
         toleranceTime: { type: String, default: '1' },
         remark: { type: String, trim: true, default: '' },

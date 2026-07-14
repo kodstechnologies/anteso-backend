@@ -37,6 +37,7 @@ export const saveReportHeader = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
     } = req.body;
@@ -134,6 +135,7 @@ export const saveReportHeader = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             toolsUsed: formattedTools,
             notes: formattedNotes,
 
@@ -166,6 +168,7 @@ export const getReportHeader = async (req, res) => {
     try {
         const report = await LinkServiceReport.findOne({ serviceId })
             .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfOperatingPotentialAndTimeBMD")
             .populate("ReproducibilityOfRadiationOutputBMD")
             .populate("LinearityOfMaLoadingBMD")
@@ -180,6 +183,15 @@ export const getReportHeader = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -207,6 +219,7 @@ export const getReportHeader = async (req, res) => {
                 location: report.location || "",
                 temperature: report.temperature || "",
                 humidity: report.humidity || "",
+                authorizedSignatory,
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: String(i + 1),
                     toolId: t.tool?._id || null,

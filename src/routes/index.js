@@ -18,6 +18,5 @@ router.use('/admin', AdminRoutes)
 
 router.use('/user', UserRoutes)
 
-//dummy data
-//summy push
+
 export default router

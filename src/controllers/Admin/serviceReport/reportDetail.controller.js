@@ -655,6 +655,7 @@ const saveReportHeader = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -749,6 +750,7 @@ const saveReportHeader = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -874,7 +876,8 @@ const getReportHeader = async (req, res) => {
 
         let query = serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         fixedRadioFluoroFields.forEach((field) => {
             query = query.populate(field);
@@ -915,13 +918,19 @@ const getReportHeader = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory:
+                    report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                        ? {
+                            _id: report.authorizedSignatory._id,
+                            name: report.authorizedSignatory.name || "",
+                            signature: report.authorizedSignatory.signature || "",
+                        }
+                        : report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
                 qrCode: report.qrCode || "",
                 notes: report.notes || [],
-                leadOwner: report.leadOwner || "",
-                manufacturerName: report.manufacturerName || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1014,6 +1023,7 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -1115,6 +1125,7 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -1167,7 +1178,7 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
 
 //         let query = serviceReportModel
 //             .findOne({ serviceId })
-//             .populate("toolsUsed.tool", "nomenclature make model");
+//             .populate("toolsUsed.tool", "nomenclature make model")
 
 //         cbctFields.forEach((field) => {
 //             query = query.populate(field);
@@ -1262,6 +1273,7 @@ export const getReportHeaderCBCT = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate(cbctPopulations)
             .lean();
 
@@ -1271,6 +1283,15 @@ export const getReportHeaderCBCT = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -1296,6 +1317,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
@@ -1361,6 +1383,7 @@ export const saveReportHeaderForCBCT = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -1448,6 +1471,7 @@ export const saveReportHeaderForCBCT = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -1492,7 +1516,8 @@ export const getReportHeaderOPG = async (req, res) => {
 
         let query = serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         // Populate all OPG fields
         opgFields.forEach(field => {
@@ -1532,6 +1557,7 @@ export const getReportHeaderOPG = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
@@ -1585,7 +1611,8 @@ export const getReportHeaderDentalIntra = async (req, res) => {
 
         let query = serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         // Populate all Dental Intra fields
         dentalIntraFields.forEach(field => {
@@ -1624,6 +1651,15 @@ export const getReportHeaderDentalIntra = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory:
+                    report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                        ? {
+                            _id: report.authorizedSignatory._id,
+                            name: report.authorizedSignatory.name || "",
+                            signature: report.authorizedSignatory.signature || "",
+                        }
+                        : report.authorizedSignatory || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -1707,6 +1743,7 @@ export const saveReportHeaderForOPG = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -1796,6 +1833,7 @@ export const saveReportHeaderForOPG = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -1850,6 +1888,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -1940,6 +1979,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -1976,6 +2016,7 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfOperatingPotentialAndTimeDentalHandHeld")
             .populate("LinearityOfTimeDentalHandHeld")
             .populate("LinearityOfMaLoadingDentalHandHeld")
@@ -1993,6 +2034,15 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -2017,6 +2067,8 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory,
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2070,7 +2122,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
         rpId, rpid, rpID, RPId, RPID,
         pages, testDate, testDueDate,
         location, temperature, humidity, toolsUsed, notes, csvFileUrl,
-        leadOwner, leadowner, manufacturerName
+        leadOwner, leadowner, manufacturerName, authorizedSignatory
     } = req.body;
 
     try {
@@ -2144,6 +2196,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             testDate: testDate ? new Date(testDate) : null,
             testDueDate: testDueDate ? new Date(testDueDate) : null,
             location, temperature, humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -2185,6 +2238,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model calibrationValidTill" })
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfIrradiationTimeRadiographyFixed")
             .populate("accuracyOfOperatingPotentialRadigraphyFixed")
             .populate("TotalFilterationRadiographyFixed")
@@ -2204,6 +2258,15 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -2228,6 +2291,8 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory,
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2295,6 +2360,7 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -2390,6 +2456,7 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -2480,6 +2547,8 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                 temperature: report.temperature,
                 humidity: report.humidity,
 
+                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
                     toolId: t.tool?._id,
@@ -2549,6 +2618,7 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -2646,6 +2716,7 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -2726,6 +2797,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -2795,6 +2867,7 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -2888,6 +2961,7 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -2966,6 +3040,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -3033,6 +3108,7 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -3126,6 +3202,7 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -3161,6 +3238,7 @@ export const getReportHeaderCArm = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("ExposureRateTableTopCArm")
             .populate("HighContrastResolutionCArm")
             .populate("LowContrastResolutionCArm")
@@ -3178,6 +3256,15 @@ export const getReportHeaderCArm = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -3205,6 +3292,7 @@ export const getReportHeaderCArm = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 notes: report.notes || [],
@@ -3270,6 +3358,7 @@ export const saveReportHeaderCArm = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -3363,6 +3452,7 @@ export const saveReportHeaderCArm = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -3415,6 +3505,7 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .lean();
 
         if (!report) {
@@ -3457,6 +3548,15 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
 
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
+
         res.status(200).json({
             exists: true,
             data: {
@@ -3479,6 +3579,8 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory,
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -3549,6 +3651,7 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -3664,6 +3767,7 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -3706,7 +3810,8 @@ export const getReportHeaderLeadApron = async (req, res) => {
 
         let query = LeadApronServiceReport
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         leadApronFields.forEach((field) => {
             query = query.populate(field);
@@ -3807,6 +3912,7 @@ export const saveReportHeaderLeadApron = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
     } = req.body;
@@ -3869,6 +3975,7 @@ export const saveReportHeaderLeadApron = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             toolsUsed: formattedTools,
             notes: formattedNotes,
         });
@@ -3894,6 +4001,7 @@ export const getReportHeaderOArm = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("ExposureRateTableTopOArm")
             .populate("HighContrastResolutionOArm")
             .populate("LowContrastResolutionOArm")
@@ -3910,6 +4018,15 @@ export const getReportHeaderOArm = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -3933,6 +4050,8 @@ export const getReportHeaderOArm = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory,
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -3994,6 +4113,7 @@ export const getReportHeaderForCTScan = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("GantryTiltCTScan")
             .populate("TablePositionCTScan")
             .populate("AlignmentOfTableGantryCTScan")
@@ -4041,6 +4161,15 @@ export const getReportHeaderForCTScan = async (req, res) => {
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
 
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
+
         res.status(200).json({
             exists: true,
             data: {
@@ -4065,6 +4194,7 @@ export const getReportHeaderForCTScan = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -4144,6 +4274,7 @@ export const saveReportHeaderForCTScan = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -4266,6 +4397,7 @@ export const saveReportHeaderForCTScan = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -4332,7 +4464,8 @@ export const getReportHeaderOBI = async (req, res) => {
 
         let query = serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         // Populate all OBI fields
         obiFields.forEach(field => {
@@ -4374,6 +4507,7 @@ export const getReportHeaderOBI = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -4436,7 +4570,8 @@ export const getReportHeaderMammography = async (req, res) => {
         // Build the query
         let query = serviceReportModel
             .findOne({ serviceId })
-            .populate("toolsUsed.tool", "nomenclature make model");
+            .populate("toolsUsed.tool", "nomenclature make model")
+            .populate("authorizedSignatory", "name signature");
 
         // Populate each Mammography field
         mammographyFields.forEach(field => {
@@ -4474,6 +4609,15 @@ export const getReportHeaderMammography = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+
+                authorizedSignatory:
+                    report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                        ? {
+                            _id: report.authorizedSignatory._id,
+                            name: report.authorizedSignatory.name || "",
+                            signature: report.authorizedSignatory.signature || "",
+                        }
+                        : report.authorizedSignatory || "",
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -4541,6 +4685,7 @@ export const saveReportHeaderForMammography = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -4638,6 +4783,7 @@ export const saveReportHeaderForMammography = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
@@ -4698,6 +4844,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
         location,
         temperature,
         humidity,
+        authorizedSignatory,
         toolsUsed,
         notes,
         leadOwner,
@@ -4801,6 +4948,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
             location,
             temperature,
             humidity,
+            authorizedSignatory: authorizedSignatory || null,
             leadOwner: leadOwner || leadowner || "",
             manufacturerName: manufacturerName || "",
             toolsUsed: formattedTools,
