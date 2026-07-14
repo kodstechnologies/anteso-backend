@@ -103,6 +103,7 @@ import "../../../models/testTables/CArm/OutputConsisitency.model.js";
 import "../../../models/testTables/CArm/TotalFilteration.model.js";
 import "../../../models/testTables/CArm/TubeHousingLeakage.model.js";
 import "../../../models/testTables/CArm/LinearityOfMasLoadingStation.model.js";
+import "../../../models/testTables/CArm/LinearityOfMaLoadingStation.model.js";
 import "../../../models/testTables/CArm/AccuracyOfIrradiationTime.model.js";
 // Import OArm models to ensure they're registered with Mongoose
 import "../../../models/testTables/OArm/ExposureRateTableTop.model.js";
@@ -3318,6 +3319,7 @@ export const saveReportHeaderCArm = async (req, res) => {
             totalFiltration,
             tubeHousing,
             linearityMas,
+            linearityMa,
             accuracyIrradiation,
         ] = await Promise.all([
             mongoose.model("ExposureRateTableTopCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
@@ -3327,10 +3329,9 @@ export const saveReportHeaderCArm = async (req, res) => {
             mongoose.model("TotalFilterationForCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("TubeHousingLeakageCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfmAsLoadingCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMaLoadingCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("AccuracyOfIrradiationTimeCArm").findOne({ serviceId }).sort({ createdAt: -1 }),
         ]);
-
-        const linearityId = linearityMas?._id || null;
 
         const normalizedRpCandidates = [rpId, rpid, rpID, RPId, RPID]
             .map((v) => (v === null || v === undefined ? "" : String(v).trim()))
@@ -3373,8 +3374,8 @@ export const saveReportHeaderCArm = async (req, res) => {
             OutputConsistencyForCArm: outputConsistency?._id || null,
             TotalFilterationForCArm: totalFiltration?._id || null,
             TubeHousingLeakageCArm: tubeHousing?._id || null,
-            LinearityOfmAsLoadingCArm: linearityId,
-            LinearityOfMaLoadingCArm: linearityId,
+            LinearityOfmAsLoadingCArm: linearityMas?._id || null,
+            LinearityOfMaLoadingCArm: linearityMa?._id || null,
             AccuracyOfIrradiationTimeCArm: accuracyIrradiation?._id || null,
         });
 

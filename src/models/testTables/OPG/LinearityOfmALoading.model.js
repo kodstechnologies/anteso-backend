@@ -65,6 +65,18 @@ const LinearityOfMaLoadingSchema = new Schema(
     // Table 2: Array of mA linearity test rows
     table2: [Table2RowSchema],
 
+    toleranceOperator: {
+      type: String,
+      default: '<=',
+      trim: true,
+    },
+
+    // Dynamic measurement column headers (e.g. Measured mR 1, Meas 1)
+    measHeaders: {
+      type: [String],
+      default: ['Measured mR 1', 'Measured mR 2', 'Measured mR 3'],
+    },
+
     // Tolerance for CoL (e.g., 0.1)
     tolerance: {
       type: String,
