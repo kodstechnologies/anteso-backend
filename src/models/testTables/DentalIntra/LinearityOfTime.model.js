@@ -28,6 +28,7 @@ const LinearityOfTimeSchema = new Schema({
   table2: [Table2RowSchema],
 
   tolerance: { type: String, default: '0.1', trim: true },
+  toleranceOperator: { type: String, default: '<=', trim: true },
   xMax: { type: String, default: '' },
   xMin: { type: String, default: '' },
   col: { type: String, default: '' },
