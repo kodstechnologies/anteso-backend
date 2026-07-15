@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental Cone Beam CT";
 // CREATE or UPDATE with Transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance, toleranceOperator } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
       existing.table2 = table2 !== undefined ? table2 : existing.table2;
       existing.tolerance = tolerance !== undefined ? tolerance : existing.tolerance;
       existing.toleranceOperator = toleranceOperator !== undefined ? toleranceOperator : existing.toleranceOperator;
+      if (Array.isArray(measHeaders)) existing.measHeaders = measHeaders;
       testRecord = existing;
     } else {
       // Create new
@@ -59,6 +60,7 @@ const create = asyncHandler(async (req, res) => {
         serviceReportId: serviceReport._id,
         table1: table1 || { fcd: "", kv: "", time: "" },
         table2: table2 || [],
+        measHeaders: Array.isArray(measHeaders) ? measHeaders : [],
         tolerance: tolerance || "0.1",
         toleranceOperator: toleranceOperator || "<=",
       });
@@ -116,7 +118,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance, toleranceOperator } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -148,6 +150,7 @@ const update = asyncHandler(async (req, res) => {
     if (table2 !== undefined) testRecord.table2 = table2;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
     if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+    if (Array.isArray(measHeaders)) testRecord.measHeaders = measHeaders;
 
     await testRecord.save({ session });
     await session.commitTransaction();
