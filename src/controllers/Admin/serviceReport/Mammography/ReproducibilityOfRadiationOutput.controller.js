@@ -67,8 +67,11 @@ const calculateCVAndRemark = (outputs, tolerance, toleranceOperator = '<=') => {
 // CREATE - First time save (rejects if already exists)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { outputRows, tolerance, toleranceOperator, fdd } = req.body;
+    const { outputRows, tolerance, toleranceOperator, fdd, outputHeaders } = req.body;
     const tolOp = toleranceOperator != null && toleranceOperator !== '' ? String(toleranceOperator) : '<=';
+    const normalizedHeaders = Array.isArray(outputHeaders)
+        ? outputHeaders.map((h, i) => (h != null && String(h).trim() !== '' ? String(h).trim() : `Meas ${i + 1}`))
+        : [];
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -120,6 +123,7 @@ const create = asyncHandler(async (req, res) => {
             testRecord.tolerance = tolerance != null && tolerance !== '' ? String(tolerance) : '0.05';
             testRecord.toleranceOperator = tolOp;
             if (fdd !== undefined) testRecord.fdd = fdd == null ? '' : String(fdd);
+            if (normalizedHeaders.length > 0) testRecord.outputHeaders = normalizedHeaders;
             testRecord.updatedAt = Date.now();
         } else {
             testRecord = new ReproducibilityOfOutputMmmography({
@@ -127,6 +131,7 @@ const create = asyncHandler(async (req, res) => {
                 reportId: serviceReport._id,
                 fdd: fdd == null ? '' : String(fdd),
                 outputRows: processedRows,
+                outputHeaders: normalizedHeaders,
                 tolerance: tolerance != null && tolerance !== '' ? String(tolerance) : '0.05',
                 toleranceOperator: tolOp,
             });
@@ -238,6 +243,12 @@ const update = asyncHandler(async (req, res) => {
 
     if (updateTolOp) {
         updateData.toleranceOperator = updateTolOp;
+    }
+
+    if (Array.isArray(updateData.outputHeaders)) {
+        updateData.outputHeaders = updateData.outputHeaders.map((h, i) =>
+            h != null && String(h).trim() !== '' ? String(h).trim() : `Meas ${i + 1}`
+        );
     }
 
     const session = await mongoose.startSession();

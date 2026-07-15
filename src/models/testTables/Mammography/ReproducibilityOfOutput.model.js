@@ -18,6 +18,9 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
         // Dynamic rows of kV/mAs + measurements
         outputRows: [OutputRowSchema],
 
+        // Column headers for Radiation Output measurements (e.g. Meas 1, Meas 2, …)
+        outputHeaders: { type: [String], default: [] },
+
         // Tolerance: numeric string; values ≤1 treated as CoV decimal (e.g. 0.05), >1 as percent (e.g. 5 → 0.05)
         tolerance: { type: String, trim: true },
         toleranceOperator: { type: String, default: '<=', trim: true },
