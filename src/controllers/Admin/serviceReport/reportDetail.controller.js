@@ -1557,7 +1557,14 @@ export const getReportHeaderOPG = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
-                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+                authorizedSignatory:
+                    report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                        ? {
+                            _id: report.authorizedSignatory._id,
+                            name: report.authorizedSignatory.name || "",
+                            signature: report.authorizedSignatory.signature || "",
+                        }
+                        : report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
                 pages: report.pages || "",
@@ -2504,6 +2511,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfIrradiationTimeRadiographyMobileHT")
             .populate("accuracyOfOperatingPotentialRadiographyMobileHT")
             .populate("CentralBeamAlignmentRadiographyMobileHT")
@@ -2522,6 +2530,15 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -2547,7 +2564,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                 temperature: report.temperature,
                 humidity: report.humidity,
 
-                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+                authorizedSignatory,
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
                     slNumber: i + 1,
@@ -2754,6 +2771,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfIrradiationTimeRadiographyPortable")
             .populate("accuracyOfOperatingPotentialRadigraphyPortable")
             .populate("CentralBeamAlignmentRadiographyPortable")
@@ -2770,6 +2788,15 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -2797,7 +2824,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
-                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+                authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -2997,6 +3024,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
         const report = await serviceReportModel
             .findOne({ serviceId })
             .populate({ path: "toolsUsed.tool", select: "nomenclature make model" })
+            .populate("authorizedSignatory", "name signature")
             .populate("AccuracyOfIrradiationTimeRadiographyMobile")
             .populate("accuracyOfOperatingPotentialRadigraphyMobile")
             .populate("CentralBeamAlignmentRadiographyMobile")
@@ -3013,6 +3041,15 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
 
         const format = (date) =>
             date ? new Date(date).toISOString().split("T")[0] : "";
+
+        const authorizedSignatory =
+            report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                ? {
+                    _id: report.authorizedSignatory._id,
+                    name: report.authorizedSignatory.name || "",
+                    signature: report.authorizedSignatory.signature || "",
+                }
+                : report.authorizedSignatory || "";
 
         res.status(200).json({
             exists: true,
@@ -3040,7 +3077,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
-                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+                authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
@@ -4507,7 +4544,14 @@ export const getReportHeaderOBI = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
-                authorizedSignatory: report.authorizedSignatory?._id || report.authorizedSignatory || "",
+                authorizedSignatory:
+                    report.authorizedSignatory && typeof report.authorizedSignatory === "object"
+                        ? {
+                            _id: report.authorizedSignatory._id,
+                            name: report.authorizedSignatory.name || "",
+                            signature: report.authorizedSignatory.signature || "",
+                        }
+                        : report.authorizedSignatory || "",
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
 
