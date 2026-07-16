@@ -11,7 +11,7 @@ const MACHINE_TYPE = "Bone Densitometer (BMD)";
 // CREATE (with transaction)
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { fcd, outputRows, tolerance } = req.body;
+  const { fcd, outputRows, tolerance, measurementHeaders } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -61,6 +61,7 @@ const create = asyncHandler(async (req, res) => {
           reportId: serviceReport._id,
           fcd: fcd || { value: "" },
           outputRows: outputRows || [],
+          measurementHeaders: measurementHeaders || [],
           tolerance: tolerance || { operator: "<=", value: "" },
         },
       ],
@@ -112,7 +113,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { fcd, outputRows, tolerance } = req.body;
+  const { fcd, outputRows, tolerance, measurementHeaders } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -128,6 +129,7 @@ const update = asyncHandler(async (req, res) => {
         $set: {
           fcd: fcd || { value: "" },
           outputRows: outputRows || [],
+          measurementHeaders: measurementHeaders || [],
           tolerance: tolerance || { operator: "<=", value: "" },
           updatedAt: Date.now(),
         },

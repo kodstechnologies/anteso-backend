@@ -10,6 +10,7 @@ const OutputRowSchema = new mongoose.Schema({
     mas: { type: String, trim: true },          // mAs
     outputs: [OutputMeasurementSchema],         // Dynamic array of measurements
     avg: { type: String, trim: true },          // Average (X̄) – stored as string
+    cov: { type: String, trim: true },          // Coefficient of Variation
     remark: { type: String, trim: true },       // Pass/Fail or custom text
 });
 
@@ -17,6 +18,9 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
     {
         // FFD (Focus to Film Distance) in cm
         ffd: { type: String, trim: true, default: "" },
+
+        // Dynamic column headers for measured outputs
+        measurementHeaders: [{ type: String, trim: true }],
 
         // Dynamic rows of kV/mAs + measurements
         outputRows: [OutputRowSchema],

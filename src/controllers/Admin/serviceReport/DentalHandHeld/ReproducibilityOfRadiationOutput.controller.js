@@ -23,6 +23,7 @@ function normalizeOutputRows(rows) {
       mas: row.mas != null ? String(row.mas) : "",
       outputs,
       avg: row.avg != null ? String(row.avg) : "",
+      cov: row.cov != null ? String(row.cov) : "",
       remark: row.remark != null ? String(row.remark) : "",
     };
   });
@@ -31,7 +32,7 @@ function normalizeOutputRows(rows) {
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, measurementHeaders } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -45,6 +46,9 @@ const create = asyncHandler(async (req, res) => {
           value: tolerance.value != null ? String(tolerance.value) : "",
         }
       : undefined;
+  const normalizedHeaders = Array.isArray(measurementHeaders)
+    ? measurementHeaders.map((h) => String(h ?? "").trim()).filter(Boolean)
+    : undefined;
 
   let session = null;
   try {
@@ -80,6 +84,7 @@ const create = asyncHandler(async (req, res) => {
       if (ffd !== undefined) testRecord.ffd = ffd;
       if (normalizedOutputRows !== undefined) testRecord.outputRows = normalizedOutputRows;
       if (normalizedTolerance !== undefined) testRecord.tolerance = normalizedTolerance;
+      if (normalizedHeaders !== undefined) testRecord.measurementHeaders = normalizedHeaders;
     } else {
       // Create new
       testRecord = new ReproducibilityOfRadiationOutput({
@@ -88,6 +93,7 @@ const create = asyncHandler(async (req, res) => {
         ffd: ffd || "",
         outputRows: normalizedOutputRows || [],
         tolerance: normalizedTolerance || { operator: "<=", value: "" },
+        measurementHeaders: normalizedHeaders || [],
       });
     }
 
@@ -156,7 +162,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, measurementHeaders } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -170,6 +176,9 @@ const update = asyncHandler(async (req, res) => {
           value: tolerance.value != null ? String(tolerance.value) : "",
         }
       : undefined;
+  const normalizedHeaders = Array.isArray(measurementHeaders)
+    ? measurementHeaders.map((h) => String(h ?? "").trim()).filter(Boolean)
+    : undefined;
 
   let session = null;
   try {
@@ -196,6 +205,7 @@ const update = asyncHandler(async (req, res) => {
     if (ffd !== undefined) testRecord.ffd = ffd;
     if (normalizedOutputRows !== undefined) testRecord.outputRows = normalizedOutputRows;
     if (normalizedTolerance !== undefined) testRecord.tolerance = normalizedTolerance;
+    if (normalizedHeaders !== undefined) testRecord.measurementHeaders = normalizedHeaders;
 
     await testRecord.save({ session });
     await session.commitTransaction();

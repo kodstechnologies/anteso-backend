@@ -11,7 +11,7 @@ const MACHINE_TYPE = "Bone Densitometer (BMD)";
 // CREATE or UPDATE with Transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ message: "Valid serviceId is required" });
@@ -85,6 +85,8 @@ const create = asyncHandler(async (req, res) => {
           table1: normalizedTable1,
           table2: normalizedTable2,
           tolerance: tolerance || "0.1",
+          toleranceOperator: toleranceOperator || "<=",
+          measHeaders: measHeaders || [],
         },
       ],
       { session }
@@ -133,7 +135,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE with Transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ message: "Valid testId is required" });
@@ -173,6 +175,8 @@ const update = asyncHandler(async (req, res) => {
           table1: normalizedTable1,
           table2: normalizedTable2,
           tolerance: tolerance || "0.1",
+          toleranceOperator: toleranceOperator || "<=",
+          measHeaders: measHeaders || [],
           updatedAt: Date.now(),
         },
       },

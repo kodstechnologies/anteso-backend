@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Hand-held)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testConditions, rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
+  const { testConditions, rows, mAStations, ffd, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -49,6 +49,8 @@ const create = asyncHandler(async (req, res) => {
       // Update existing
       if (testConditions !== undefined) testRecord.testConditions = testConditions;
       if (rows !== undefined) testRecord.rows = rows;
+      if (Array.isArray(mAStations)) testRecord.mAStations = mAStations;
+      if (ffd !== undefined) testRecord.ffd = ffd;
       if (kvpToleranceSign !== undefined) testRecord.kvpToleranceSign = kvpToleranceSign;
       if (kvpToleranceValue !== undefined) testRecord.kvpToleranceValue = kvpToleranceValue;
       if (timeToleranceSign !== undefined) testRecord.timeToleranceSign = timeToleranceSign;
@@ -62,6 +64,8 @@ const create = asyncHandler(async (req, res) => {
         reportId: serviceReport._id,
         testConditions: testConditions || { fcd: "", kv: "", ma: "" },
         rows: rows || [],
+        mAStations: Array.isArray(mAStations) ? mAStations : [],
+        ffd: ffd || "",
         kvpToleranceSign: kvpToleranceSign || "",
         kvpToleranceValue: kvpToleranceValue || "",
         timeToleranceSign: timeToleranceSign || "",
@@ -146,7 +150,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testConditions, rows, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
+  const { testConditions, rows, mAStations, ffd, kvpToleranceSign, kvpToleranceValue, timeToleranceSign, timeToleranceValue, totalFiltration, filtrationTolerance } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -176,6 +180,8 @@ const update = asyncHandler(async (req, res) => {
     // Update fields
     if (testConditions !== undefined) testRecord.testConditions = testConditions;
     if (rows !== undefined) testRecord.rows = rows;
+    if (Array.isArray(mAStations)) testRecord.mAStations = mAStations;
+    if (ffd !== undefined) testRecord.ffd = ffd;
     if (kvpToleranceSign !== undefined) testRecord.kvpToleranceSign = kvpToleranceSign;
     if (kvpToleranceValue !== undefined) testRecord.kvpToleranceValue = kvpToleranceValue;
     if (timeToleranceSign !== undefined) testRecord.timeToleranceSign = timeToleranceSign;

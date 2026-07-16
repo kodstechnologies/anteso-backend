@@ -73,6 +73,17 @@ const LinearityOfMaLoadingSchema = new Schema(
       trim: true,
     },
 
+    toleranceOperator: {
+      type: String,
+      default: '<=',
+      trim: true,
+    },
+
+    measHeaders: {
+      type: [String],
+      default: [],
+    },
+
     // References
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,

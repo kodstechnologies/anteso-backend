@@ -9,7 +9,10 @@ const Table1RowSchema = new Schema({
 });
 
 const Table2RowSchema = new Schema({
+    // Frontend saves `ma`; keep `mas` for older records
+    ma: { type: String, trim: true },
     mas: { type: String, trim: true },
+    mAsRange: { type: String, trim: true },
     measuredOutputs: [{ type: String, trim: true }],
     average: { type: String, default: '' },
     x: { type: String, default: '' },           // mGy/mAs
@@ -27,6 +30,8 @@ const LinearityOfmAsLoadingSchema = new Schema({
     table2: [Table2RowSchema],
 
     tolerance: { type: String, default: '0.1', trim: true },
+    toleranceOperator: { type: String, default: '<=', trim: true },
+    measHeaders: { type: [String], default: [] },
 }, { timestamps: true });
 
 const LinearityOfmAsLoading = mongoose.model('LinearityOfmAsLoadingDentalHandHeld', LinearityOfmAsLoadingSchema);

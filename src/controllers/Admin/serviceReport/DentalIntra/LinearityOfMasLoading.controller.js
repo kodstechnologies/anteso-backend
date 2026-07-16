@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Intra Oral)";
 // CREATE or UPDATE (Upsert) by serviceId
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
-    const { table1, table2, tolerance, toleranceOperator } = req.body;
+    const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
     if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
         return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -43,6 +43,7 @@ const create = asyncHandler(async (req, res) => {
             if (table2 !== undefined) testRecord.table2 = table2;
             if (tolerance !== undefined) testRecord.tolerance = tolerance;
             if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+            if (Array.isArray(measHeaders)) testRecord.measHeaders = measHeaders;
         } else {
             testRecord = new LinearityOfMasLoading({
                 serviceId,
@@ -51,6 +52,7 @@ const create = asyncHandler(async (req, res) => {
                 table2: table2 || [],
                 tolerance: tolerance || "0.1",
                 toleranceOperator: toleranceOperator || "<=",
+                measHeaders: Array.isArray(measHeaders) ? measHeaders : [],
             });
         }
 
@@ -95,15 +97,23 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
     const { testId } = req.params;
-    const { table1, table2, tolerance, toleranceOperator } = req.body;
+    const { table1, table2, tolerance, toleranceOperator, measHeaders } = req.body;
 
     if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
         return res.status(400).json({ success: false, message: "Valid testId is required" });
     }
 
+    const updateFields = {
+        ...(table1 !== undefined && { table1 }),
+        ...(table2 !== undefined && { table2 }),
+        ...(tolerance !== undefined && { tolerance }),
+        ...(toleranceOperator !== undefined && { toleranceOperator }),
+        ...(Array.isArray(measHeaders) && { measHeaders }),
+    };
+
     const testRecord = await LinearityOfMasLoading.findByIdAndUpdate(
         testId,
-        { table1, table2, tolerance, toleranceOperator },
+        updateFields,
         { new: true, runValidators: true }
     );
 

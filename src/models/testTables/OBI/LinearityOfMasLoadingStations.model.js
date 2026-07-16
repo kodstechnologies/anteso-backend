@@ -47,6 +47,10 @@ const linearityOfmAsLoadingSchema = new mongoose.Schema(
             type: String,
             default: "0.1",
         },
+        toleranceOperator: {
+            type: String,
+            default: "<=",
+        },
 
         // Optional: associate with a QA Report or order
         reportId: {

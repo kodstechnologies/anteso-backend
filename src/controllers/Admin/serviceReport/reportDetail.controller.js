@@ -2094,10 +2094,11 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
                 // ⭐ DENTAL HAND-HELD TEST RESULTS (POPULATED)
                 AccuracyOfOperatingPotentialAndTimeDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
                 AccuracyOfOperatingPotentialDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
+                // Do not alias AOP as Irradiation Time — shared document has kVp rows in both modes
                 AccuracyOfIrradiationTimeDentalHandHeld: report.AccuracyOfOperatingPotentialAndTimeDentalHandHeld || null,
 
                 LinearityOfTimeDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
-                LinearityOfMaLoadingDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
+                LinearityOfMaLoadingDentalHandHeld: report.LinearityOfMaLoadingDentalHandHeld || null,
 
                 LinearityOfmAsLoadingDentalHandHeld: report.LinearityOfmAsLoadingDentalHandHeld || null,
 
@@ -2213,7 +2214,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             // Link test results
             AccuracyOfOperatingPotentialAndTimeDentalHandHeld: accuracyOp?._id || null,
             LinearityOfTimeDentalHandHeld: linearityTime?._id || null,
-            LinearityOfmALoadingDentalHandHeld: linearityMa?._id || null,
+            LinearityOfMaLoadingDentalHandHeld: linearityMa?._id || null,
             LinearityOfmAsLoadingDentalHandHeld: linearityMas?._id || null,
             ConsistencyOfRadiationOutputDentalHandHeld: consistency?._id || null,
             ReproducibilityOfRadiationOutputDentalHandHeld: reproducibility?._id || null,

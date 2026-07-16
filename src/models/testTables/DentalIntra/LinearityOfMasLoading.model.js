@@ -29,6 +29,7 @@ const LinearityOfMasLoadingSchema = new Schema({
 
     tolerance: { type: String, default: '0.1', trim: true },
     toleranceOperator: { type: String, default: '<=', trim: true },
+    measHeaders: { type: [String], default: [] },
     testId: { type: String, unique: true, sparse: true },
 }, { timestamps: true });
 

@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Dental (Intra Oral)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders, xMax, xMin, col, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
       if (table2 !== undefined) testRecord.table2 = table2;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
       if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+      if (Array.isArray(measHeaders)) testRecord.measHeaders = measHeaders;
       if (xMax !== undefined) testRecord.xMax = xMax;
       if (xMin !== undefined) testRecord.xMin = xMin;
       if (col !== undefined) testRecord.col = col;
@@ -64,6 +65,7 @@ const create = asyncHandler(async (req, res) => {
         table2: table2 || [],
         tolerance: tolerance || "0.1",
         toleranceOperator: toleranceOperator || "<=",
+        measHeaders: Array.isArray(measHeaders) ? measHeaders : [],
         xMax: xMax || "",
         xMin: xMin || "",
         col: col || "",
@@ -136,7 +138,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId (Mongo _id) with transaction
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance, toleranceOperator, xMax, xMin, col, remarks } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measHeaders, xMax, xMin, col, remarks } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -168,6 +170,7 @@ const update = asyncHandler(async (req, res) => {
     if (table2 !== undefined) testRecord.table2 = table2;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
     if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
+    if (Array.isArray(measHeaders)) testRecord.measHeaders = measHeaders;
     if (xMax !== undefined) testRecord.xMax = xMax;
     if (xMin !== undefined) testRecord.xMin = xMin;
     if (col !== undefined) testRecord.col = col;

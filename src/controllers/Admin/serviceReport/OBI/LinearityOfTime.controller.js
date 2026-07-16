@@ -10,7 +10,7 @@ const MACHINE_TYPE = "KV Imaging (OBI)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { testConditions, measurementRows, measHeaders, tolerance, xMax, xMin, coefficientOfLinearity, remarks } = req.body;
+  const { testConditions, measurementRows, measHeaders, tolerance, toleranceOperator, xMax, xMin, coefficientOfLinearity, remarks } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -51,6 +51,7 @@ const create = asyncHandler(async (req, res) => {
       if (measurementRows !== undefined) testRecord.measurementRows = measurementRows;
       if (measHeaders !== undefined) testRecord.measHeaders = measHeaders;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
       if (xMax !== undefined) testRecord.xMax = xMax;
       if (xMin !== undefined) testRecord.xMin = xMin;
       if (coefficientOfLinearity !== undefined) testRecord.coefficientOfLinearity = coefficientOfLinearity;
@@ -64,6 +65,7 @@ const create = asyncHandler(async (req, res) => {
         measurementRows: measurementRows || [],
         measHeaders: measHeaders || [],
         tolerance: tolerance || "0.1",
+        toleranceOperator: toleranceOperator || "<=",
         xMax: xMax || "",
         xMin: xMin || "",
         coefficientOfLinearity: coefficientOfLinearity || "",
@@ -136,7 +138,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { testConditions, measurementRows, measHeaders, tolerance, xMax, xMin, coefficientOfLinearity, remarks } = req.body;
+  const { testConditions, measurementRows, measHeaders, tolerance, toleranceOperator, xMax, xMin, coefficientOfLinearity, remarks } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -168,6 +170,7 @@ const update = asyncHandler(async (req, res) => {
     if (measurementRows !== undefined) testRecord.measurementRows = measurementRows;
     if (measHeaders !== undefined) testRecord.measHeaders = measHeaders;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (toleranceOperator !== undefined) testRecord.toleranceOperator = toleranceOperator;
     if (xMax !== undefined) testRecord.xMax = xMax;
     if (xMin !== undefined) testRecord.xMin = xMin;
     if (coefficientOfLinearity !== undefined) testRecord.coefficientOfLinearity = coefficientOfLinearity;

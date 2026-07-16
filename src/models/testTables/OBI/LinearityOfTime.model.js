@@ -51,6 +51,7 @@ const LinearityOfTimeSchema = new Schema({
 
   // Tolerance
   tolerance: { type: String, default: '0.1', trim: true },
+  toleranceOperator: { type: String, default: '<=', trim: true },
 
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },

@@ -50,6 +50,10 @@ const accuracyOfOperatingPotentialAndTimeSchema = new Schema(
             },
         ],
 
+        // Dynamic column headers for AOP measured kVp stations
+        mAStations: [{ type: String }],
+        ffd: { type: String },
+
         // kVp Tolerance
         kvpToleranceSign: { type: String },
         kvpToleranceValue: { type: String },

@@ -29,6 +29,7 @@ const LinearityOfTimeSchema = new Schema({
 
   tolerance: { type: String, default: '0.1', trim: true },
   toleranceOperator: { type: String, default: '<=', trim: true },
+  measHeaders: { type: [String], default: [] },
   xMax: { type: String, default: '' },
   xMin: { type: String, default: '' },
   col: { type: String, default: '' },
