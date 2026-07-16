@@ -9,7 +9,7 @@ const MACHINE_TYPE = "Radiography (Portable)";
 
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, measurementHeaders } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -45,12 +45,14 @@ const create = asyncHandler(async (req, res) => {
       if (ffd !== undefined) testRecord.ffd = ffd;
       if (outputRows !== undefined) testRecord.outputRows = outputRows;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
+      if (measurementHeaders !== undefined) testRecord.measurementHeaders = measurementHeaders;
     } else {
       testRecord = new ConsistencyOfRadiationOutput({
         serviceId,
         reportId: serviceReport._id,
         ffd: ffd || { value: "" },
         outputRows: outputRows || [],
+        measurementHeaders: measurementHeaders || [],
         tolerance: tolerance || { operator: "<=", value: "" },
       });
     }
@@ -101,7 +103,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { ffd, outputRows, tolerance } = req.body;
+  const { ffd, outputRows, tolerance, measurementHeaders } = req.body;
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
   }
@@ -125,6 +127,7 @@ const update = asyncHandler(async (req, res) => {
     if (ffd !== undefined) testRecord.ffd = ffd;
     if (outputRows !== undefined) testRecord.outputRows = outputRows;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
+    if (measurementHeaders !== undefined) testRecord.measurementHeaders = measurementHeaders;
     await testRecord.save({ session });
     await session.commitTransaction();
     return res.json({ success: true, message: "Updated successfully", data: { _id: testRecord._id.toString() } });
