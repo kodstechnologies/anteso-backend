@@ -24,6 +24,11 @@ const TimerAccuracySchema = new Schema(
         table1: [Table1RowSchema],
         table2: [Table2RowSchema],
         tolerance: { type: String, default: '', trim: true },
+        toleranceOperator: {
+            type: String,
+            enum: ['<', '<=', '>', '>=', '='],
+            default: '<=',
+        },
         serviceReportId: {
             type: Schema.Types.ObjectId,
             ref: 'ServiceReport',

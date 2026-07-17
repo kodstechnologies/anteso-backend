@@ -103,7 +103,7 @@ import serviceReportModel from "../../../../models/serviceReports/serviceReport.
 
 // ====================== CREATE ======================
 const create = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, tubeId } = req.body;
   const { serviceId } = req.params;
 
   if (!serviceId) return res.status(400).json({ success: false, message: "serviceId required" });
@@ -131,7 +131,15 @@ const create = asyncHandler(async (req, res) => {
     // For double tube: find by serviceId AND tubeId; for single: find by serviceId with tubeId null
     const tubeIdValue = tubeId || null;
     let testRecord = await TimerAccuracy.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
-    const payload = { table1, table2, tolerance: tolerance?.toString() || "", serviceId, serviceReportId: serviceReport._id, tubeId: tubeIdValue };
+    const payload = {
+      table1,
+      table2,
+      tolerance: tolerance?.toString() || "",
+      toleranceOperator: ['<', '<=', '>', '>=', '='].includes(toleranceOperator) ? toleranceOperator : '<=',
+      serviceId,
+      serviceReportId: serviceReport._id,
+      tubeId: tubeIdValue,
+    };
 
     if (testRecord) {
       Object.assign(testRecord, payload);
@@ -195,7 +203,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE BY TEST ID
 // ======================
 const update = asyncHandler(async (req, res) => {
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, tubeId } = req.body;
   const { testId } = req.params;
 
   if (!testId) {
@@ -237,6 +245,9 @@ const update = asyncHandler(async (req, res) => {
     testRecord.table1 = table1;
     testRecord.table2 = table2;
     testRecord.tolerance = tolerance?.toString().trim() || "";
+    if (['<', '<=', '>', '>=', '='].includes(toleranceOperator)) {
+      testRecord.toleranceOperator = toleranceOperator;
+    }
     await testRecord.save({ session });
 
     await session.commitTransaction();

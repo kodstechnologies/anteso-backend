@@ -29,6 +29,11 @@ const MeasurementOfMaLinearitySchema = new Schema(
         table2: [Table2RowSchema],
         measurementHeaders: [{ type: String, trim: true }],
         tolerance: { type: String, default: '0.1', trim: true },
+        toleranceOperator: {
+            type: String,
+            enum: ['<', '<=', '>', '>=', '='],
+            default: '<',
+        },
         serviceReportId: {
             type: Schema.Types.ObjectId,
             ref: 'ServiceReport',
