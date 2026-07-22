@@ -40,6 +40,20 @@ import "../../../models/testTables/DentalHandHeld/ReproducibilityOfRadiationOutp
 import "../../../models/testTables/DentalHandHeld/TubeHousingLeakage.model.js";
 import "../../../models/testTables/DentalHandHeld/RadiationLeakagelevel.model.js";
 import "../../../models/testTables/DentalHandHeld/RadiationProtectionSurvey.model.js";
+// Import FixedRadioFluro models to ensure they're registered with Mongoose
+import "../../../models/testTables/FixedRadioFluro/accuracyOfOperatingPotential.model.js";
+import "../../../models/testTables/FixedRadioFluro/OutputConsistency.model.js";
+import "../../../models/testTables/FixedRadioFluro/LowContrastResolution.model.js";
+import "../../../models/testTables/FixedRadioFluro/HighContrastResolutionForFixedRadioFluoro.model.js";
+import "../../../models/testTables/FixedRadioFluro/ExposureRate.model.js";
+import "../../../models/testTables/FixedRadioFluro/LinearityOfmAsLoadingStations.model.js";
+import "../../../models/testTables/FixedRadioFluro/TubeHousing.model.js";
+import "../../../models/testTables/FixedRadioFluro/AccuracyOfIrradiationTime.model.js";
+import "../../../models/testTables/FixedRadioFluro/congruence.model.js";
+import "../../../models/testTables/FixedRadioFluro/centralBeamAlignment.model.js";
+import "../../../models/testTables/FixedRadioFluro/RadiationPotectionSurvay.model.js";
+import "../../../models/testTables/FixedRadioFluro/EffectiveFocalSpot.model.js";
+import "../../../models/testTables/FixedRadioFluro/TotalFilteration.model.js";
 // Import RadiographyFixed models to ensure they're registered with Mongoose
 import "../../../models/testTables/RadiographyFixed/AccuracyOfIrradiationTime.model.js";
 import "../../../models/testTables/RadiographyFixed/AccuracyOfOperatingPotential.model.js";

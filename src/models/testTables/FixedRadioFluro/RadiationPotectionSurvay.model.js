@@ -102,5 +102,5 @@ RadiationProtectionSurveySchema.pre('save', function (next) {
 // RadiationProtectionSurveySchema.index({ hospitalName: 1 });
 // RadiationProtectionSurveySchema.index({ equipmentId: 1 });
 
-export default mongoose.models.RadiationProtectionSurvey ||
+export default mongoose.models.RadiationProtectionSurveyFixedRadioFluoro ||
   mongoose.model("RadiationProtectionSurveyFixedRadioFluoro", RadiationProtectionSurveySchema);

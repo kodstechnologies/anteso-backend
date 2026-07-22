@@ -279,7 +279,7 @@ const serviceReportSchema = new mongoose.Schema({
     },
     RadiationProtectionSurvey: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "RadiationProtectionSurvey"
+        ref: "RadiationProtectionSurveyFixedRadioFluoro"
     },
     TubeHousingLeakageFixedRadioFlouro: {
         type: mongoose.Schema.Types.ObjectId,
