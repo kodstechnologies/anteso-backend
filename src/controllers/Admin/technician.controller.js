@@ -548,25 +548,7 @@ const add = asyncHandler(async (req, res) => {
             hashedPassword = await bcrypt.hash(password, 10);
         }
 
-        // ✅ Engineer-specific tool validation
-        // if (technicianType === "engineer") {
-        //     if (!parsedTools || !Array.isArray(parsedTools) || parsedTools.length === 0) {
-        //         throw new ApiError(400, "Engineer must be assigned at least one tool.");
-        //     }
-
-        //     for (const t of parsedTools) {
-        //         const toolDoc = await Tool.findById(t.toolId);
-        //         if (!toolDoc) {
-        //             throw new ApiError(404, `Tool with ID ${t.toolId} not found`);
-        //         }
-        //         if (toolDoc.toolStatus === "assigned") {
-        //             throw new ApiError(
-        //                 400,
-        //                 `Tool ${toolDoc.nomenclature} (Serial: ${toolDoc.SrNo}) is already assigned`
-        //             );
-        //         }
-        //     }
-        // }
+    
         // ✅ Engineer optional tools validation
         if (technicianType === "engineer" && parsedTools?.length > 0) {
             for (const t of parsedTools) {

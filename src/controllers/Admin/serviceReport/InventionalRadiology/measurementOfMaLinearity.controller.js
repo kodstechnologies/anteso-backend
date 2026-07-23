@@ -8,7 +8,7 @@ const MACHINE_TYPE = "Interventional Radiology";
 
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measurementHeaders, tubeId } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -40,10 +40,18 @@ const create = asyncHandler(async (req, res) => {
 
     const tubeIdValue = tubeId || null;
     let testRecord = await MeasurementOfMaLinearity.findOne({ serviceId, tubeId: tubeIdValue }).session(session);
+    const allowedOps = ["<", "<=", ">", ">=", "="];
+    const tolOp = allowedOps.includes(String(toleranceOperator || "").trim())
+      ? String(toleranceOperator).trim()
+      : "<=";
     const payload = {
       table1,
       table2,
+      measurementHeaders: Array.isArray(measurementHeaders)
+        ? measurementHeaders.map((h, i) => String(h ?? "").trim() || `Meas ${i + 1}`)
+        : [],
       tolerance: tolerance?.toString().trim() || "0.1",
+      toleranceOperator: tolOp,
       serviceId,
       serviceReportId: serviceReport._id,
       tubeId: tubeIdValue,
@@ -82,7 +90,7 @@ const getById = asyncHandler(async (req, res) => {
 
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance, tubeId } = req.body;
+  const { table1, table2, tolerance, toleranceOperator, measurementHeaders, tubeId } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -116,7 +124,14 @@ const update = asyncHandler(async (req, res) => {
 
     rec.table1 = table1;
     rec.table2 = table2;
+    if (Array.isArray(measurementHeaders)) {
+      rec.measurementHeaders = measurementHeaders.map((h, i) => String(h ?? "").trim() || `Meas ${i + 1}`);
+    }
     rec.tolerance = tolerance?.toString().trim() || "0.1";
+    const allowedOps = ["<", "<=", ">", ">=", "="];
+    rec.toleranceOperator = allowedOps.includes(String(toleranceOperator || "").trim())
+      ? String(toleranceOperator).trim()
+      : "<=";
     await rec.save({ session });
 
     await session.commitTransaction();

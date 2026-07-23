@@ -1,4 +1,5 @@
 import Manufacturer from '../../models/manufacturer.model.js';
+import User from '../../models/user.model.js';
 import { ApiResponse } from '../../utils/ApiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
 
@@ -33,14 +34,14 @@ export const addManufacturer = asyncHandler(async (req, res) => {
                 .json(new ApiResponse(400, null, "Name, Email, and Phone are required"));
         }
 
-        // ✅ Check duplicates
-        const existingManufacturer = await Manufacturer.findOne({
+        // ✅ Only error if phone/email already belongs to a Manufacturer
+        const existingUser = await User.findOne({
             $or: [{ phone }, { email }],
         });
 
-        if (existingManufacturer) {
+        if (existingUser && existingUser.role === "Manufacturer") {
             const duplicateField =
-                existingManufacturer.phone === phone ? "phone number" : "email";
+                existingUser.phone === phone ? "phone number" : "email";
             return res
                 .status(200)
                 .json(

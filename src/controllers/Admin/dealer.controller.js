@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Dealer from "../../models/dealer.model.js";
+import User from "../../models/user.model.js";
 import { asyncHandler } from "../../utils/AsyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js"
 import { ApiError } from "../../utils/ApiError.js"
@@ -26,18 +27,18 @@ export const createDealer = asyncHandler(async (req, res) => {
                 .json(new ApiResponse(400, null, "Name, phone, and email are required"));
         }
 
-        // ✅ Check for existing phone or email
-        const existingDealer = await Dealer.findOne({
+        // ✅ Only error if phone/email already belongs to a Dealer
+        const existingUser = await User.findOne({
             $or: [{ phone }, { email }],
         });
 
-        if (existingDealer) {
-            if (existingDealer.phone === phone) {
+        if (existingUser && existingUser.role === "Dealer") {
+            if (existingUser.phone === phone) {
                 return res
                     .status(200)
                     .json(new ApiResponse(400, null, "Dealer with this phone number already exists"));
             }
-            if (existingDealer.email === email) {
+            if (existingUser.email === email) {
                 return res
                     .status(200)
                     .json(new ApiResponse(400, null, "Dealer with this email already exists"));
