@@ -8,11 +8,16 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 const MACHINE_TYPE = "C-Arm";
 
 // Normalize body: frontend may send settings array and finalRemark; model has fcd, kv, ma, time, remark
-function normalizeBody(body) {
-  const firstSetting = Array.isArray(body.settings) && body.settings[0] ? body.settings[0] : body;
+function normalizeBody(body = {}) {
+  const firstSetting =
+    Array.isArray(body.settings) && body.settings[0] && typeof body.settings[0] === "object"
+      ? body.settings[0]
+      : body.settings && typeof body.settings === "object" && !Array.isArray(body.settings)
+        ? body.settings
+        : {};
   return {
     fcd: body.fcd ?? firstSetting.fcd ?? "",
-    kv: body.kv ?? firstSetting.kv ?? "",
+    kv: body.kv ?? firstSetting.kv ?? firstSetting.kvp ?? "",
     ma: body.ma ?? firstSetting.ma ?? "",
     time: body.time ?? firstSetting.time ?? "",
     workload: body.workload ?? "",
@@ -21,6 +26,23 @@ function normalizeBody(body) {
     toleranceOperator: body.toleranceOperator ?? "",
     toleranceTime: body.toleranceTime ?? "",
     remark: body.remark ?? body.finalRemark ?? "",
+  };
+}
+
+/** Attach settings[] so clients that only read nested settings still get measurement values */
+function withSettings(doc) {
+  if (!doc) return doc;
+  const plain = typeof doc.toObject === "function" ? doc.toObject() : { ...doc };
+  return {
+    ...plain,
+    settings: [
+      {
+        fcd: plain.fcd ?? "",
+        kv: plain.kv ?? "",
+        ma: plain.ma ?? "",
+        time: plain.time ?? "",
+      },
+    ],
   };
 }
 
@@ -92,10 +114,12 @@ const create = asyncHandler(async (req, res) => {
 
     await session.commitTransaction();
 
+    const saved = withSettings(testRecord.toObject ? testRecord.toObject() : testRecord);
     return res.json({
       success: true,
-      message: testRecord.isNew ? "Test created successfully" : "Test updated successfully",
+      message: "Test saved successfully",
       data: {
+        ...saved,
         testId: testRecord._id.toString(),
         _id: testRecord._id.toString(),
         serviceId: testRecord.serviceId.toString(),
@@ -135,7 +159,7 @@ const getById = asyncHandler(async (req, res) => {
       });
     }
 
-    return res.json({ success: true, data: testRecord });
+    return res.json({ success: true, data: withSettings(testRecord) });
   } catch (error) {
     console.error("getById TubeHousingLeakageCArm Error:", error);
     return res.status(500).json({
@@ -188,10 +212,15 @@ const update = asyncHandler(async (req, res) => {
     await testRecord.save({ session });
     await session.commitTransaction();
 
+    const saved = withSettings(testRecord.toObject ? testRecord.toObject() : testRecord);
     return res.json({
       success: true,
       message: "Updated successfully",
-      data: { testId: testRecord._id.toString() },
+      data: {
+        ...saved,
+        testId: testRecord._id.toString(),
+        _id: testRecord._id.toString(),
+      },
     });
   } catch (error) {
     if (session) await session.abortTransaction();
@@ -228,7 +257,7 @@ const getByServiceId = asyncHandler(async (req, res) => {
       });
     }
 
-    return res.json({ success: true, data: testRecord });
+    return res.json({ success: true, data: withSettings(testRecord) });
   } catch (error) {
     console.error("getByServiceId TubeHousingLeakageCArm Error:", error);
     return res.status(500).json({

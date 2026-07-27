@@ -30,9 +30,11 @@ const TotalFilterationSchema = new Schema({
     },
 
     // Table 2: Total Filtration
+    // Generate form stores mm Al in `required` and kVp in `atKvp`
     totalFiltration: {
-        measured: { type: String },  // mm Al
-        required: { type: String },  // mm Al
+        measured: { type: String },  // mm Al (legacy / optional)
+        required: { type: String },  // mm Al (actual measured value from generate form)
+        atKvp: { type: String },     // kVp at which filtration was measured
     },
 
     // Tolerance for Total Filtration (dynamic thresholds)

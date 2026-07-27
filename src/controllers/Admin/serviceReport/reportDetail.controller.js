@@ -640,6 +640,36 @@ const getTools = asyncHandler(async (req, res) => {
 
 
 
+
+/** Shared: save timer / no-timer popup choice onto ServiceReport.hasTimer */
+export const saveTimerPreference = async (req, res) => {
+    const { serviceId } = req.params;
+    const { hasTimer } = req.body;
+    try {
+        if (typeof hasTimer !== "boolean") {
+            return res.status(400).json({ message: "hasTimer (boolean) is required" });
+        }
+        if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
+            return res.status(400).json({ message: "Valid serviceId is required" });
+        }
+        let report = await serviceReportModel.findOne({ serviceId });
+        if (!report) {
+            report = new serviceReportModel({ serviceId });
+        }
+        report.hasTimer = hasTimer;
+        await report.save();
+        return res.status(200).json({
+            message: "Timer preference saved successfully!",
+            hasTimer: report.hasTimer,
+            report,
+        });
+    } catch (error) {
+        console.error("Save timer preference error:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+
 const saveReportHeader = async (req, res) => {
     const { serviceId } = req.params;
     const {
@@ -675,10 +705,32 @@ const saveReportHeader = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             report = new serviceReportModel({ serviceId });
             await report.save();
@@ -770,6 +822,10 @@ const saveReportHeader = async (req, res) => {
             toolsUsed: formattedTools,
             notes: formattedNotes,
         });
+
+        if (typeof hasTimer === "boolean") {
+            report.hasTimer = hasTimer;
+        }
 
         await report.save();
 
@@ -932,6 +988,7 @@ const getReportHeader = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory:
                     report.authorizedSignatory && typeof report.authorizedSignatory === "object"
                         ? {
@@ -1043,10 +1100,32 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -1159,6 +1238,15 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
             EffectiveFocalSpotForRadiographyFixedAndMobile: effectiveFocalSpot?._id || null,
             TotalFilterationRadiographyFixed: totalFiltration?._id || null,
         });
+
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
 
         await report.save();
 
@@ -1331,6 +1419,7 @@ export const getReportHeaderCBCT = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -1403,10 +1492,32 @@ export const saveReportHeaderForCBCT = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -1499,6 +1610,15 @@ export const saveReportHeaderForCBCT = async (req, res) => {
             RadiationProtectionSurveyCBCT: radiationProtection?._id || null,
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -1571,6 +1691,7 @@ export const getReportHeaderOPG = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory:
                     report.authorizedSignatory && typeof report.authorizedSignatory === "object"
                         ? {
@@ -1672,6 +1793,7 @@ export const getReportHeaderDentalIntra = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory:
                     report.authorizedSignatory && typeof report.authorizedSignatory === "object"
@@ -1770,12 +1892,34 @@ export const saveReportHeaderForOPG = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -1868,6 +2012,15 @@ export const saveReportHeaderForOPG = async (req, res) => {
             RadiationProtectionSurveyOPG: pickRef(radiationProtection, report.RadiationProtectionSurveyOPG),
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -1915,10 +2068,32 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -2016,6 +2191,15 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
             RadiationProtectionSurveyDentalIntra: radiationProtection?._id || null,
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -2088,6 +2272,7 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory,
 
@@ -2144,11 +2329,33 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
         rpId, rpid, rpID, RPId, RPID,
         pages, testDate, testDueDate,
         location, temperature, humidity, toolsUsed, notes, csvFileUrl,
-        leadOwner, leadowner, manufacturerName, authorizedSignatory
+        leadOwner, leadowner, manufacturerName, authorizedSignatory,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -2238,6 +2445,15 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             RadiationProtectionSurveyDentalHandHeld: radiationProtection?._id || null,
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -2313,6 +2529,7 @@ export const getReportHeaderRadiographyFixed = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory,
 
@@ -2388,10 +2605,32 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -2496,6 +2735,10 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
             RadiationProtectionSurveyRadiographyFixed: radiationProtection?._id || null,
         });
 
+        if (typeof hasTimer === "boolean") {
+            report.hasTimer = hasTimer;
+        }
+
         await report.save();
 
         return res.status(200).json({
@@ -2578,6 +2821,7 @@ export const getReportHeaderRadiographyMobileHT = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory,
 
@@ -2656,12 +2900,34 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -2766,6 +3032,15 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
             TotalFilterationRadiographyMobileHT: pickRef(totalFiltration, report.TotalFilterationRadiographyMobileHT),
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -2839,6 +3114,7 @@ export const getReportHeaderRadiographyPortable = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -2915,12 +3191,34 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -3019,6 +3317,15 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
             RadiationLeakageLevelRadiographyPortable: pickRef(radiationLeakageLevel, report.RadiationLeakageLevelRadiographyPortable),
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -3092,6 +3399,7 @@ export const getReportHeaderRadiographyMobile = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -3166,12 +3474,34 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -3270,6 +3600,15 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
             RadiationLeakageLevelRadiographyMobile: pickRef(radiationLeakageLevel, report.RadiationLeakageLevelRadiographyMobile),
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -3344,6 +3683,7 @@ export const getReportHeaderCArm = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -3416,10 +3756,32 @@ export const saveReportHeaderCArm = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -3520,6 +3882,15 @@ export const saveReportHeaderCArm = async (req, res) => {
             LinearityOfMaLoadingCArm: linearityMa?._id || null,
             AccuracyOfIrradiationTimeCArm: accuracyIrradiation?._id || null,
         });
+
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
 
         await report.save();
 
@@ -3631,6 +4002,7 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory,
 
@@ -3709,6 +4081,7 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     let tubeIdValue = null;
@@ -3906,6 +4279,7 @@ export const getReportHeaderLeadApron = async (req, res) => {
                 location: report.location || "",
                 temperature: report.temperature || "",
                 humidity: report.humidity || "",
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 notes: report.notes || [],
 
                 toolsUsed: (report.toolsUsed || []).map((t, i) => ({
@@ -4102,6 +4476,7 @@ export const getReportHeaderOArm = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory,
 
@@ -4246,6 +4621,7 @@ export const getReportHeaderForCTScan = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -4332,6 +4708,7 @@ export const saveReportHeaderForCTScan = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     let tubeIdValue = null;
@@ -4559,6 +4936,7 @@ export const getReportHeaderOBI = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
                 authorizedSignatory:
                     report.authorizedSignatory && typeof report.authorizedSignatory === "object"
                         ? {
@@ -4668,6 +5046,7 @@ export const getReportHeaderMammography = async (req, res) => {
                 location: report.location,
                 temperature: report.temperature,
                 humidity: report.humidity,
+                hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
 
                 authorizedSignatory:
                     report.authorizedSignatory && typeof report.authorizedSignatory === "object"
@@ -4750,10 +5129,32 @@ export const saveReportHeaderForMammography = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -4861,6 +5262,15 @@ export const saveReportHeaderForMammography = async (req, res) => {
             LinearityOfMaLoadingStationsMammography: linearityOfMaLoadingStations?._id || null,
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -4909,12 +5319,34 @@ export const saveReportHeaderForOBI = async (req, res) => {
         leadOwner,
         leadowner,
         manufacturerName,
+        hasTimer,
     } = req.body;
 
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only timer preference is posted (popup choice before full header fill)
+        const isTimerPreferenceOnly =
+            typeof hasTimer === "boolean" &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTimerPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.hasTimer = hasTimer;
+            await report.save();
+            return res.status(200).json({
+                message: "Timer preference saved successfully!",
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -5028,6 +5460,15 @@ export const saveReportHeaderForOBI = async (req, res) => {
             TubeHousingLeakageOBI: pickRef(tubeHousingLeakage, report.TubeHousingLeakageOBI),
         });
 
+        if (typeof hasTimer === "boolean") {
+
+
+            report.hasTimer = hasTimer;
+
+
+        }
+
+
         await report.save();
 
         return res.status(200).json({
@@ -5040,4 +5481,4 @@ export const saveReportHeaderForOBI = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, getTools, getReportHeader, saveReportHeaderFixedRadioFluro, getReportHeaderCBCT, saveReportHeaderForCBCT, getReportHeaderOPG, saveReportHeaderForOPG, getReportHeaderDentalIntra, saveReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, saveReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, saveReportHeaderForRadiographyMobileHT, getReportHeaderRadiographyPortable, saveReportHeaderForRadiographyPortable, getReportHeaderRadiographyMobile, saveReportHeaderForRadiographyMobile, getReportHeaderCArm, saveReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, saveReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, saveReportHeaderForOBI, getReportHeaderMammography, saveReportHeaderForMammography, getReportHeaderInventionalRadiology, saveReportHeaderForInventionalRadiology }
+export default { getCustomerDetails, saveTimerPreference, getTools, getReportHeader, saveReportHeaderFixedRadioFluro, getReportHeaderCBCT, saveReportHeaderForCBCT, getReportHeaderOPG, saveReportHeaderForOPG, getReportHeaderDentalIntra, saveReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, saveReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, saveReportHeaderForRadiographyMobileHT, getReportHeaderRadiographyPortable, saveReportHeaderForRadiographyPortable, getReportHeaderRadiographyMobile, saveReportHeaderForRadiographyMobile, getReportHeaderCArm, saveReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, saveReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, saveReportHeaderForOBI, getReportHeaderMammography, saveReportHeaderForMammography, getReportHeaderInventionalRadiology, saveReportHeaderForInventionalRadiology }

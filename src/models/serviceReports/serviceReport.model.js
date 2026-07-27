@@ -116,6 +116,10 @@ const serviceReportSchema = new mongoose.Schema({
     humidity: {
         type: String
     },
+    /** Radiography Fixed (and similar): user choice from timer / no-timer popup */
+    hasTimer: {
+        type: Boolean,
+    },
     authorizedSignatory: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "AuthorizedSignatory"
