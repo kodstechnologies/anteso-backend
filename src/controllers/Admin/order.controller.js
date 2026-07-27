@@ -7017,37 +7017,38 @@ const acceptQAReport = asyncHandler(async (req, res) => {
         return res.status(400).json({ success: false, message: "Invalid ID(s)" });
     }
 
-    let qrCodeUrl = null;
-
-    if (req.file) {
-        const uploaded = await uploadToS3(req.file);
-        qrCodeUrl = uploaded.url;
-    } else if (req.body?.qrCode) {
-        const qrCode = req.body.qrCode;
-
-        if (typeof qrCode === "string" && (qrCode.startsWith("http://") || qrCode.startsWith("https://"))) {
-            qrCodeUrl = qrCode;
-        } else if (typeof qrCode === "string") {
-            const dataUrlMatch = qrCode.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
-            const base64Data = dataUrlMatch ? dataUrlMatch[2] : qrCode;
-            const mimeType = dataUrlMatch ? dataUrlMatch[1] : "image/png";
-            const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "png";
-
-            const uploaded = await uploadToS3({
-                buffer: Buffer.from(base64Data, "base64"),
-                originalname: `qr-code-${Date.now()}.${ext}`,
-                mimetype: mimeType,
-            });
-            qrCodeUrl = uploaded.url;
-        }
-    }
-
-    if (!qrCodeUrl) {
-        return res.status(400).json({
-            success: false,
-            message: "QR code image is required. Send it as 'qrCode' file or in request body.",
-        });
-    }
+    // QR code upload — temporarily disabled
+    // let qrCodeUrl = null;
+    //
+    // if (req.file) {
+    //     const uploaded = await uploadToS3(req.file);
+    //     qrCodeUrl = uploaded.url;
+    // } else if (req.body?.qrCode) {
+    //     const qrCode = req.body.qrCode;
+    //
+    //     if (typeof qrCode === "string" && (qrCode.startsWith("http://") || qrCode.startsWith("https://"))) {
+    //         qrCodeUrl = qrCode;
+    //     } else if (typeof qrCode === "string") {
+    //         const dataUrlMatch = qrCode.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+    //         const base64Data = dataUrlMatch ? dataUrlMatch[2] : qrCode;
+    //         const mimeType = dataUrlMatch ? dataUrlMatch[1] : "image/png";
+    //         const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "png";
+    //
+    //         const uploaded = await uploadToS3({
+    //             buffer: Buffer.from(base64Data, "base64"),
+    //             originalname: `qr-code-${Date.now()}.${ext}`,
+    //             mimetype: mimeType,
+    //         });
+    //         qrCodeUrl = uploaded.url;
+    //     }
+    // }
+    //
+    // if (!qrCodeUrl) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         message: "QR code image is required. Send it as 'qrCode' file or in request body.",
+    //     });
+    // }
 
     // Find order with services and QA report populated
     const order = await orderModel.findById(orderId)
@@ -7069,22 +7070,23 @@ const acceptQAReport = asyncHandler(async (req, res) => {
 
     const serviceObjectId = new mongoose.Types.ObjectId(serviceId);
 
-    let serviceReport = await ServiceReport.findOne({
+    const serviceReport = await ServiceReport.findOne({
         $or: [{ serviceId: serviceObjectId }, { serviceId }],
     });
 
-    if (serviceReport) {
-        serviceReport.qrCode = qrCodeUrl;
-        if (serviceReport.serviceId?.toString() !== serviceObjectId.toString()) {
-            serviceReport.serviceId = serviceObjectId;
-        }
-        await serviceReport.save();
-    } else {
-        serviceReport = await ServiceReport.create({
-            serviceId: serviceObjectId,
-            qrCode: qrCodeUrl,
-        });
-    }
+    // QR code save on ServiceReport — temporarily disabled
+    // if (serviceReport) {
+    //     serviceReport.qrCode = qrCodeUrl;
+    //     if (serviceReport.serviceId?.toString() !== serviceObjectId.toString()) {
+    //         serviceReport.serviceId = serviceObjectId;
+    //     }
+    //     await serviceReport.save();
+    // } else {
+    //     serviceReport = await ServiceReport.create({
+    //         serviceId: serviceObjectId,
+    //         qrCode: qrCodeUrl,
+    //     });
+    // }
 
     wt.QAtest.reportStatus = "accepted";
     await wt.QAtest.save();
@@ -7099,7 +7101,7 @@ const acceptQAReport = asyncHandler(async (req, res) => {
         success: true,
         message: "QA Report accepted and stored in hospital",
         report: wt.QAtest,
-        qrCode: serviceReport.qrCode,
+        qrCode: serviceReport?.qrCode ?? null,
     });
 });
 
