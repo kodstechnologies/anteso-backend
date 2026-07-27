@@ -356,10 +356,20 @@ const updateById = asyncHandler(async (req, res) => {
 
 const deleteById = asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const deletedTool = await Tool.findByIdAndDelete(id);
-    if (!deletedTool) {
+
+    const tool = await Tool.findById(id);
+    if (!tool) {
         throw new ApiError(404, "Tool not found");
     }
+
+    // Remove this tool from any engineer who has it assigned
+    await Employee.updateMany(
+        { "tools.toolId": tool._id },
+        { $pull: { tools: { toolId: tool._id } } }
+    );
+
+    const deletedTool = await Tool.findByIdAndDelete(id);
+
     res.status(200).json(new ApiResponse(200, deletedTool, "Tool deleted successfully"));
 });
 
