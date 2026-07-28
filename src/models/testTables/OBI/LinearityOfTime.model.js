@@ -1,69 +1,92 @@
-// models/LinearityOfTime.js
-import mongoose from 'mongoose';
+// models/testTables/OBI/LinearityOfTime.model.js
+import mongoose from "mongoose";
 
 const { Schema } = mongoose;
 
-// Test Conditions Schema (FDD, kV, Time)
-const TestConditionsSchema = new Schema({
-  fdd: { type: String, default: "" }, // FDD in cm
-  kv: { type: String, default: "" },  // kV
-  time: { type: String, default: "" }, // Time in Sec
-}, { _id: false });
-
-// Measurement Row Schema
-const MeasurementRowSchema = new Schema({
-  maApplied: { type: String, required: true, trim: true }, // mA Applied
-  radiationOutputs: { type: [String], default: [] }, // Dynamic array of measurements
-  averageOutput: { type: String, default: "" }, // Average Output (mGy) - calculated
-  mGyPerMAs: { type: String, default: "" }, // mGy / mAs (X) - calculated
-}, { _id: false });
-
-const LinearityOfTimeSchema = new Schema({
-  serviceId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Service',
-    required: true,
-    index: true,
+/** Fixed test conditions: FFD, kV, mA */
+const TestConditionsSchema = new Schema(
+  {
+    ffd: { type: String, default: "", trim: true }, // FFD (cm)
+    kv: { type: String, default: "", trim: true }, // kV
+    ma: { type: String, default: "", trim: true }, // mA
   },
-  serviceReportId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ServiceReport',
-    index: true,
+  { _id: false }
+);
+
+/**
+ * One measurement row per time applied.
+ * radiationOutputs: multiple readings as an array (e.g. ["1.2", "1.3", "1.1"])
+ */
+const MeasurementRowSchema = new Schema(
+  {
+    timeApplied: { type: String, default: "", trim: true }, // Time applied (s)
+    radiationOutputs: {
+      type: [String],
+      default: [],
+    }, // Multiple radiation output readings
+    averageOutput: { type: String, default: "", trim: true }, // Average Output
+    x: { type: String, default: "", trim: true }, // X (mGy / time or similar)
   },
+  { _id: false }
+);
 
-  // Test Conditions (Fixed)
-  testConditions: { type: TestConditionsSchema, default: () => ({}) },
+const LinearityOfTimeSchema = new Schema(
+  {
+    serviceId: {
+      type: Schema.Types.ObjectId,
+      ref: "Service",
+      required: true,
+      index: true,
+    },
+    serviceReportId: {
+      type: Schema.Types.ObjectId,
+      ref: "ServiceReport",
+      index: true,
+    },
 
-  // Measurement Rows (Dynamic)
-  measurementRows: [MeasurementRowSchema],
+    // FFD, kV, mA
+    testConditions: {
+      type: TestConditionsSchema,
+      default: () => ({}),
+    },
 
-  // Column headers for dynamic radiation output columns
-  measHeaders: {
-    type: [String],
-    default: [],
+    /**
+     * timeApplied is stored per row in this array.
+     * Each row has its own radiationOutputs array.
+     */
+    measurementRows: {
+      type: [MeasurementRowSchema],
+      default: [],
+    },
+
+    // Headers for dynamic radiation-output reading columns (Meas 1, Meas 2, ...)
+    measHeaders: {
+      type: [String],
+      default: [],
+    },
+
+    // Summary
+    xMax: { type: String, default: "", trim: true },
+    xMin: { type: String, default: "", trim: true },
+    col: { type: String, default: "", trim: true }, // Coefficient of Linearity
+    remark: {
+      type: String,
+      enum: ["Pass", "Fail", ""],
+      default: "",
+    },
+
+    // Tolerance
+    tolerance: { type: String, default: "0.1", trim: true },
+    toleranceOperator: { type: String, default: "<=", trim: true },
   },
-
-  // Summary Values (Calculated)
-  xMax: { type: String, default: "" },
-  xMin: { type: String, default: "" },
-  coefficientOfLinearity: { type: String, default: "" }, // CoL
-  remarks: { type: String, enum: ['Pass', 'Fail', ''], default: '' },
-
-  // Tolerance
-  tolerance: { type: String, default: '0.1', trim: true },
-  toleranceOperator: { type: String, default: '<=', trim: true },
-
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
-}, { timestamps: true });
-
-// Update the `updatedAt` field on save
-LinearityOfTimeSchema.pre('save', function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
+  { timestamps: true }
+);
 
 LinearityOfTimeSchema.index({ serviceId: 1 }, { unique: true });
 
-const LinearityOfTime = mongoose.model('LinearityOfTimeOBI', LinearityOfTimeSchema);
+const LinearityOfTime = mongoose.model(
+  "LinearityOfTimeForOBI",
+  LinearityOfTimeSchema
+);
+
 export default LinearityOfTime;

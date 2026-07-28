@@ -103,6 +103,7 @@ import "../../../models/testTables/OBI/CongruenceOfRadiation.model.js";
 import "../../../models/testTables/OBI/EffectiveFocalSpot.model.js";
 import "../../../models/testTables/OBI/HighContrastSensitivity.model.js";
 import "../../../models/testTables/OBI/LinearityOfMasLoadingStations.model.js";
+import "../../../models/testTables/OBI/LinearityOfMaLoading.model.js";
 import "../../../models/testTables/OBI/LinearityOfTime.model.js";
 import "../../../models/testTables/OBI/LowContrastSensitivity.model.js";
 import "../../../models/testTables/OBI/OutputConsistency.model.js";
@@ -4003,6 +4004,7 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
                 temperature: report.temperature,
                 humidity: report.humidity,
                 hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
+                tubeType: report.tubeType === "single" || report.tubeType === "double" ? report.tubeType : null,
 
                 authorizedSignatory,
 
@@ -4082,6 +4084,7 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
         leadowner,
         manufacturerName,
         hasTimer,
+        tubeType,
     } = req.body;
 
     let tubeIdValue = null;
@@ -4100,6 +4103,28 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only tube type is posted (popup choice before full header fill)
+        const isTubeTypePreferenceOnly =
+            (tubeType === "single" || tubeType === "double") &&
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined;
+
+        if (isTubeTypePreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            report.tubeType = tubeType;
+            await report.save();
+            return res.status(200).json({
+                message: "Tube type preference saved successfully!",
+                tubeType: report.tubeType,
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -4211,6 +4236,13 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
             MeasurementOfMaLinearityInventionalRadiology: pickRef(measurementOfMaLinearity, report.MeasurementOfMaLinearityInventionalRadiology),
             RadiationProtectionSurveyInventionalRadiology: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyInventionalRadiology),
         });
+
+        if (typeof hasTimer === "boolean") {
+            report.hasTimer = hasTimer;
+        }
+        if (tubeType === "single" || tubeType === "double") {
+            report.tubeType = tubeType;
+        }
 
         await report.save();
 
@@ -4622,6 +4654,8 @@ export const getReportHeaderForCTScan = async (req, res) => {
                 temperature: report.temperature,
                 humidity: report.humidity,
                 hasTimer: typeof report.hasTimer === "boolean" ? report.hasTimer : null,
+                tubeType: report.tubeType === "single" || report.tubeType === "double" ? report.tubeType : null,
+                hasGantryTilt: typeof report.hasGantryTilt === "boolean" ? report.hasGantryTilt : null,
                 authorizedSignatory,
                 leadOwner: report.leadOwner || "",
                 manufacturerName: report.manufacturerName || "",
@@ -4709,6 +4743,8 @@ export const saveReportHeaderForCTScan = async (req, res) => {
         leadowner,
         manufacturerName,
         hasTimer,
+        tubeType,
+        hasGantryTilt,
     } = req.body;
 
     let tubeIdValue = null;
@@ -4728,6 +4764,34 @@ export const saveReportHeaderForCTScan = async (req, res) => {
 
     try {
         let report = await serviceReportModel.findOne({ serviceId });
+
+        // Lightweight save when only tube type / gantry tilt preference is posted (popup before full header fill)
+        const isPreferenceOnly =
+            customerName === undefined &&
+            testReportNumber === undefined &&
+            toolsUsed === undefined &&
+            notes === undefined &&
+            ((tubeType === "single" || tubeType === "double") || typeof hasGantryTilt === "boolean");
+
+        if (isPreferenceOnly) {
+            if (!report) {
+                report = new serviceReportModel({ serviceId });
+            }
+            if (tubeType === "single" || tubeType === "double") {
+                report.tubeType = tubeType;
+            }
+            if (typeof hasGantryTilt === "boolean") {
+                report.hasGantryTilt = hasGantryTilt;
+            }
+            await report.save();
+            return res.status(200).json({
+                message: "CT Scan preference saved successfully!",
+                tubeType: report.tubeType || null,
+                hasGantryTilt: typeof report.hasGantryTilt === "boolean" ? report.hasGantryTilt : null,
+                report,
+            });
+        }
+
         if (!report) {
             return res.status(404).json({
                 message: "ServiceReport not found. Please generate the test report first.",
@@ -4850,6 +4914,16 @@ export const saveReportHeaderForCTScan = async (req, res) => {
             GantryTiltCTScan: pickRef(gantryTilt, report.GantryTiltCTScan),
         });
 
+        if (typeof hasTimer === "boolean") {
+            report.hasTimer = hasTimer;
+        }
+        if (tubeType === "single" || tubeType === "double") {
+            report.tubeType = tubeType;
+        }
+        if (typeof hasGantryTilt === "boolean") {
+            report.hasGantryTilt = hasGantryTilt;
+        }
+
         await report.save();
 
         return res.status(200).json({
@@ -4884,6 +4958,7 @@ export const getReportHeaderOBI = async (req, res) => {
             "HighContrastSensitivityOBI",
             "LinearityOfMasLoadingStationsOBI",
             "LinearityOfTimeOBI",
+            "LinearityOfTimeForOBI",
             "LowContrastSensitivityOBI",
             "OutputConsistencyOBI",
             "RadiationProtectionSurveyOBI",
@@ -4972,6 +5047,7 @@ export const getReportHeaderOBI = async (req, res) => {
                 HighContrastSensitivityOBI: report.HighContrastSensitivityOBI,
                 LinearityOfMasLoadingStationsOBI: report.LinearityOfMasLoadingStationsOBI,
                 LinearityOfTimeOBI: report.LinearityOfTimeOBI,
+                LinearityOfTimeForOBI: report.LinearityOfTimeForOBI,
                 LowContrastSensitivityOBI: report.LowContrastSensitivityOBI,
                 OutputConsistencyOBI: report.OutputConsistencyOBI,
                 RadiationProtectionSurveyOBI: report.RadiationProtectionSurveyOBI,
@@ -5388,6 +5464,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
             highContrastSensitivity,
             linearityOfMasLoadingStations,
             linearityOfTime,
+            linearityOfTimeForOBI,
             lowContrastSensitivity,
             outputConsistency,
             radiationProtectionSurvey,
@@ -5402,6 +5479,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
             mongoose.model("HighContrastSensitivityOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfMasLoadingStationsOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfTimeOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfTimeForOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LowContrastSensitivityOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("OutputConsistencyOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("RadiationProtectionSurveyOBI").findOne({ serviceId }).sort({ createdAt: -1 }),
@@ -5453,6 +5531,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
             HighContrastSensitivityOBI: pickRef(highContrastSensitivity, report.HighContrastSensitivityOBI),
             LinearityOfMasLoadingStationsOBI: pickRef(linearityOfMasLoadingStations, report.LinearityOfMasLoadingStationsOBI),
             LinearityOfTimeOBI: pickRef(linearityOfTime, report.LinearityOfTimeOBI),
+            LinearityOfTimeForOBI: pickRef(linearityOfTimeForOBI, report.LinearityOfTimeForOBI),
             LowContrastSensitivityOBI: pickRef(lowContrastSensitivity, report.LowContrastSensitivityOBI),
             OutputConsistencyOBI: pickRef(outputConsistency, report.OutputConsistencyOBI),
             RadiationProtectionSurveyOBI: pickRef(radiationProtectionSurvey, report.RadiationProtectionSurveyOBI),

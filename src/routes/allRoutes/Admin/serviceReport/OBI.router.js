@@ -8,6 +8,7 @@ import CentralBeamAlignmentController from "../../../../controllers/Admin/servic
 import CongruenceOfRadiationController from "../../../../controllers/Admin/serviceReport/OBI/CongruenceOfRadiation.controller.js";
 import EffectiveFocalSpotController from "../../../../controllers/Admin/serviceReport/OBI/EffectiveFocalSpot.controller.js";
 import LinearityOfMasLoadingStationsController from "../../../../controllers/Admin/serviceReport/OBI/LinearityOfMasLoadingStations.controller.js";
+import LinearityOfMaLoadingController from "../../../../controllers/Admin/serviceReport/OBI/LinearityOfMaLoading.controller.js";
 import LinearityOfTimeController from "../../../../controllers/Admin/serviceReport/OBI/LinearityOfTime.controller.js";
 import TubeHousingLeakageController from "../../../../controllers/Admin/serviceReport/OBI/TubeHousingLeakage.controller.js";
 import RadiationProtectionController from "../../../../controllers/Admin/serviceReport/OBI/RadiationProtection.controller.js";
@@ -66,11 +67,22 @@ router.get('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingSt
 router.put('/linearity-of-mas-loading-stations/:testId', LinearityOfMasLoadingStationsController.update)
 router.get('/linearity-of-mas-loading-stations-by-serviceId/:serviceId', LinearityOfMasLoadingStationsController.getByServiceId)
 
-// 9. Linearity of Time
-router.post('/linearity-of-time/:serviceId', LinearityOfTimeController.create)
-router.get('/linearity-of-time/:testId', LinearityOfTimeController.getById)
-router.put('/linearity-of-time/:testId', LinearityOfTimeController.update)
-router.get('/linearity-of-time-by-serviceId/:serviceId', LinearityOfTimeController.getByServiceId)
+// 9. Linearity of mA Loading (formerly Linearity of Time)
+router.post('/linearity-of-ma-loading/:serviceId', LinearityOfMaLoadingController.create)
+router.get('/linearity-of-ma-loading/:testId', LinearityOfMaLoadingController.getById)
+router.put('/linearity-of-ma-loading/:testId', LinearityOfMaLoadingController.update)
+router.get('/linearity-of-ma-loading-by-serviceId/:serviceId', LinearityOfMaLoadingController.getByServiceId)
+// Backward-compatible aliases for mA Loading
+router.post('/linearity-of-time/:serviceId', LinearityOfMaLoadingController.create)
+router.get('/linearity-of-time/:testId', LinearityOfMaLoadingController.getById)
+router.put('/linearity-of-time/:testId', LinearityOfMaLoadingController.update)
+router.get('/linearity-of-time-by-serviceId/:serviceId', LinearityOfMaLoadingController.getByServiceId)
+
+// 9b. Linearity of Time (new – FFD/kV/mA + Time Applied rows)
+router.post('/linearity-of-time-measurement/:serviceId', LinearityOfTimeController.create)
+router.get('/linearity-of-time-measurement/:testId', LinearityOfTimeController.getById)
+router.put('/linearity-of-time-measurement/:testId', LinearityOfTimeController.update)
+router.get('/linearity-of-time-measurement-by-serviceId/:serviceId', LinearityOfTimeController.getByServiceId)
 
 // 10. Tube Housing Leakage
 router.post('/tube-housing-leakage/:serviceId', TubeHousingLeakageController.create)

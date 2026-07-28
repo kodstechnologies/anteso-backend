@@ -120,6 +120,15 @@ const serviceReportSchema = new mongoose.Schema({
     hasTimer: {
         type: Boolean,
     },
+    /** CT Scan / Interventional Radiology: single or double tube configuration */
+    tubeType: {
+        type: String,
+        enum: ["single", "double"],
+    },
+    /** CT Scan: user choice from gantry tilt yes/no popup */
+    hasGantryTilt: {
+        type: Boolean,
+    },
     authorizedSignatory: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "AuthorizedSignatory"
@@ -712,9 +721,15 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfMasLoadingStationsOBI"
     },
+    /** OBI: Linearity of mA Loading (legacy field name LinearityOfTimeOBI kept for existing data) */
     LinearityOfTimeOBI: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfTimeOBI"
+    },
+    /** OBI: Linearity of Time (FFD/kV/mA + Time Applied) */
+    LinearityOfTimeForOBI: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfTimeForOBI"
     },
     LowContrastSensitivityOBI: {
         type: mongoose.Schema.Types.ObjectId,
