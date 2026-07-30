@@ -13,15 +13,23 @@ let reconnectTimer = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
 let lastEnsureFailureAt = 0;
+let dbEventHandlersBound = false;
+
+// const connectionOptions = {
+//   serverSelectionTimeoutMS: 10000,
+//   socketTimeoutMS: 45000,
+//   // Keep pool conservative for Atlas M0/M2 tiers.
+//   maxPoolSize: 3,
+//   minPoolSize: 0,
+//   // maxIdleTimeMS: 10000,
+//   waitQueueTimeoutMS: 5000,
+//   // heartbeatFrequencyMS: 10000,
+//   family: 4,
+// };
 
 const connectionOptions = {
   serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
-  // Keep pool conservative for Atlas M0/M2 tiers.
-  maxPoolSize: 3,
-  minPoolSize: 0,
-  maxIdleTimeMS: 10000,
-  waitQueueTimeoutMS: 5000,
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,22 +105,33 @@ const scheduleReconnect = () => {
 };
 
 export const setupDbEventHandlers = () => {
+  if (dbEventHandlersBound) {
+    return;
+  }
+  dbEventHandlersBound = true;
+
   mongoose.connection.on('connected', () => {
-    console.log('MongoDB connected');
+    console.log('✅ MongoDB connected');
     reconnectAttempts = 0;
   });
 
   mongoose.connection.on('disconnected', () => {
-    console.warn('MongoDB disconnected — scheduling reconnect');
+    console.log('❌ MongoDB disconnected');
+    console.log('readyState:', mongoose.connection.readyState);
     scheduleReconnect();
   });
 
+  mongoose.connection.on('close', () => {
+    console.log('⚠️ MongoDB connection closed');
+  });
+
   mongoose.connection.on('error', (err) => {
-    console.error('MongoDB connection error:', err.message);
+    console.error('❌ MongoDB error');
+    console.error(err); // Print the complete error object
   });
 
   mongoose.connection.on('reconnected', () => {
-    console.log('MongoDB reconnected');
+    console.log('🔄 MongoDB reconnected');
     reconnectAttempts = 0;
   });
 };
@@ -156,6 +175,22 @@ export const ensureDbConnection = async (timeoutMs = 8000) => {
   const inCooldown = now - lastEnsureFailureAt < ENSURE_RETRY_COOLDOWN_MS;
   if (inCooldown) {
     return false;
+  }
+
+  if (mongoose.connection.readyState === 2 || isConnecting) {
+    try {
+      await Promise.race([
+        waitForExistingConnection(),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database connection timeout')), timeoutMs);
+        }),
+      ]);
+      return isDbConnected();
+    } catch (err) {
+      lastEnsureFailureAt = Date.now();
+      console.warn('ensureDbConnection failed:', err.message);
+      return false;
+    }
   }
 
   try {
