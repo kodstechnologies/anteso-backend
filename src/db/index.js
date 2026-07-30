@@ -7,15 +7,21 @@ const MONGODB_URL = process.env.MONGODB_URL;
 const MAX_RECONNECT_ATTEMPTS = 15;
 const RECONNECT_BASE_DELAY_MS = 2000;
 const RECONNECT_MAX_DELAY_MS = 30000;
+const ENSURE_RETRY_COOLDOWN_MS = 5000;
 
 let reconnectTimer = null;
 let reconnectAttempts = 0;
 let isConnecting = false;
+let lastEnsureFailureAt = 0;
 
 const connectionOptions = {
   serverSelectionTimeoutMS: 10000,
   socketTimeoutMS: 45000,
-  maxPoolSize: 10,
+  // Keep pool conservative for Atlas M0/M2 tiers.
+  maxPoolSize: 3,
+  minPoolSize: 0,
+  maxIdleTimeMS: 10000,
+  waitQueueTimeoutMS: 5000,
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -146,6 +152,12 @@ export const ensureDbConnection = async (timeoutMs = 8000) => {
     return true;
   }
 
+  const now = Date.now();
+  const inCooldown = now - lastEnsureFailureAt < ENSURE_RETRY_COOLDOWN_MS;
+  if (inCooldown) {
+    return false;
+  }
+
   try {
     await Promise.race([
       connectToDb({ isRetry: true }),
@@ -156,6 +168,7 @@ export const ensureDbConnection = async (timeoutMs = 8000) => {
 
     return isDbConnected();
   } catch (err) {
+    lastEnsureFailureAt = Date.now();
     console.warn('ensureDbConnection failed:', err.message);
     scheduleReconnect();
     return false;
