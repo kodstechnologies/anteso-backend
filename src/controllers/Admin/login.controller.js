@@ -19,6 +19,7 @@ import Enquiry from "../../models/enquiry.model.js";
 import Services from "../../models/Services.js";
 import { enquirySchema } from "../../validators/enquiryValidators.js";
 import AdditionalService from "../../models/additionalService.model.js";
+import {uploadToS3} from "../../utils/s3Upload.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -657,34 +658,31 @@ const add = asyncHandler(async (req, res) => {
         if (!customerId) {
             const { emailAddress, contactNumber, hospitalName, fullAddress, branch, contactPerson } = value;
 
-            // Check existing by email
+            // Unique email/phone only among Customer role (compound index: email+role / phone+role)
             if (emailAddress) {
-                const existingByEmail = await User.findOne({ email: emailAddress });
+                const existingByEmail = await Client.findOne({ email: emailAddress });
                 if (existingByEmail) {
                     return res.status(400).json(
                         new ApiResponse(
                             400,
                             { existingByEmail },
-                            "Email already exists. Please enter another email."
+                            "Email already exists for a Customer. Please enter another email."
                         )
                     );
                 }
             }
 
-            // Check existing by phone
-            let existingCustomer = null;
             if (contactNumber) {
-                existingCustomer = await User.findOne({ phone: contactNumber });
-            }
-
-            if (existingCustomer) {
-                return res.status(200).json(
-                    new ApiResponse(
-                        200,
-                        { existingCustomer },
-                        "Customer already exists. Please enquire via mobile app."
-                    )
-                );
+                const existingByPhone = await Client.findOne({ phone: contactNumber });
+                if (existingByPhone) {
+                    return res.status(400).json(
+                        new ApiResponse(
+                            400,
+                            { existingByPhone },
+                            "Mobile number already exists for a Customer. Please enter another mobile number."
+                        )
+                    );
+                }
             }
 
             // ✅ Create Customer using the correct discriminator (Client)
@@ -692,6 +690,7 @@ const add = asyncHandler(async (req, res) => {
                 name: contactPerson,
                 email: emailAddress,
                 phone: contactNumber,
+                role: "Customer",
             });
 
             customerId = newCustomer._id;
