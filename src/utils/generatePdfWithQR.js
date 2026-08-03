@@ -27,7 +27,8 @@ export const generatePdfWithQR = async (data) => {
             width: scaledQR.width,
             height: scaledQR.height,
         });
-
+ 
+    
         const pdfBytes = await pdfDoc.save();
         const outputPath = path.join(path.resolve(), 'tool-certificate.pdf');
         fs.writeFileSync(outputPath, pdfBytes);
@@ -37,3 +38,4 @@ export const generatePdfWithQR = async (data) => {
         console.error('❌ Error generating PDF:', err);
     }
 };
+

@@ -7223,13 +7223,6 @@ const getEloraReport = asyncHandler(async (req, res) => {
     }
 });
 
-const getReportStatus = async (req, res) => {
-    try {
-
-    } catch (error) {
-
-    }
-}
 
 
 
