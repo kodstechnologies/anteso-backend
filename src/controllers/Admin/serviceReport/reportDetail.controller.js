@@ -207,7 +207,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
             .select("machineType machineModel serialNumber workTypeDetails")
             .populate({
                 path: "workTypeDetails.engineer",
-                select: "name email designation technicianType", // adjust fields as per Employee schema
+                select: "name email designation technicianType empId doc1", // adjust fields as per Employee schema
             })
             .lean();
 
@@ -257,10 +257,13 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
                 orderCreatedAt: order.createdAt,
                 engineerAssigned: qaEngineer
                     ? {
+                        _id: qaEngineer._id,
                         name: qaEngineer.name || "N/A",
                         email: qaEngineer.email || "N/A",
                         designation: qaEngineer.designation || "N/A",
                         technicianType: qaEngineer.technicianType || "N/A",
+                        empId: qaEngineer.empId || "",
+                        doc1: qaEngineer.doc1 || "",
                     }
                     : null,
                 qaTests: qaTestReportNumbers,

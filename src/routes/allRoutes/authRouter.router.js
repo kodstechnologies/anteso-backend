@@ -18,6 +18,8 @@ router.post('/login', loginController.adminLogin)
 // router.post('/signout',lo)
 router.post('/staff-login', loginController.staffLogin)
 
+// Public QR scan target — no auth (before admin authenticate middleware)
+router.get('/engineer-signature/:id', loginController.getPublicEngineerSignature)
 
 // router.
 export default router

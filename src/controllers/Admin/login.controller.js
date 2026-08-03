@@ -784,4 +784,34 @@ const add = asyncHandler(async (req, res) => {
     }
 });
 
-export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword, getAllStates, add }
+/** Public: engineer signature (doc1) for QR signed-page — no auth */
+const getPublicEngineerSignature = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        throw new ApiError(400, "Engineer id is required");
+    }
+
+    const engineer = await Employee.findById(id)
+        .select("name empId doc1 designation technicianType")
+        .lean();
+
+    if (!engineer) {
+        throw new ApiError(404, "Engineer not found");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                _id: engineer._id,
+                name: engineer.name || "",
+                empId: engineer.empId || "",
+                doc1: engineer.doc1 || "",
+                designation: engineer.designation || "",
+            },
+            "Engineer signature fetched successfully"
+        )
+    );
+});
+
+export default { adminLogin, staffLogin, sendOtpForStaff, verifyOtpForStaff, resetPassword, getAllStates, add, getPublicEngineerSignature }
