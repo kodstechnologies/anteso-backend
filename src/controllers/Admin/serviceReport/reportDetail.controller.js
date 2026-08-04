@@ -240,6 +240,12 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
             });
         }
 
+        // Pull latest header-level RP ID (used by C-Arm / O-Arm generate screens)
+        const headerReport = await serviceReportModel
+            .findOne({ serviceId })
+            .select("rpId")
+            .lean();
+
         // Extract QATest IDs from workTypeDetails (if any)
         const qaTestIds = service.workTypeDetails
             ?.map((w) => w.QAtest)
@@ -260,10 +266,13 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
             }));
         }
 
+        // Find QA work-type details (for completedAt + assigned engineer)
+        const qaWorkType = service.workTypeDetails?.find(
+            (w) => w.workType === "Quality Assurance Test"
+        );
+
         // Find the engineer assigned for Quality Assurance Test (if present)
-        const qaEngineer = service.workTypeDetails?.find(
-            (w) => w.workType === "Quality Assurance Test" && w.engineer
-        )?.engineer;
+        const qaEngineer = qaWorkType?.engineer;
 
         // 3️⃣ Construct final response
         return res.status(200).json({
@@ -277,6 +286,8 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
                 machineModel: service.machineModel || "N/A",
                 serialNumber: service.serialNumber || "N/A",
                 orderCreatedAt: order.createdAt,
+                completedAt: qaWorkType?.completedAt || null,
+                rpId: headerReport?.rpId || "",
                 engineerAssigned: qaEngineer
                     ? {
                         _id: qaEngineer._id,
