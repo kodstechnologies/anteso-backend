@@ -6707,7 +6707,7 @@ const getQaReportsByTechnician = async (req, res) => {
         // 2️⃣ Fetch related orders for those services
         const serviceIds = services.map(s => s._id);
         const orders = await orderModel.find({ services: { $in: serviceIds } })
-            .select("_id srfNumber partyCodeOrSysId procNoOrPoNo services");
+            .select("_id srfNumber partyCodeOrSysId procNoOrPoNo hospitalName services");
 
         const reports = [];
 
@@ -6723,6 +6723,7 @@ const getQaReportsByTechnician = async (req, res) => {
                     reports.push({
                         orderId: parentOrder?._id,
                         srfNumber: parentOrder?.srfNumber,
+                        hospitalName: parentOrder?.hospitalName || "",
                         procNoOrPoNo: parentOrder?.procNoOrPoNo,
                         partyCodeOrSysId: parentOrder?.partyCodeOrSysId,
                         serviceId: service._id,
