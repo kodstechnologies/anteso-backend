@@ -170,7 +170,7 @@ export const sendOtp = asyncHandler(async (req, res) => {
 
         await LoginOtp.findOneAndUpdate(
             { mobileNumber },
-            { otp, expiresAt },
+            { otp, expiresAt, otpVerified: false, otpExpiry: expiresAt },
             { upsert: true, new: true }
         );
 
@@ -452,8 +452,9 @@ export const sendOtp = asyncHandler(async (req, res) => {
 export const verifyOtp = asyncHandler(async (req, res) => {
     const verifyOtpSchema = Joi.object({
         mobileNumber: Joi.string().required(),
-        otp: Joi.string().length(6).required(),
-        // Client sends "Technician" for engineer account (not "Employee")
+        // otp can be omitted on 2nd call after otpVerified=true is stored
+        otp: Joi.string().length(6).optional(),
+       
         role: Joi.string().valid("Customer", "Technician").optional(),
     });
 
@@ -466,7 +467,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
     }
 
     const { mobileNumber, role: selectedRole } = req.body;
-    const otp = String(req.body.otp);
+    const otp = req.body.otp ? String(req.body.otp) : "";
+    const otpProvided = Boolean(req.body.otp);
 
     const isStaticOtp = otp === "555555";
 
@@ -477,27 +479,46 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         return userDoc.role;
     };
 
-    // ✅ Skip DB validation if static OTP
-    if (!isStaticOtp) {
-        const otpRecord = await LoginOtp.findOne({ mobileNumber });
+    const otpRecord = await LoginOtp.findOne({ mobileNumber });
+    if (!otpRecord) {
+        return res.status(400).json({
+            success: false,
+            message: "No OTP sent to this number"
+        });
+    }
 
-        if (!otpRecord)
+    const otpExpiresAt = otpRecord.expiresAt || otpRecord.otpExpiry;
+    if (otpExpiresAt && otpExpiresAt < new Date()) {
+        return res.status(400).json({
+            success: false,
+            message: "OTP has expired"
+        });
+    }
+
+    const alreadyOtpVerified = otpRecord.otpVerified === true;
+
+    // If otp is not yet verified, validate it now and mark otpVerified=true in DB.
+    if (!alreadyOtpVerified) {
+        if (!isStaticOtp && !otpProvided) {
             return res.status(400).json({
                 success: false,
-                message: "No OTP sent to this number"
+                message: "OTP is required"
             });
+        }
 
-        if (otpRecord.expiresAt < new Date())
-            return res.status(400).json({
-                success: false,
-                message: "OTP has expired"
-            });
+        if (!isStaticOtp) {
+            if (String(otpRecord.otp) !== otp) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid OTP"
+                });
+            }
+        }
 
-        if (String(otpRecord.otp) !== otp)
-            return res.status(400).json({
-                success: false,
-                message: "Invalid OTP"
-            });
+        await LoginOtp.updateOne(
+            { mobileNumber },
+            { $set: { otpVerified: true } }
+        );
     }
 
     // 🔍 Find all matching accounts for this phone
@@ -539,6 +560,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
                 needsRoleSelection: true,
                 roles: ["Customer", "Engineer"],
                 accounts,
+                otpVerified: true,
                 token: null,
                 refreshToken: null,
                 user: null,
@@ -683,6 +705,7 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         data: {
             needsRoleSelection: false,
             roles: [displayRole],
+            otpVerified: true,
             token,
             user: userResponse,
             refreshToken,

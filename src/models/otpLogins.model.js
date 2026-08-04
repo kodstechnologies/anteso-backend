@@ -12,8 +12,19 @@ const loginOtpSchema = new mongoose.Schema(
         },
         otpExpiry: {
             type: Date,
-            required: true,
+            required: false,
             index: { expires: 0 },
+        },
+        // Keep compatibility with existing controller code that writes `expiresAt`
+        expiresAt: {
+            type: Date,
+            required: false,
+            index: { expires: 0 },
+        },
+        // When user selects role after OTP, we set this to true so OTP isn't required again
+        otpVerified: {
+            type: Boolean,
+            default: false,
         },
     },
     { timestamps: true }
