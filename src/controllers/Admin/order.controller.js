@@ -1245,7 +1245,7 @@ const getMachineDetails = asyncHandler(async (req, res) => {
         // Filter workTypeDetails assigned to this technician
         const result = service.workTypeDetails
             .filter(work => work.engineer?.toString() === technicianId)
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // 🔥 latest on top
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .map(work => ({
                 machineType: service.machineType,
                 workType: work.workType,

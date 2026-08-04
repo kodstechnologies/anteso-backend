@@ -5,7 +5,19 @@ import LinearityOfMaLoading from "../../../../models/testTables/BMD/LinearityOfM
 import TubeHousingLeakage from "../../../../models/testTables/BMD/TubeHousing.model.js";
 import RadiationProtection from "../../../../models/testTables/BMD/DetailsOfRadiationProtection.model.js";
 import TotalFilteration from "../../../../models/testTables/BMD/TotalFilteration.model.js";
+import Services from "../../../../models/Services.js";
 import mongoose from "mongoose";
+
+const syncServiceSerialNumber = async (serviceId, slNumber) => {
+    if (!serviceId || slNumber === undefined || slNumber === null) return;
+    const serial = String(slNumber).trim();
+    if (!serial) return;
+    try {
+        await Services.findByIdAndUpdate(serviceId, { serialNumber: serial });
+    } catch (err) {
+        console.error("syncServiceSerialNumber error:", err?.message || err);
+    }
+};
 
 // SAVE/UPDATE Report Header for BMD
 export const saveReportHeader = async (req, res) => {
@@ -149,6 +161,8 @@ export const saveReportHeader = async (req, res) => {
         });
 
         await report.save();
+
+        await syncServiceSerialNumber(serviceId, slNumber);
 
         return res.status(200).json({
             success: true,
