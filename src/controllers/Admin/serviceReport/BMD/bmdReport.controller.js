@@ -8,14 +8,22 @@ import TotalFilteration from "../../../../models/testTables/BMD/TotalFilteration
 import Services from "../../../../models/Services.js";
 import mongoose from "mongoose";
 
-const syncServiceSerialNumber = async (serviceId, slNumber) => {
-    if (!serviceId || slNumber === undefined || slNumber === null) return;
-    const serial = String(slNumber).trim();
-    if (!serial) return;
+const syncServiceDeviceFields = async (serviceId, { model, slNumber } = {}) => {
+    if (!serviceId) return;
+    const update = {};
+    if (model !== undefined && model !== null) {
+        const machineModel = String(model).trim();
+        if (machineModel) update.machineModel = machineModel;
+    }
+    if (slNumber !== undefined && slNumber !== null) {
+        const serial = String(slNumber).trim();
+        if (serial) update.serialNumber = serial;
+    }
+    if (Object.keys(update).length === 0) return;
     try {
-        await Services.findByIdAndUpdate(serviceId, { serialNumber: serial });
+        await Services.findByIdAndUpdate(serviceId, update);
     } catch (err) {
-        console.error("syncServiceSerialNumber error:", err?.message || err);
+        console.error("syncServiceDeviceFields error:", err?.message || err);
     }
 };
 
@@ -162,7 +170,7 @@ export const saveReportHeader = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             success: true,

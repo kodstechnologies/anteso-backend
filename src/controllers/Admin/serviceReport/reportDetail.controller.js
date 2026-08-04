@@ -180,15 +180,23 @@ import "../../../models/testTables/DentalConeBeamCT/RadiationProtectionSurvey.mo
 import mongoose from "mongoose";
 
 
-/** Sync report header slNumber onto Service.serialNumber */
-const syncServiceSerialNumber = async (serviceId, slNumber) => {
-    if (!serviceId || slNumber === undefined || slNumber === null) return;
-    const serial = String(slNumber).trim();
-    if (!serial) return;
+/** Sync report header model/slNumber onto Service.machineModel/serialNumber */
+const syncServiceDeviceFields = async (serviceId, { model, slNumber } = {}) => {
+    if (!serviceId) return;
+    const update = {};
+    if (model !== undefined && model !== null) {
+        const machineModel = String(model).trim();
+        if (machineModel) update.machineModel = machineModel;
+    }
+    if (slNumber !== undefined && slNumber !== null) {
+        const serial = String(slNumber).trim();
+        if (serial) update.serialNumber = serial;
+    }
+    if (Object.keys(update).length === 0) return;
     try {
-        await Services.findByIdAndUpdate(serviceId, { serialNumber: serial });
+        await Services.findByIdAndUpdate(serviceId, update);
     } catch (err) {
-        console.error("syncServiceSerialNumber error:", err?.message || err);
+        console.error("syncServiceDeviceFields error:", err?.message || err);
     }
 };
 
@@ -847,7 +855,7 @@ const saveReportHeader = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Report header saved successfully!",
@@ -1270,7 +1278,7 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Fixed Radio Flouro report header saved successfully!",
@@ -1640,7 +1648,7 @@ export const saveReportHeaderForCBCT = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Dental Cone Beam CT report header saved successfully!",
@@ -2044,7 +2052,7 @@ export const saveReportHeaderForOPG = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "OPG report header saved successfully!",
@@ -2225,7 +2233,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Dental Intra report header saved successfully!",
@@ -2481,7 +2489,7 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Dental Hand-held report header saved successfully!",
@@ -2768,7 +2776,7 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Radiography Fixed report header saved successfully!",
@@ -3072,7 +3080,7 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Radiography Mobile HT report header saved successfully!",
@@ -3359,7 +3367,7 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Radiography Portable report header saved successfully!",
@@ -3644,7 +3652,7 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Radiography Mobile report header saved successfully!",
@@ -3929,7 +3937,7 @@ export const saveReportHeaderCArm = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "C-Arm report header saved successfully!",
@@ -4282,7 +4290,7 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Interventional Radiology report header saved successfully!",
@@ -4478,7 +4486,7 @@ export const saveReportHeaderLeadApron = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Lead Apron report header saved successfully!",
@@ -4966,7 +4974,7 @@ export const saveReportHeaderForCTScan = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "CT Scan report header saved successfully!",
@@ -5391,7 +5399,7 @@ export const saveReportHeaderForMammography = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "Mammography report header saved successfully!",
@@ -5594,7 +5602,7 @@ export const saveReportHeaderForOBI = async (req, res) => {
 
         await report.save();
 
-        await syncServiceSerialNumber(serviceId, slNumber);
+        await syncServiceDeviceFields(serviceId, { model, slNumber });
 
         return res.status(200).json({
             message: "OBI report header saved successfully!",
