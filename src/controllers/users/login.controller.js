@@ -448,11 +448,13 @@ export const sendOtp = asyncHandler(async (req, res) => {
 // });
 
 
-//static otp
+//static otp — supports optional role when phone is both Customer + Engineer
 export const verifyOtp = asyncHandler(async (req, res) => {
     const verifyOtpSchema = Joi.object({
         mobileNumber: Joi.string().required(),
         otp: Joi.string().length(6).required(),
+        // Client sends "Technician" for engineer account (not "Employee")
+        role: Joi.string().valid("Customer", "Technician").optional(),
     });
 
     const { error } = verifyOtpSchema.validate(req.body);
@@ -463,10 +465,17 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         });
     }
 
-    const { mobileNumber } = req.body;
-    const otp = String(req.body.otp); // ⭐ ensure string
+    const { mobileNumber, role: selectedRole } = req.body;
+    const otp = String(req.body.otp);
 
     const isStaticOtp = otp === "555555";
+
+    // Response label: engineer Employee → "Engineer"
+    const toDisplayRole = (userDoc) => {
+        if (!userDoc) return null;
+        if (userDoc.role === "Employee" && userDoc.technicianType === "engineer") return "Engineer";
+        return userDoc.role;
+    };
 
     // ✅ Skip DB validation if static OTP
     if (!isStaticOtp) {
@@ -491,8 +500,8 @@ export const verifyOtp = asyncHandler(async (req, res) => {
             });
     }
 
-    // 🔍 Check for User (including both engineer + office staff)
-    let user = await User.findOne({
+    // 🔍 Find all matching accounts for this phone
+    const matchedUsers = await User.find({
         phone: mobileNumber,
         $or: [
             { role: "Customer" },
@@ -503,9 +512,78 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         ]
     });
 
+    const customerAccount = matchedUsers.find((u) => u.role === "Customer") || null;
+    const engineerAccount =
+        matchedUsers.find(
+            (u) => u.role === "Employee" && u.technicianType === "engineer" && u.status === "active"
+        ) || null;
+
+    // Dual-role: Customer + Engineer → client must pick role (no token until role is sent)
+    const hasDualCustomerEngineer = Boolean(customerAccount && engineerAccount);
+
+    if (hasDualCustomerEngineer && !selectedRole) {
+        const accounts = [customerAccount, engineerAccount].map((u) => ({
+            _id: u._id,
+            name: u.name,
+            phone: u.phone,
+            email: u.email,
+            role: toDisplayRole(u), // Customer | Engineer
+            technicianType: u.technicianType || null,
+            status: u.status || null,
+        }));
+
+        // Keep OTP so second call with role can still verify
+        return res.status(200).json({
+            success: true,
+            data: {
+                needsRoleSelection: true,
+                roles: ["Customer", "Engineer"],
+                accounts,
+                token: null,
+                refreshToken: null,
+                user: null,
+            },
+            message: "Multiple roles found. Please select a role and verify again.",
+        });
+    }
+
+    let user = null;
     let isAdmin = false;
 
-    if (!user) {
+    if (hasDualCustomerEngineer && selectedRole) {
+        if (selectedRole === "Customer") {
+            user = customerAccount;
+        } else if (selectedRole === "Technician") {
+            // Payload "Technician" → engineer Employee account
+            user = engineerAccount;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role. Choose Customer or Technician.",
+            });
+        }
+    } else if (matchedUsers.length === 1) {
+        user = matchedUsers[0];
+    } else if (matchedUsers.length > 1) {
+        if (selectedRole === "Customer") {
+            user = matchedUsers.find((u) => u.role === "Customer") || null;
+        } else if (selectedRole === "Technician") {
+            user =
+                matchedUsers.find(
+                    (u) => u.role === "Employee" && u.technicianType === "engineer"
+                ) || null;
+        } else if (selectedRole) {
+            user = matchedUsers.find((u) => u.role === selectedRole) || null;
+        } else {
+            user = matchedUsers[0];
+        }
+        if (selectedRole && !user) {
+            return res.status(400).json({
+                success: false,
+                message: "No account found for role " + selectedRole,
+            });
+        }
+    } else {
         user = await Admin.findOne({ phoneNumber: mobileNumber });
         if (!user) {
             return res.status(404).json({
@@ -572,11 +650,11 @@ export const verifyOtp = asyncHandler(async (req, res) => {
         }
     }
 
-    // Generate JWT
+    // Generate JWT (DB role "Employee" kept for authorizeRoles middleware)
     const payload = {
         _id: user._id,
-        role: user.role,
-        phone: user.phone,
+        role: isAdmin ? (user.role || "admin") : user.role,
+        phone: isAdmin ? user.phoneNumber : user.phone,
         isAdmin
     };
 
@@ -592,14 +670,26 @@ export const verifyOtp = asyncHandler(async (req, res) => {
 
     if (!isStaticOtp) await LoginOtp.deleteOne({ mobileNumber });
 
+    const displayRole = isAdmin ? (user.role || "admin") : toDisplayRole(user);
+    const userResponse = isAdmin
+        ? user
+        : {
+            ...(typeof user.toObject === "function" ? user.toObject() : user),
+            role: displayRole, // Customer | Engineer in API response
+        };
+
     return res.status(200).json({
         success: true,
-        data: { token, user, refreshToken },
+        data: {
+            needsRoleSelection: false,
+            roles: [displayRole],
+            token,
+            user: userResponse,
+            refreshToken,
+        },
         message: "OTP verified successfully"
     });
 });
-
-
 
 
 //verify otp--production
