@@ -16,22 +16,22 @@
   let lastEnsureFailureAt = 0;
   let dbEventHandlersBound = false;
 
-  // const connectionOptions = {
-  //   serverSelectionTimeoutMS: 10000,
-  //   socketTimeoutMS: 45000,
-  //   // Keep pool conservative for Atlas M0/M2 tiers.
-  //   maxPoolSize: 3,
-  //   minPoolSize: 0,
-  //   // maxIdleTimeMS: 10000,
-  //   waitQueueTimeoutMS: 5000,
-  //   // heartbeatFrequencyMS: 10000,
-  //   family: 4,
-  // };
-
   const connectionOptions = {
     serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 45000,
+    // Keep pool conservative for Atlas M0/M2 tiers.
+    maxPoolSize: 3,
+    minPoolSize: 0,
+    // maxIdleTimeMS: 10000,
+    waitQueueTimeoutMS: 5000,
+    // heartbeatFrequencyMS: 10000,
+    family: 4,
   };
+
+  // const connectionOptions = {
+  //   serverSelectionTimeoutMS: 10000,
+  //   socketTimeoutMS: 45000,
+  // };
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
