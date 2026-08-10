@@ -1974,7 +1974,12 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
 
 const getAllInvoices = asyncHandler(async (req, res) => {
   try {
-    const { state, branchName } = req.query;
+    const { state, branchName, leadOwner } = req.query;
+
+    const sortValues = (values = []) =>
+      [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+        .map((value) => String(value).trim())
+        .sort((a, b) => a.localeCompare(b));
 
     const query = {};
     if (state && String(state).trim()) {
@@ -1997,33 +2002,108 @@ const getAllInvoices = asyncHandler(async (req, res) => {
       ];
     }
 
-    // Fetch matching invoices, populate 'enquiry', 'order' and 'payment'
+    if (String(leadOwner || "").trim()) {
+      const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+      const userIds = matchingUsers.map((user) => user._id);
+      const userIdStrings = userIds.map((id) => id.toString());
+
+      const [matchingOrders, matchingEnquiries] = userIds.length
+        ? await Promise.all([
+          Order.find({
+            $or: [
+              { leadOwner: { $in: userIds } },
+              { customer: { $in: userIds } },
+            ],
+          }).select("_id").lean(),
+          Enquiry.find({ leadOwner: { $in: userIdStrings } }).select("_id").lean(),
+        ])
+        : [[], []];
+
+      const leadOwnerFilter = {
+        $or: [
+          { order: { $in: matchingOrders.map((order) => order._id) } },
+          { enquiry: { $in: matchingEnquiries.map((enquiry) => enquiry._id) } },
+        ],
+      };
+
+      if (query.$or) {
+        query.$and = [{ $or: query.$or }, leadOwnerFilter];
+        delete query.$or;
+      } else {
+        query.$or = leadOwnerFilter.$or;
+      }
+    }
+
     const invoices = await Invoice.find(query)
-      .sort({ createdAt: -1 }) // latest first
-      .populate("enquiry") // populate enquiry if needed
+      .sort({ createdAt: -1 })
+      .populate("enquiry", "branch leadOwner")
       .populate({
         path: "order",
-        select: "branchName", // select branchName from order
+        select: "branchName leadOwner customer",
       })
       .populate({
         path: "payment",
-        select: "paymentType paymentAmount paymentStatus utrNumber", // select the fields you need
+        select: "paymentType paymentAmount paymentStatus utrNumber",
       });
 
-    const invoicesWithBranch = invoices.map((invoice) => {
-      const invObj = invoice.toObject();
-      return {
-        ...invObj,
-        branchName: invObj.order?.branchName || invObj.enquiry?.branch || null,
-      };
-    });
+    const [orderLeadOwnerIds, orderCustomerIds, enquiryLeadOwnerIds] = await Promise.all([
+      Order.distinct("leadOwner"),
+      Order.distinct("customer"),
+      Enquiry.distinct("leadOwner"),
+    ]);
+    const leadOwnerFilterIds = [
+      ...new Set(
+        [...orderLeadOwnerIds, ...orderCustomerIds, ...enquiryLeadOwnerIds]
+          .filter((id) => id && mongoose.Types.ObjectId.isValid(id))
+      ),
+    ];
+    const leadOwnerUsers = leadOwnerFilterIds.length
+      ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
+      : [];
+    const leadOwnerMap = Object.fromEntries(
+      leadOwnerUsers.map((user) => [user._id.toString(), user.name])
+    );
 
-    console.log("🚀 ~ invoices:", invoicesWithBranch);
+    const resolveLeadOwnerName = async (order, enquiry) => {
+      if (order?.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+        const name = leadOwnerMap[String(order.leadOwner)];
+        if (name) return name;
+        const user = await User.findById(order.leadOwner).select("name");
+        if (user?.name) return user.name;
+      }
+      if (order?.customer && mongoose.Types.ObjectId.isValid(order.customer)) {
+        const name = leadOwnerMap[String(order.customer)];
+        if (name) return name;
+        const customer = await User.findById(order.customer).select("name");
+        if (customer?.name) return customer.name;
+      }
+      if (enquiry?.leadOwner && mongoose.Types.ObjectId.isValid(enquiry.leadOwner)) {
+        const name = leadOwnerMap[String(enquiry.leadOwner)];
+        if (name) return name;
+        const user = await User.findById(enquiry.leadOwner).select("name");
+        if (user?.name) return user.name;
+      }
+      return "N/A";
+    };
+
+    const invoicesWithBranch = await Promise.all(
+      invoices.map(async (invoice) => {
+        const invObj = invoice.toObject();
+        return {
+          ...invObj,
+          branchName: invObj.order?.branchName || invObj.enquiry?.branch || null,
+          leadOwner: await resolveLeadOwnerName(invObj.order, invObj.enquiry),
+        };
+      })
+    );
 
     res.status(200).json({
       success: true,
       data: invoicesWithBranch,
       count: invoicesWithBranch.length,
+      filters: {
+        leadOwners: sortValues(leadOwnerUsers.map((user) => user.name)),
+      },
     });
   } catch (error) {
     console.error("Error fetching invoices:", error);

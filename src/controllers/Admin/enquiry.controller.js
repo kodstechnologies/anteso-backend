@@ -1997,7 +1997,7 @@ const addByHospitalId = asyncHandler(async (req, res) => {
 
 const getAll = asyncHandler(async (req, res) => {
     try {
-        const { city, district, pinCode, branch, emailAddress, contactNumber } = req.query;
+        const { city, district, pinCode, branch, emailAddress, contactNumber, leadOwner } = req.query;
 
         const match = {};
         const addExactFilter = (field, value) => {
@@ -2013,6 +2013,12 @@ const getAll = asyncHandler(async (req, res) => {
         addExactFilter("branch", branch);
         addExactFilter("emailAddress", emailAddress);
         addExactFilter("contactNumber", contactNumber);
+
+        if (String(leadOwner || "").trim()) {
+            const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+            const ids = matchingUsers.map((user) => user._id.toString());
+            match.leadOwner = ids.length ? { $in: ids } : { $in: [] };
+        }
 
         const pipeline = [];
 
@@ -2043,6 +2049,7 @@ const getAll = asyncHandler(async (req, res) => {
                     emailAddress: 1,
                     contactNumber: 1,
                     designation: 1,
+                    leadOwner: 1,
                     enquiryStatus: 1,
                     quotationStatus: 1,
                     createdAt: 1,
@@ -2063,7 +2070,7 @@ const getAll = asyncHandler(async (req, res) => {
                 .map((value) => String(value).trim())
                 .sort((a, b) => a.localeCompare(b));
 
-        const [enquiries, cities, districts, pinCodes, branches, emailAddresses, contactNumbers] = await Promise.all([
+        const [enquiries, cities, districts, pinCodes, branches, emailAddresses, contactNumbers, enquiryLeadOwnerIds] = await Promise.all([
             Enquiry.aggregate(pipeline),
             Enquiry.distinct("city"),
             Enquiry.distinct("district"),
@@ -2071,7 +2078,26 @@ const getAll = asyncHandler(async (req, res) => {
             Enquiry.distinct("branch"),
             Enquiry.distinct("emailAddress"),
             Enquiry.distinct("contactNumber"),
+            Enquiry.distinct("leadOwner"),
         ]);
+
+        const validLeadOwnerIds = enquiryLeadOwnerIds.filter(
+            (id) => id && mongoose.Types.ObjectId.isValid(id)
+        );
+        const leadOwnerUsers = validLeadOwnerIds.length
+            ? await User.find({ _id: { $in: validLeadOwnerIds } }).select("name")
+            : [];
+        const leadOwnerMap = Object.fromEntries(
+            leadOwnerUsers.map((user) => [user._id.toString(), user.name])
+        );
+
+        const enquiriesWithLeadOwner = enquiries.map((enquiry) => ({
+            ...enquiry,
+            leadOwnerName:
+                enquiry.leadOwner && leadOwnerMap[String(enquiry.leadOwner)]
+                    ? leadOwnerMap[String(enquiry.leadOwner)]
+                    : enquiry.leadOwner || "N/A",
+        }));
 
         const filters = {
             cities: sortValues(cities),
@@ -2080,9 +2106,10 @@ const getAll = asyncHandler(async (req, res) => {
             branches: sortValues(branches),
             emailAddresses: sortValues(emailAddresses),
             contactNumbers: sortValues(contactNumbers),
+            leadOwners: sortValues(leadOwnerUsers.map((user) => user.name)),
         };
 
-        if (!enquiries || enquiries.length === 0) {
+        if (!enquiriesWithLeadOwner || enquiriesWithLeadOwner.length === 0) {
             return res.status(200).json({
                 statusCode: 200,
                 data: [],
@@ -2094,7 +2121,7 @@ const getAll = asyncHandler(async (req, res) => {
 
         return res.status(200).json({
             statusCode: 200,
-            data: enquiries,
+            data: enquiriesWithLeadOwner,
             filters,
             message: "All enquiries fetched",
             success: true,

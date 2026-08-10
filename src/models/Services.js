@@ -97,5 +97,6 @@ const serviceSchema = new mongoose.Schema({
     partyCodeOrSysId: { type: String },
     procNoOrPoNo: { type: String },
     procExpiryDate: { type: Date },
+    
 }, { timestamps: true });
 export default mongoose.model('Service', serviceSchema);

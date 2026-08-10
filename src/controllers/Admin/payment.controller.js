@@ -1066,7 +1066,12 @@ const getTotalAmount = asyncHandler(async (req, res) => {
 
 const getAllPayments = asyncHandler(async (req, res) => {
     try {
-        const { paymentType, paymentMode, branchName } = req.query;
+        const { paymentType, paymentMode, branchName, leadOwner } = req.query;
+
+        const sortValues = (values = []) =>
+            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+                .map((value) => String(value).trim())
+                .sort((a, b) => a.localeCompare(b));
 
         const query = {};
         if (paymentType && String(paymentType).trim()) {
@@ -1083,36 +1088,98 @@ const getAllPayments = asyncHandler(async (req, res) => {
             query.orderId = { $in: orderIds };
         }
 
+        if (String(leadOwner || "").trim()) {
+            const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+            const userIds = matchingUsers.map((user) => user._id);
+            const matchingOrders = userIds.length
+                ? await Order.find({
+                    $or: [
+                        { leadOwner: { $in: userIds } },
+                        { customer: { $in: userIds } },
+                    ],
+                }).select("_id").lean()
+                : [];
+            const orderIds = matchingOrders.map((order) => order._id);
+            query.orderId = query.orderId
+                ? { $in: orderIds.filter((id) => query.orderId.$in.some((existingId) => String(existingId) === String(id))) }
+                : { $in: orderIds };
+        }
+
         const payments = await Payment.find(query)
             .populate({
                 path: "orderId",
-                select: "srfNumber hospitalName branchName", // ✅ Added hospitalName
+                select: "srfNumber hospitalName branchName leadOwner customer",
             })
             .sort({ createdAt: -1 });
 
-        // Transform the response to include all fields
-        const formattedPayments = payments.map(payment => ({
-            _id: payment._id,
-            paymentId: payment.paymentId,
-            orderId: payment.orderId?._id,
-            srfNumber: payment.orderId?.srfNumber || "N/A",
-            hospitalName: payment.orderId?.hospitalName || "N/A",
-            totalAmount: payment.totalAmount,
-            paymentAmount: payment.paymentAmount,
-            paymentType: payment.paymentType,
-            utrNumber: payment.utrNumber,
-            paymentMode: payment.paymentMode,  // ✅ Added paymentMode
-            paymentStatus: payment.paymentStatus, // ✅ Added paymentStatus
-            screenshot: payment.screenshot,
-            createdAt: payment.createdAt,
-            updatedAt: payment.updatedAt,
-            branchName: payment.orderId?.branchName || "N/A",
-        }));
+        const leadOwnerIds = await Order.distinct("leadOwner");
+        const customerIds = await Order.distinct("customer");
+        const leadOwnerFilterIds = [
+            ...new Set(
+                [...leadOwnerIds, ...customerIds].filter(
+                    (id) => id && mongoose.Types.ObjectId.isValid(id)
+                )
+            ),
+        ];
+        const leadOwnerUsers = leadOwnerFilterIds.length
+            ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
+            : [];
+        const leadOwnerMap = Object.fromEntries(
+            leadOwnerUsers.map((user) => [user._id.toString(), user.name])
+        );
+
+        const resolveLeadOwnerName = async (order) => {
+            if (!order) return "N/A";
+            let leadOwnerName = "N/A";
+            if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+                leadOwnerName = leadOwnerMap[String(order.leadOwner)] || "N/A";
+                if (leadOwnerName === "N/A") {
+                    const user = await User.findById(order.leadOwner).select("name");
+                    if (user?.name) leadOwnerName = user.name;
+                }
+            }
+            if (
+                leadOwnerName === "N/A" &&
+                order.customer &&
+                mongoose.Types.ObjectId.isValid(order.customer)
+            ) {
+                leadOwnerName = leadOwnerMap[String(order.customer)] || "N/A";
+                if (leadOwnerName === "N/A") {
+                    const customer = await User.findById(order.customer).select("name");
+                    if (customer?.name) leadOwnerName = customer.name;
+                }
+            }
+            return leadOwnerName;
+        };
+
+        const formattedPayments = await Promise.all(
+            payments.map(async (payment) => ({
+                _id: payment._id,
+                paymentId: payment.paymentId,
+                orderId: payment.orderId?._id,
+                srfNumber: payment.orderId?.srfNumber || "N/A",
+                hospitalName: payment.orderId?.hospitalName || "N/A",
+                leadOwner: await resolveLeadOwnerName(payment.orderId),
+                totalAmount: payment.totalAmount,
+                paymentAmount: payment.paymentAmount,
+                paymentType: payment.paymentType,
+                utrNumber: payment.utrNumber,
+                paymentMode: payment.paymentMode,
+                paymentStatus: payment.paymentStatus,
+                screenshot: payment.screenshot,
+                createdAt: payment.createdAt,
+                updatedAt: payment.updatedAt,
+                branchName: payment.orderId?.branchName || "N/A",
+            }))
+        );
 
         res.status(200).json({
             success: true,
             count: formattedPayments.length,
             payments: formattedPayments,
+            filters: {
+                leadOwners: sortValues(leadOwnerUsers.map((user) => user.name)),
+            },
         });
     } catch (error) {
         console.error("Error fetching payments:", error);

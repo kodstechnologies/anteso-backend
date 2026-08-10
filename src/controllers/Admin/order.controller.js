@@ -153,7 +153,7 @@ import Invoice from "../../models/invoice.model.js";
 
 const getAllOrders = asyncHandler(async (req, res) => {
     try {
-        const { branchName, city, district, emailAddress, contactNumber } = req.query;
+        const { branchName, city, district, emailAddress, contactNumber, leadOwner } = req.query;
 
         const filter = {};
         const addExactFilter = (field, value) => {
@@ -169,12 +169,25 @@ const getAllOrders = asyncHandler(async (req, res) => {
         addExactFilter("emailAddress", emailAddress);
         addExactFilter("contactNumber", contactNumber);
 
+        if (String(leadOwner || "").trim()) {
+            const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+            const userIds = matchingUsers.map((user) => user._id);
+            if (userIds.length) {
+                filter.$or = [
+                    { leadOwner: { $in: userIds } },
+                    { customer: { $in: userIds } },
+                ];
+            } else {
+                filter._id = null;
+            }
+        }
+
         const sortValues = (values = []) =>
             [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
                 .map((value) => String(value).trim())
                 .sort((a, b) => a.localeCompare(b));
 
-        let [orders, branchNames, cities, districts, emailAddresses, contactNumbers] = await Promise.all([
+        let [orders, branchNames, cities, districts, emailAddresses, contactNumbers, leadOwnerIds, customerIds] = await Promise.all([
             orderModel
                 .find(filter)
                 .populate({
@@ -187,7 +200,20 @@ const getAllOrders = asyncHandler(async (req, res) => {
             orderModel.distinct("district"),
             orderModel.distinct("emailAddress"),
             orderModel.distinct("contactNumber"),
+            orderModel.distinct("leadOwner"),
+            orderModel.distinct("customer"),
         ]);
+
+        const leadOwnerFilterIds = [
+            ...new Set(
+                [...leadOwnerIds, ...customerIds].filter(
+                    (id) => id && mongoose.Types.ObjectId.isValid(id)
+                )
+            ),
+        ];
+        const leadOwnerUsers = leadOwnerFilterIds.length
+            ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
+            : [];
 
         orders = await Promise.all(
             orders.map(async (order) => {
@@ -237,6 +263,7 @@ const getAllOrders = asyncHandler(async (req, res) => {
                 districts: sortValues(districts),
                 emailAddresses: sortValues(emailAddresses),
                 contactNumbers: sortValues(contactNumbers),
+                leadOwners: sortValues(leadOwnerUsers.map((user) => user.name)),
             },
         });
 
@@ -3739,12 +3766,22 @@ const assignTechnicianByQARaw = asyncHandler(async (req, res) => {
         // ✅ Reset isSubmitted flag (important)
         work.isSubmitted = false;
         work.assignedAt = new Date();
+        // workTypeDetails subdocs use `_id: false`, so Mongoose may not detect
+        // engineer replacements without an explicit markModified.
+        service.markModified("workTypeDetails");
         await service.save();
+
+        const updatedService = await Services.findById(serviceId)
+            .populate({
+                path: "workTypeDetails.engineer",
+                model: "Employee",
+                select: "name email designation technicianType empId doc1",
+            });
 
         res.status(200).json({
             message: `Engineer assigned successfully to workType '${workType}'`,
             assignedAt: work.assignedAt,
-            service,
+            service: updatedService || service,
         });
     } catch (error) {
         console.error("Error assigning engineer:", error);

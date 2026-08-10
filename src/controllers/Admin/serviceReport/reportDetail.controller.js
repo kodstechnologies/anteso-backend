@@ -3,6 +3,7 @@ import QATest from "../../../models/QATest.model.js";
 import serviceReportModel from "../../../models/serviceReports/serviceReport.model.js";
 import LeadApronServiceReport from "../../../models/serviceReports/leadApronServiceReport.model.js";
 import Services from "../../../models/Services.js";
+import Employee from "../../../models/technician.model.js";
 import MeasurementOfMaLinearity from "../../../models/testTables/CTScan/measurementOfMaLinearity.model.js";
 import MeasurementOfOperatingPotential from "../../../models/testTables/CTScan/MeasurementOfOperatingPotential.model.js";
 import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
@@ -229,6 +230,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
             .select("machineType machineModel serialNumber workTypeDetails")
             .populate({
                 path: "workTypeDetails.engineer",
+                model: "Employee",
                 select: "name email designation technicianType empId doc1", // adjust fields as per Employee schema
             })
             .lean();
@@ -255,21 +257,31 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
 
         if (qaTestIds && qaTestIds.length > 0) {
             const qaTests = await QATest.find({ _id: { $in: qaTestIds } })
-                .select("qaTestReportNumber reportULRNumber createdAt")
+                .select("qaTestReportNumber reportULRNumber reportStatus  createdAt")
                 .lean();
 
             qaTestReportNumbers = qaTests.map((q) => ({
                 qaTestId: q._id,
                 qaTestReportNumber: q.qaTestReportNumber || "N/A",
                 reportULRNumber: q.reportULRNumber || "N/A",
+                reportStatus:q.reportStatus ||"pending",
                 createdAt: q.createdAt || null,
             }));
         }
 
-        // Find QA work-type details (for completedAt + assigned engineer)
-        const qaWorkType = service.workTypeDetails?.find(
+        // Find QA work-type details (for completedAt + assigned engineer).
+        // Prefer the entry that actually has an engineer, and if multiple, the latest assignedAt.
+        const qaWorkTypes = (service.workTypeDetails || []).filter(
             (w) => w.workType === "Quality Assurance Test"
         );
+        const qaWorkType =
+            [...qaWorkTypes]
+                .filter((w) => w.engineer)
+                .sort((a, b) => {
+                    const aTime = a.assignedAt ? new Date(a.assignedAt).getTime() : 0;
+                    const bTime = b.assignedAt ? new Date(b.assignedAt).getTime() : 0;
+                    return bTime - aTime;
+                })[0] || qaWorkTypes[0] || null;
 
         // Find the engineer assigned for Quality Assurance Test (if present)
         const qaEngineer = qaWorkType?.engineer;
