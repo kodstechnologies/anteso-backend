@@ -151,50 +151,124 @@ import Invoice from "../../models/invoice.model.js";
 //     }
 // });
 
-const getAllOrders = asyncHandler(async (req, res) => {
-    try {
-        const { branchName, city, district, emailAddress, contactNumber, leadOwner } = req.query;
+const sortFilterValues = (values = []) =>
+    [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
+        .map((value) => String(value).trim())
+        .sort((a, b) => a.localeCompare(b));
 
-        const filter = {};
-        const addExactFilter = (field, value) => {
-            const trimmed = String(value || "").trim();
-            if (trimmed) {
-                filter[field] = trimmed;
-            }
+const buildOrdersListFilter = async (query = {}) => {
+    const { branchName, city, district, emailAddress, contactNumber, leadOwner, search, dateFrom, dateTo } = query;
+
+    const filter = {};
+    const addExactFilter = (field, value) => {
+        const trimmed = String(value || "").trim();
+        if (trimmed) {
+            filter[field] = trimmed;
+        }
+    };
+
+    addExactFilter("branchName", branchName);
+    addExactFilter("city", city);
+    addExactFilter("district", district);
+    addExactFilter("emailAddress", emailAddress);
+    addExactFilter("contactNumber", contactNumber);
+
+    if (String(leadOwner || "").trim()) {
+        const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+        const userIds = matchingUsers.map((user) => user._id);
+        if (userIds.length) {
+            filter.$or = [
+                { leadOwner: { $in: userIds } },
+                { customer: { $in: userIds } },
+            ];
+        } else {
+            filter._id = null;
+        }
+    }
+
+    const searchText = String(search || "").trim();
+    if (searchText) {
+        const regex = new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+        const searchCondition = {
+            $or: [
+                { srfNumber: regex },
+                { hospitalName: regex },
+                { fullAddress: regex },
+                { city: regex },
+                { district: regex },
+                { state: regex },
+                { pinCode: regex },
+                { branchName: regex },
+                { emailAddress: regex },
+                { contactNumber: regex },
+                { status: regex },
+            ],
         };
 
-        addExactFilter("branchName", branchName);
-        addExactFilter("city", city);
-        addExactFilter("district", district);
-        addExactFilter("emailAddress", emailAddress);
-        addExactFilter("contactNumber", contactNumber);
-
-        if (String(leadOwner || "").trim()) {
-            const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
-            const userIds = matchingUsers.map((user) => user._id);
-            if (userIds.length) {
-                filter.$or = [
-                    { leadOwner: { $in: userIds } },
-                    { customer: { $in: userIds } },
-                ];
-            } else {
-                filter._id = null;
-            }
+        if (filter.$or) {
+            filter.$and = [{ $or: filter.$or }, searchCondition];
+            delete filter.$or;
+        } else {
+            Object.assign(filter, searchCondition);
         }
+    }
 
-        const sortValues = (values = []) =>
-            [...new Set(values.filter((value) => value !== null && value !== undefined && String(value).trim() !== ""))]
-                .map((value) => String(value).trim())
-                .sort((a, b) => a.localeCompare(b));
+    if (dateFrom || dateTo) {
+        filter.createdAt = {};
+        if (dateFrom) {
+            filter.createdAt.$gte = new Date(String(dateFrom));
+        }
+        if (dateTo) {
+            const endDate = new Date(String(dateTo));
+            endDate.setHours(23, 59, 59, 999);
+            filter.createdAt.$lte = endDate;
+        }
+    }
 
-        let [orders, branchNames, cities, districts, emailAddresses, contactNumbers, leadOwnerIds, customerIds] = await Promise.all([
-            orderModel
-                .find(filter)
-                .populate({
-                    path: "services",
-                    select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId"
-                })
-                .sort({ createdAt: -1 }),
+    return filter;
+};
+
+const enrichOrdersList = async (orders = []) =>
+    Promise.all(
+        orders.map(async (order) => {
+            let leadOwnerName = "N/A";
+            let leadOwnerType = "N/A";
+
+            if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
+                const user = await User.findById(order.leadOwner).select("name role");
+                if (user) {
+                    leadOwnerName = user.name;
+                    leadOwnerType = user.role;
+                }
+            }
+
+            if (
+                (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
+                order.customer &&
+                mongoose.Types.ObjectId.isValid(order.customer)
+            ) {
+                const customer = await User.findById(order.customer).select("name role");
+                if (customer) {
+                    leadOwnerName = customer.name;
+                    leadOwnerType = customer.role;
+                }
+            }
+
+            return {
+                ...order.toObject(),
+                createdAt: order.createdAt,
+                leadOwner: leadOwnerName,
+                leadOwnerType,
+                partyCodeOrSysId: order.services?.[0]?.partyCodeOrSysId || null,
+                procNoOrPoNo: order.services?.[0]?.procNoOrPoNo || null,
+                procExpiryDate: order.services?.[0]?.procExpiryDate || null,
+            };
+        })
+    );
+
+const fetchOrdersFilterOptions = async () => {
+    const [branchNames, cities, districts, emailAddresses, contactNumbers, leadOwnerIds, customerIds] =
+        await Promise.all([
             orderModel.distinct("branchName"),
             orderModel.distinct("city"),
             orderModel.distinct("district"),
@@ -204,67 +278,49 @@ const getAllOrders = asyncHandler(async (req, res) => {
             orderModel.distinct("customer"),
         ]);
 
-        const leadOwnerFilterIds = [
-            ...new Set(
-                [...leadOwnerIds, ...customerIds].filter(
-                    (id) => id && mongoose.Types.ObjectId.isValid(id)
-                )
-            ),
-        ];
-        const leadOwnerUsers = leadOwnerFilterIds.length
-            ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
-            : [];
+    const leadOwnerFilterIds = [
+        ...new Set(
+            [...leadOwnerIds, ...customerIds].filter(
+                (id) => id && mongoose.Types.ObjectId.isValid(id)
+            )
+        ),
+    ];
+    const leadOwnerUsers = leadOwnerFilterIds.length
+        ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
+        : [];
 
-        orders = await Promise.all(
-            orders.map(async (order) => {
-                let leadOwnerName = "N/A";
-                let leadOwnerType = "N/A";
+    return {
+        branchNames: sortFilterValues(branchNames),
+        cities: sortFilterValues(cities),
+        districts: sortFilterValues(districts),
+        emailAddresses: sortFilterValues(emailAddresses),
+        contactNumbers: sortFilterValues(contactNumbers),
+        leadOwners: sortFilterValues(leadOwnerUsers.map((user) => user.name)),
+    };
+};
 
-                if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
-                    const user = await User.findById(order.leadOwner).select("name role");
-                    if (user) {
-                        leadOwnerName = user.name;
-                        leadOwnerType = user.role;
-                    }
-                }
+const getAllOrders = asyncHandler(async (req, res) => {
+    try {
+        const filter = await buildOrdersListFilter(req.query);
 
-                if (
-                    (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
-                    order.customer &&
-                    mongoose.Types.ObjectId.isValid(order.customer)
-                ) {
-                    const customer = await User.findById(order.customer).select("name role");
-                    if (customer) {
-                        leadOwnerName = customer.name;
-                        leadOwnerType = customer.role;
-                    }
-                }
+        let [orders, filters] = await Promise.all([
+            orderModel
+                .find(filter)
+                .populate({
+                    path: "services",
+                    select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId",
+                })
+                .sort({ createdAt: -1 }),
+            fetchOrdersFilterOptions(),
+        ]);
 
-                return {
-                    ...order.toObject(),
-                    createdAt: order.createdAt,
-                    leadOwner: leadOwnerName,
-                    leadOwnerType,
-                    partyCodeOrSysId: order.services?.[0]?.partyCodeOrSysId || null,
-                    // ✅ Flatten first service (or handle multiple)
-                    procNoOrPoNo: order.services?.[0]?.procNoOrPoNo || null,
-                    procExpiryDate: order.services?.[0]?.procExpiryDate || null,
-                };
-            })
-        );
+        orders = await enrichOrdersList(orders);
 
         res.status(200).json({
             message: "Orders fetched successfully",
             count: orders.length,
             orders,
-            filters: {
-                branchNames: sortValues(branchNames),
-                cities: sortValues(cities),
-                districts: sortValues(districts),
-                emailAddresses: sortValues(emailAddresses),
-                contactNumbers: sortValues(contactNumbers),
-                leadOwners: sortValues(leadOwnerUsers.map((user) => user.name)),
-            },
+            filters,
         });
 
     } catch (error) {
@@ -273,6 +329,66 @@ const getAllOrders = asyncHandler(async (req, res) => {
     }
 });
 
+const getAllOrdersWeb = asyncHandler(async (req, res) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+        const sortBy = String(req.query.sortBy || "createdAt");
+        const sortDirection = req.query.sortDirection === "asc" ? 1 : -1;
+        const allowedSortFields = new Set([
+            "srfNumber",
+            "hospitalName",
+            "fullAddress",
+            "city",
+            "district",
+            "state",
+            "pinCode",
+            "branchName",
+            "emailAddress",
+            "contactNumber",
+            "status",
+            "createdAt",
+        ]);
+        const sortField = allowedSortFields.has(sortBy) ? sortBy : "createdAt";
+
+        const filter = await buildOrdersListFilter(req.query);
+        const skip = (page - 1) * limit;
+
+        const [totalRecords, ordersRaw, filters] = await Promise.all([
+            orderModel.countDocuments(filter),
+            orderModel
+                .find(filter)
+                .populate({
+                    path: "services",
+                    select: "procNoOrPoNo procExpiryDate machineType partyCodeOrSysId",
+                })
+                .sort({ [sortField]: sortDirection })
+                .skip(skip)
+                .limit(limit),
+            fetchOrdersFilterOptions(),
+        ]);
+
+        const orders = await enrichOrdersList(ordersRaw);
+
+        res.status(200).json({
+            message: "Orders fetched successfully",
+            count: orders.length,
+            totalRecords,
+            page,
+            limit,
+            totalPages: Math.ceil(totalRecords / limit) || 0,
+            orders,
+            filters,
+        });
+    } catch (error) {
+        console.error("Error in getAllOrdersWeb:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+});
+
+
+const isMongoObjectId = (value) =>
+    mongoose.Types.ObjectId.isValid(value) && /^[a-fA-F0-9]{24}$/.test(String(value));
 
 const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
     try {
@@ -288,11 +404,11 @@ const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
         const order = await orderModel
             .findById(orderId)
             .select(
-                'srfNumber leadOwner hospitalName fullAddress city district state pinCode branchName contactPersonName emailAddress contactNumber designation'
+                'srfNumber leadOwner hospital hospitalName fullAddress city district state pinCode branchName contactPersonName emailAddress contactNumber designation'
             )
             .populate({
-                path: "leadOwner",
-                select: "name role email _id",
+                path: "hospital",
+                select: "name email address branch phone",
             });
 
         if (!order) {
@@ -300,24 +416,43 @@ const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
         }
 
         const orderData = order.toObject();
+        const hospitalDoc = orderData?.hospital && typeof orderData.hospital === "object"
+            ? orderData.hospital
+            : null;
 
-        // In some records leadOwner may remain an ObjectId/string even after populate.
-        let leadOwnerDoc = orderData?.leadOwner;
-        if (
-            leadOwnerDoc &&
-            (typeof leadOwnerDoc === "string" || leadOwnerDoc instanceof mongoose.Types.ObjectId)
-        ) {
-            leadOwnerDoc = await User.findById(leadOwnerDoc).select("name role email _id").lean();
+        // Seeded orders often store leadOwner as a name string, not a User ObjectId.
+        let leadOwnerDoc = null;
+        let leadOwnerName = "";
+        const rawLeadOwner = orderData?.leadOwner;
+
+        if (rawLeadOwner && typeof rawLeadOwner === "object") {
+            leadOwnerDoc = rawLeadOwner;
+            leadOwnerName = rawLeadOwner.name || "";
+        } else if (isMongoObjectId(rawLeadOwner)) {
+            leadOwnerDoc = await User.findById(rawLeadOwner).select("name role email _id").lean();
+            leadOwnerName = leadOwnerDoc?.name || "";
+        } else if (typeof rawLeadOwner === "string") {
+            leadOwnerName = rawLeadOwner.trim();
         }
 
-        if (leadOwnerDoc && typeof leadOwnerDoc === "object") {
-            orderData.leadOwner = leadOwnerDoc;
-        }
+        orderData.leadOwner = leadOwnerDoc || leadOwnerName || "";
+        orderData.leadOwnerName = leadOwnerName;
 
         const leadOwnerRole = String(leadOwnerDoc?.role || "").trim().toLowerCase();
         if (leadOwnerRole === "manufacturer") {
             orderData.manufacturerName = leadOwnerDoc?.name || "";
         }
+
+        // Fill missing basic details from linked hospital (seeded records).
+        if (hospitalDoc) {
+            orderData.hospitalName = orderData.hospitalName || hospitalDoc.name || "";
+            orderData.fullAddress = orderData.fullAddress || hospitalDoc.address || "";
+            orderData.branchName = orderData.branchName || hospitalDoc.branch || "";
+            orderData.emailAddress = orderData.emailAddress || hospitalDoc.email || "";
+            orderData.contactNumber = orderData.contactNumber || hospitalDoc.phone || "";
+        }
+
+        delete orderData.hospital;
 
         res.status(200).json({
             message: 'Order basic details fetched successfully',
@@ -346,10 +481,10 @@ const updateBasicDetailsByOrderId = asyncHandler(async (req, res) => {
             'hospitalName',
             'fullAddress',
             'city',
-            // 'district',
+            'district',
             'state',
             'pinCode',
-            // 'branchName',
+            'branchName',
             'contactPersonName',
             'emailAddress',
             'contactNumber',
@@ -4972,9 +5107,44 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
             "reportType:", reportType
         );
 
+        let payload = {};
+        if (req.body?.payload) {
+            try {
+                payload = typeof req.body.payload === "string"
+                    ? JSON.parse(req.body.payload)
+                    : req.body.payload;
+            } catch (e) {
+                payload = {};
+            }
+        } else if (req.body && typeof req.body === "object") {
+            payload = req.body;
+        }
+
         // 🔒 File validation
         if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
             return res.status(400).json({ message: "File is required" });
+        }
+
+        const requestedStatusEarly = String(status || "").toLowerCase().trim();
+        const isCompleteStatus = ["complete", "completed"].includes(requestedStatusEarly);
+        const isLicenseWorkTypeParam = String(workType || "").toLowerCase().trim() === "license for operation";
+
+        if (isLicenseWorkTypeParam && isCompleteStatus) {
+            if (!payload.licenseValidFrom || !payload.licenseValidTill) {
+                return res.status(400).json({
+                    message: "License valid from and license valid till are required",
+                });
+            }
+            const fromDate = new Date(payload.licenseValidFrom);
+            const tillDate = new Date(payload.licenseValidTill);
+            if (Number.isNaN(fromDate.getTime()) || Number.isNaN(tillDate.getTime())) {
+                return res.status(400).json({ message: "Invalid license validity dates" });
+            }
+            if (tillDate < fromDate) {
+                return res.status(400).json({
+                    message: "License valid till cannot be before license valid from",
+                });
+            }
         }
 
         // 🔁 Normalize reportType
@@ -5056,6 +5226,15 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                 if (["completed", "generated"].includes(normalizedStatus)) {
                     work.completedAt = new Date();
+                }
+
+                if (work.workType?.toLowerCase() === "license for operation") {
+                    if (payload.licenseValidFrom) {
+                        work.licenseValidFrom = new Date(payload.licenseValidFrom);
+                    }
+                    if (payload.licenseValidTill) {
+                        work.licenseValidTill = new Date(payload.licenseValidTill);
+                    }
                 }
 
                 // 🔥 BUILD updatedBy OBJECT (MATCHES SCHEMA)
@@ -6583,10 +6762,16 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             })
             .populate({
                 path: "services",
-                populate: {
-                    path: "workTypeDetails.QAtest",
-                    select: "reportULRNumber report qaTestReportNumber reportStatus",
-                },
+                populate: [
+                    {
+                        path: "workTypeDetails.QAtest",
+                        select: "reportULRNumber report qaTestReportNumber reportStatus reportPdf",
+                    },
+                    {
+                        path: "workTypeDetails.elora",
+                        select: "reportULRNumber qaTestReportNumber report",
+                    },
+                ],
             })
             .populate("additionalServices", "name description totalAmount report")
             .populate("customer", "name email role")
@@ -6602,27 +6787,54 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
             });
         }
 
-        // ✅ Map services: include QA report ONLY if reportStatus = 'accepted'
-        const servicesWithReports = order.services.map(service => {
-            const workDetails = service.workTypeDetails.map(wt => {
-                if (wt.QAtest) {
-                    const qa = wt.QAtest.toObject();
-                    // Only include report if reportStatus is accepted
+        const serviceIds = order.services.map((service) => service._id);
+        const serviceReports = await ServiceReport.find({ serviceId: { $in: serviceIds } })
+            .select("serviceId make model slNumber testDate testDueDate")
+            .lean();
+        const serviceReportByServiceId = Object.fromEntries(
+            serviceReports.map((sr) => [sr.serviceId.toString(), sr])
+        );
+
+        // ✅ Map services: include QA/Elora reports + service report header fields
+        const servicesWithReports = order.services.map((service) => {
+            const serviceReport = serviceReportByServiceId[service._id.toString()] || null;
+
+            const workDetails = service.workTypeDetails.map((wt) => {
+                const wtObj = wt.toObject ? wt.toObject() : { ...wt };
+
+                if (wtObj.QAtest) {
+                    const qa = { ...wtObj.QAtest };
                     if (qa.reportStatus === "accepted") {
                         qa.qaReportUrl = qa.reportULRNumber || qa.report || null;
                     } else {
-                        // Exclude/Nullify report info if not accepted
                         qa.qaReportUrl = null;
                         qa.report = null;
                         qa.reportULRNumber = null;
+                        qa.reportPdf = null;
                     }
-                    wt.QAtest = qa;
+                    wtObj.QAtest = qa;
                 }
-                return wt;
+
+                if (wtObj.elora) {
+                    wtObj.elora = {
+                        ...wtObj.elora,
+                        eloraReportUrl: wtObj.elora.report || wtObj.elora.reportULRNumber || null,
+                    };
+                }
+
+                return wtObj;
             });
 
+            const serviceObj = service.toObject();
             return {
-                ...service.toObject(),
+                ...serviceObj,
+                equipmentNo: serviceObj.equipmentNo || null,
+                serialNumber: serviceObj.serialNumber || null,
+                make: serviceReport?.make || null,
+                model: serviceReport?.model || null,
+                slNumber: serviceReport?.slNumber || null,
+                testDate: serviceReport?.testDate || null,
+                testDueDate: serviceReport?.testDueDate || null,
                 workTypeDetails: workDetails,
             };
         });
@@ -7673,4 +7885,4 @@ const getPaymentStatusByOrderId = asyncHandler(async (req, res) => {
 });
 
 
-export default { getAllOrders, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId, getPaymentStatusByOrderId }
+export default { getAllOrders, getAllOrdersWeb, getBasicDetailsByOrderId, getAdditionalServicesByOrderId, getAllServicesByOrderId, getMachineDetailsByOrderId, updateOrderDetails, updateEmployeeStatus, getQARawByOrderId, getAllOrdersForTechnician, startOrder, getSRFDetails, assignTechnicianByQARaw, assignOfficeStaffByQATest, getQaDetails, getAllOfficeStaff, getAssignedTechnicianName, getAssignedOfficeStaffName, getUpdatedOrderServices, getUpdatedOrderServices2, createOrder, completedStatusAndReport, getMachineDetails, updateServiceWorkType, updateAdditionalService, getUpdatedAdditionalServiceReport, editDocuments, assignStaffByElora, getAllOrdersByHospitalId, getOrderByHospitalIdOrderId, getReportNumbers, getQaReportsByTechnician, getReportById, acceptQAReport, rejectQAReport, getEloraReport, getPdfForAcceptQuotation, getAssignedOrdersForStaff, deleteOrderAndReports, getWorkOrderCopy, updateBasicDetailsByOrderId, assignAdditionalServiceStaff, updateAdditionalServiceStatus, getAssignedStaffDetailsForAdditionalService, addMachineToOrder, deleteMachineByorderId, updateServicePrice, customerFeedback, getCustomerFeedbackByOrderId, getPaymentStatusByOrderId }

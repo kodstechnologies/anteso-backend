@@ -1,4 +1,5 @@
 import orderModel from "../../../models/order.model.js";
+import { uploadToS3 } from "../../../utils/s3Upload.js";
 import QATest from "../../../models/QATest.model.js";
 import serviceReportModel from "../../../models/serviceReports/serviceReport.model.js";
 import LeadApronServiceReport from "../../../models/serviceReports/leadApronServiceReport.model.js";
@@ -12,6 +13,7 @@ import TimerAccuracy from "../../../models/testTables/CTScan/TimerAccuracy.model
 import MeasurementOfCTDI from "../../../models/testTables/CTScan/measurementOfCTDI.model.js";
 import Tools from "../../../models/tools.model.js";
 import { asyncHandler } from "../../../utils/AsyncHandler.js";
+import { persistReportPdfForService, trySaveReportPdfOnly } from "./reportPdf.service.js";
 import TotalFilterationForCTScan from "../../../models/testTables/CTScan/TotalFilterationForCTScan.js";
 import RadiationLeakageLeveFromXRayTube from "../../../models/testTables/CTScan/radiationLeakageLevelFromXRayTubeHouse.model.js";
 import MeasureMaxRadiationLevel from "../../../models/testTables/CTScan/MeasureMaxRadiationLevel.model.js";
@@ -264,7 +266,7 @@ export const getCustomerDetails = asyncHandler(async (req, res) => {
                 qaTestId: q._id,
                 qaTestReportNumber: q.qaTestReportNumber || "N/A",
                 reportULRNumber: q.reportULRNumber || "N/A",
-                reportStatus:q.reportStatus ||"pending",
+                reportStatus: q.reportStatus || "pending",
                 createdAt: q.createdAt || null,
             }));
         }
@@ -591,6 +593,10 @@ const getTools = asyncHandler(async (req, res) => {
 //     } = req.body;
 
 //     try {
+//         if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+//             return;
+//         }
+
 //         let report = await serviceReportModel.findOne({ serviceId });
 //         if (!report) {
 //             return res.status(404).json({
@@ -758,6 +764,10 @@ const saveReportHeader = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -1155,6 +1165,10 @@ export const saveReportHeaderFixedRadioFluro = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -1546,6 +1560,10 @@ export const saveReportHeaderForCBCT = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -1950,6 +1968,10 @@ export const saveReportHeaderForOPG = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -2126,6 +2148,10 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -2390,6 +2416,10 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -2664,9 +2694,14 @@ export const saveReportHeaderRadiographyFixed = async (req, res) => {
         leadowner,
         manufacturerName,
         hasTimer,
+        reportPdfBase64,
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -2966,6 +3001,10 @@ export const saveReportHeaderForRadiographyMobileHT = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -3259,6 +3298,10 @@ export const saveReportHeaderForRadiographyPortable = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -3544,6 +3587,10 @@ export const saveReportHeaderForRadiographyMobile = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -3826,6 +3873,10 @@ export const saveReportHeaderCArm = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -4169,6 +4220,10 @@ export const saveReportHeaderForInventionalRadiology = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only tube type is posted (popup choice before full header fill)
@@ -4834,6 +4889,10 @@ export const saveReportHeaderForCTScan = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only tube type / gantry tilt preference is posted (popup before full header fill)
@@ -5282,6 +5341,10 @@ export const saveReportHeaderForMammography = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -5476,6 +5539,10 @@ export const saveReportHeaderForOBI = async (req, res) => {
     const pickRef = (doc, existing) => (doc && doc._id ? doc._id : existing ?? null);
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => serviceReportModel.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await serviceReportModel.findOne({ serviceId });
 
         // Lightweight save when only timer preference is posted (popup choice before full header fill)
@@ -5637,4 +5704,26 @@ export const saveReportHeaderForOBI = async (req, res) => {
     }
 };
 
-export default { getCustomerDetails, saveTimerPreference, getTools, getReportHeader, saveReportHeaderFixedRadioFluro, getReportHeaderCBCT, saveReportHeaderForCBCT, getReportHeaderOPG, saveReportHeaderForOPG, getReportHeaderDentalIntra, saveReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, saveReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, saveReportHeaderForRadiographyMobileHT, getReportHeaderRadiographyPortable, saveReportHeaderForRadiographyPortable, getReportHeaderRadiographyMobile, saveReportHeaderForRadiographyMobile, getReportHeaderCArm, saveReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, saveReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, saveReportHeaderForOBI, getReportHeaderMammography, saveReportHeaderForMammography, getReportHeaderInventionalRadiology, saveReportHeaderForInventionalRadiology }
+export const uploadReportPdf = asyncHandler(async (req, res) => {
+        const { serviceId } = req.params;
+        if (!serviceId) {
+            return res.status(400).json({ success: false, message: "serviceId is required" });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "PDF file is required" });
+        }
+
+        const uploaded = await uploadToS3(req.file);
+        const reportPdfUrl = uploaded.url;
+        const qaTest = await persistReportPdfForService(serviceId, reportPdfUrl);
+
+        return res.status(200).json({
+            success: true,
+            message: "Report PDF uploaded and saved to QATest successfully!",
+            reportPdf: reportPdfUrl,
+            qaTest,
+        });
+});
+
+export default { getCustomerDetails, saveTimerPreference, getTools, getReportHeader, saveReportHeaderFixedRadioFluro, getReportHeaderCBCT, saveReportHeaderForCBCT, getReportHeaderOPG, saveReportHeaderForOPG, getReportHeaderDentalIntra, saveReportHeaderDentalIntra, getReportHeaderDentalHandHeld, saveReportHeaderDentalHandHeld, getReportHeaderRadiographyFixed, saveReportHeaderRadiographyFixed, getReportHeaderRadiographyMobileHT, saveReportHeaderForRadiographyMobileHT, getReportHeaderRadiographyPortable, saveReportHeaderForRadiographyPortable, getReportHeaderRadiographyMobile, saveReportHeaderForRadiographyMobile, getReportHeaderCArm, saveReportHeaderCArm, getReportHeaderLeadApron, saveReportHeader, saveReportHeaderLeadApron, getReportHeaderForCTScan, saveReportHeaderForCTScan, getReportHeaderOArm, getReportHeaderOBI, saveReportHeaderForOBI, getReportHeaderMammography, saveReportHeaderForMammography, getReportHeaderInventionalRadiology, saveReportHeaderForInventionalRadiology, uploadReportPdf };

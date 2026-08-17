@@ -48,7 +48,7 @@ const workTypeDetailSchema = new mongoose.Schema({
         },
         updatedAt: { type: Date, default: Date.now }
     }],
-    
+
     uploadFile: { type: String },
     viewFile: { type: [String], default: [] }, // array of strings    remark: { type: String }
     // report: { type: String },
@@ -63,7 +63,9 @@ const workTypeDetailSchema = new mongoose.Schema({
     price: { type: Number, default: 0 },
 
     assignedAt: Date,
-    completedAt: { type: Date }
+    completedAt: { type: Date },
+    licenseValidFrom: { type: Date },
+    licenseValidTill: { type: Date }
 }, { _id: false });
 const serviceSchema = new mongoose.Schema({
     machineType: {
@@ -97,6 +99,6 @@ const serviceSchema = new mongoose.Schema({
     partyCodeOrSysId: { type: String },
     procNoOrPoNo: { type: String },
     procExpiryDate: { type: Date },
-    
+
 }, { timestamps: true });
 export default mongoose.model('Service', serviceSchema);

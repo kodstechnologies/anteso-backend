@@ -1,5 +1,6 @@
 import { Router } from "express";
 const router = Router();
+import upload from "../../../../middlewares/upload.js";
 import AccuracyOfIrradiationTimeController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/AccuracyOfIrradiationTime.controller.js";
 import AccuracyOfOperatingPotentialController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/AccuracyOfOperatingPotential.controller.js";
 import TotalFilterationController from "../../../../controllers/Admin/serviceReport/RadiographyFixed/TotalFilteration.controller.js";
@@ -15,6 +16,7 @@ import reportDetailController from "../../../../controllers/Admin/serviceReport/
 // Report Header
 router.get('/report-header/:serviceId', reportDetailController.getReportHeaderRadiographyFixed);
 router.put('/report-header/:serviceId', reportDetailController.saveReportHeaderRadiographyFixed);
+router.post('/upload-pdf/:serviceId', upload.single('pdf'), reportDetailController.uploadReportPdf);
 
 // Accuracy of Irradiation Time
 router.post('/accuracy-of-irradiation-time/:serviceId', AccuracyOfIrradiationTimeController.create);

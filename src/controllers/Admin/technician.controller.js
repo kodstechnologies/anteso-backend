@@ -786,6 +786,27 @@ export const updateById = asyncHandler(async (req, res) => {
             );
         }
 
+        const nextType = String(updateData.technicianType || employee.technicianType || "")
+            .toLowerCase()
+            .replace(/\s+/g, "-");
+        if (updateData.technicianType) {
+            updateData.technicianType = nextType;
+        }
+
+        if (nextType === "office-staff") {
+            if (updateData.password) {
+                updateData.password = await bcrypt.hash(String(updateData.password), 10);
+            } else {
+                delete updateData.password;
+                const changingToOfficeStaff = employee.technicianType !== "office-staff";
+                if (changingToOfficeStaff && !employee.password) {
+                    throw new ApiError(400, "Password is required for office staff");
+                }
+            }
+        } else {
+            delete updateData.password;
+        }
+
         // Save employee
         const updatedEmployee = await Employee.findByIdAndUpdate(id, updateData, {
             new: true,

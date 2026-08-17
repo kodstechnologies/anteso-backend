@@ -17,12 +17,14 @@ import RadiographyMobile from "../serviceReport/RadiographyMobile.router.js"
 import OArm from "../serviceReport/OArm.router.js"
 import LeadApron from "../serviceReport/LeadApron.router.js"
 import OBI from "../serviceReport/OBI.router.js"
+import upload from "../../../../middlewares/upload.js";
 
 const router = Router();
 router.get('/get-details/:serviceId', reportDetailController.getCustomerDetails)
 router.get('/get-tools/:serviceId', reportDetailController.getTools)
 router.put('/report-header/:serviceId', reportDetailController.saveReportHeader)
 router.put('/timer-preference/:serviceId', reportDetailController.saveTimerPreference)
+router.post('/upload-report-pdf/:serviceId', upload.single('pdf'), reportDetailController.uploadReportPdf)
 // router.get('/report-header/:serviceId', reportDetailController.getReportHeader)
 
 // router.get('/get-tools-for-technician-assigned/:serviceId',reportDetailController.)

@@ -22,6 +22,9 @@ const qaTestSchema = new Schema({
     remark: {
         type: String
     },
+    reportPdf: {
+        type: String
+    },
     assignedAt: Date,
     qatestSubmittedAt: { type: Date },
 }, { timestamps: true });

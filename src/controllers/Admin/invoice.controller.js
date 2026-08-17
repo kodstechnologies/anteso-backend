@@ -1766,6 +1766,63 @@ const createInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
+  try {
+    const [dealers, manufacturers] = await Promise.all([
+      Dealer.find({}, "_id name").lean(),
+      Manufacturer.find({}, "_id name").lean(),
+    ]);
+
+    const dealerIdSet = new Set(dealers.map((d) => d._id.toString()));
+    const manufacturerIdSet = new Set(manufacturers.map((m) => m._id.toString()));
+    const leadOwnerNameById = new Map(
+      [...dealers, ...manufacturers].map((user) => [user._id.toString(), user.name || "N/A"])
+    );
+
+    const leadOwnerIds = [...new Set([...dealerIdSet, ...manufacturerIdSet])];
+
+    if (leadOwnerIds.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+      });
+    }
+
+    const orders = await Order.find(
+      { leadOwner: { $in: leadOwnerIds } },
+      { _id: 1, srfNumber: 1, leadOwner: 1, branchName: 1 }
+    )
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const data = orders.map((order) => {
+      const leadOwnerId = order.leadOwner?.toString();
+      const leadType = manufacturerIdSet.has(leadOwnerId) ? "Manufacturer" : "Dealer";
+
+      return {
+        orderId: order._id,
+        branchName: order.branchName || "",
+        srfNumber: order.srfNumber,
+        leadOwner: leadOwnerNameById.get(leadOwnerId) || "N/A",
+        leadType,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      count: data.length,
+      data,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching dealer/manufacturer branches:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch dealer/manufacturer branches",
+    });
+  }
+});
+
 const getDealerOrders = asyncHandler(async (req, res) => {
   try {
     const [dealers, manufacturers] = await Promise.all([
@@ -2285,4 +2342,4 @@ const getInvoicePdf = asyncHandler(async (req, res) => {
 
 
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders }
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders, getDealerManufacturerBranches }

@@ -14,4 +14,5 @@ router.delete('/delete-invoice/:id', InvoiceController.deleteInvoice)
 router.post("/upload-pdf/:orderId", Upload.single("invoicePdf"), InvoiceController.uploadInvoicePdf);
 router.get("/get-invoice-pdf/:orderId", InvoiceController.getInvoicePdf)
 router.get('/get-dealer-orders', invoiceController.getDealerOrders)
+router.get('/get-dealer-manufacturer-branches', invoiceController.getDealerManufacturerBranches)
 export default router

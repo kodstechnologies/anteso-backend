@@ -12,8 +12,11 @@ router.get('/get-engineer-by-tool/:id', toolsController.getEngineerByTool)
 router.get('/history/:toolId', toolsController.toolHistory)
 //tools by employee
 
+
 router.get('/all-tools-by-technicianId/:technicianId', toolsController.getAllToolsByTechnicianId)
 router.get('/get-tools-by-technicanId-and-toolId/:technicianId/:toolId', toolsController.getToolByTechnicianAndTool)
 router.get('/unassigned-tools', toolsController.getUnassignedTools)
 router.get('/expiring-tools', toolsController.GetExpiringTools)
+// Get assigned tools for engineer filtered by machine type
+router.get('/assigned-tools-by-engineer-machine', toolsController.getAssignedToolsForEngineerByMachine)
 export default router

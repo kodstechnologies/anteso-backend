@@ -1,4 +1,5 @@
 import LinkServiceReport from "../../../../models/serviceReports/serviceReport.model.js";
+import { trySaveReportPdfOnly } from "../reportPdf.service.js";
 import AccuracyOfOperatingPotentialAndTime from "../../../../models/testTables/BMD/AccuracyOfOperatingPotentialAndTime.model.js";
 import ConsistencyOfRadiationOutput from "../../../../models/testTables/BMD/ConsistencyOfRadiationOutput.model.js";
 import LinearityOfMaLoading from "../../../../models/testTables/BMD/LinearityOfMasLoading.model.js";
@@ -63,6 +64,10 @@ export const saveReportHeader = async (req, res) => {
     } = req.body;
 
     try {
+        if (await trySaveReportPdfOnly(req, res, serviceId, (id) => LinkServiceReport.findOne({ serviceId: id }))) {
+            return;
+        }
+
         let report = await LinkServiceReport.findOne({ serviceId });
         if (!report) {
             return res.status(404).json({

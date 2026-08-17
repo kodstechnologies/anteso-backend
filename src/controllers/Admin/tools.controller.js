@@ -842,4 +842,99 @@ const GetExpiringTools = asyncHandler(async (req, res) => {
         });
     }
 });
-export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory, getUnassignedTools, GetExpiringTools };
+
+
+
+const getUnassignedToolsPerMachine = asyncHandler((req, res) => {
+    try {
+        
+    } catch (error) {
+        
+    }
+})
+
+/**
+ * Get assigned tools for a specific engineer filtered by machine type
+ * @route GET /api/tools/assigned-tools-by-engineer-machine
+ * @query {string} engineerId - ID of the engineer/technician
+ * @query {string} machineType - Type of machine (e.g., "Computed Tomography", "Radiography (Fixed)", "C-Arm")
+ * @returns {Object} Response containing filtered tools assigned to the engineer for the specified machine type
+ * @example
+ * GET /api/tools/assigned-tools-by-engineer-machine?engineerId=507f1f77bcf86cd799439011&machineType=Computed%20Tomography
+ */
+const getAssignedToolsForEngineerByMachine = asyncHandler(async (req, res) => {
+    try {
+        const { engineerId, machineType } = req.query;
+
+        // Validate required parameters
+        if (!engineerId) {
+            return res.status(400).json({
+                success: false,
+                message: "Engineer ID is required"
+            });
+        }
+
+        if (!machineType) {
+            return res.status(400).json({
+                success: false,
+                message: "Machine type is required"
+            });
+        }
+
+        // Build query: tools assigned to this engineer with status 'assigned'
+        const query = {
+            technician: engineerId,
+            toolStatus: 'assigned'
+        };
+
+        // Add applicableMachines filter if specified
+        // Case-insensitive match for machine type
+        query.applicableMachines = {
+            $elemMatch: {
+                $regex: new RegExp(`^${machineType.trim()}$`, 'i')
+            }
+        };
+
+        // Find tools and populate technician details
+        const tools = await Tools.find(query)
+            .populate('technician', 'name email phone rpId')
+            .populate('createdBy', 'name')
+            .sort({ createdAt: -1 });
+
+        // Check if calibration is still valid
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const toolsWithStatus = tools.map(tool => {
+            const validTill = new Date(tool.calibrationValidTill);
+            validTill.setHours(0, 0, 0, 0);
+            
+            return {
+                ...tool.toObject(),
+                isCalibrationValid: validTill >= today,
+                daysUntilExpiry: Math.ceil((validTill - today) / (1000 * 60 * 60 * 24))
+            };
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Tools retrieved successfully",
+            data: {
+                engineerId,
+                machineType,
+                totalTools: toolsWithStatus.length,
+                toolsAssigned: toolsWithStatus
+            }
+        });
+
+    } catch (error) {
+        console.error("Error in getAssignedToolsForEngineerByMachine:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to retrieve assigned tools",
+            error: error.message
+        });
+    }
+});
+
+export default { create, allTools, updateById, deleteById, getById, getEngineerByTool, getAllToolsByTechnicianId, getToolByTechnicianAndTool, toolHistory, getUnassignedTools, GetExpiringTools, getAssignedToolsForEngineerByMachine };
