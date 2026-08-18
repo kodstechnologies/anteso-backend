@@ -1425,17 +1425,13 @@ const getAllOrdersWithType = asyncHandler(async (req, res) => {
 //   }
 // });
 
-const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    if (!orderId) {
-      return res.status(400).json({ success: false, message: "orderId is required" });
-    }
+const fetchOrderInvoicePayload = async (orderId) => {
+    if (!orderId) return null;
 
     const order = await Order.findById(orderId)
       .populate({
         path: 'services',
-        select: 'machineType machineModel totalAmount price workTypeDetails quantity',
+        select: 'machineType machineModel serialNumber totalAmount price workTypeDetails quantity',
       })
       .populate({
         path: 'additionalServices',
@@ -1455,7 +1451,7 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
       .lean();
 
     if (!order) {
-      return res.status(404).json({ success: false, message: "Order not found" });
+      return null;
     }
 
     // 🧮 Use service totals from quotation.enquiry (same source style as getQuotationByEnquiryId)
@@ -1569,13 +1565,28 @@ const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
     const quotationTotal = order.quotation?.total || 0;
     const grandTotal = quotationTotal || (serviceTotal + additionalTotal);
 
+    return {
+      ...order,
+      services: servicesWithAmount,
+      grandTotal,
+    };
+};
+
+const getAllDetailsWithOrderId = asyncHandler(async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: "orderId is required" });
+    }
+
+    const data = await fetchOrderInvoicePayload(orderId);
+    if (!data) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
     res.status(200).json({
       success: true,
-      data: {
-        ...order,
-        services: servicesWithAmount,
-        grandTotal,
-      },
+      data,
     });
   } catch (error) {
     console.error("Error fetching order details:", error);
@@ -1603,6 +1614,9 @@ const createInvoice = asyncHandler(async (req, res) => {
       additionalServices,
       dealerHospitals,
       orderId,
+      orderIds,
+      leadOwnerId,
+      branchNames,
       paymentType,
       paymentAmount,
       utrNumber,
@@ -1614,15 +1628,30 @@ const createInvoice = asyncHandler(async (req, res) => {
     console.log("🚀 ~ createInvoice ~ additionalServices:", additionalServices);
     console.log("🚀 ~ createInvoice ~ dealerHospitals:", dealerHospitals);
 
+    const linkedOrderIds = [
+      ...new Set(
+        [
+          orderId,
+          ...(Array.isArray(orderIds) ? orderIds : []),
+          ...(Array.isArray(dealerHospitals)
+            ? dealerHospitals.map((dh) => dh?.orderId).filter(Boolean)
+            : []),
+        ]
+          .map((id) => String(id || "").trim())
+          .filter(Boolean)
+      ),
+    ];
+    const primaryOrderId = linkedOrderIds[0];
+
     // Validate orderId
-    if (!orderId) {
+    if (!primaryOrderId) {
       return res.status(400).json({
         success: false,
         message: "orderId is required to link invoice",
       });
     }
 
-    const orderExists = await Order.findById(orderId);
+    const orderExists = await Order.findById(primaryOrderId);
     if (!orderExists) {
       return res.status(404).json({
         success: false,
@@ -1630,11 +1659,18 @@ const createInvoice = asyncHandler(async (req, res) => {
       });
     }
 
-    // Validate required fields
-    if (!srfNumber || !buyerName) {
+    // Validate required fields (SRF can be derived from selected dealer hospitals)
+    if (type === "Customer" && !srfNumber) {
       return res.status(400).json({
         success: false,
-        message: "SRF number and buyerName are required",
+        message: "SRF number is required",
+      });
+    }
+
+    if (!buyerName) {
+      return res.status(400).json({
+        success: false,
+        message: "buyerName is required",
       });
     }
 
@@ -1712,11 +1748,21 @@ const createInvoice = asyncHandler(async (req, res) => {
       }))
       : [];
 
+    const formattedBranchNames = Array.isArray(branchNames)
+      ? branchNames.map((name) => String(name || "").trim()).filter(Boolean)
+      : [];
+    const resolvedSrfNumber =
+      srfNumber ||
+      [...new Set(
+        formattedDealerHospitals.map((dh) => dh.srfNumber).filter(Boolean)
+      )].join(", ") ||
+      orderExists.srfNumber;
+
     // Create Invoice
     const newInvoice = await Invoice.create({
       invoiceId,
       type,
-      srfNumber,
+      srfNumber: resolvedSrfNumber,
       buyerName,
       address,
       state,
@@ -1732,14 +1778,17 @@ const createInvoice = asyncHandler(async (req, res) => {
       igst: taxAmounts.igst,
       grandtotal: grandTotalFromFrontend,
       createdBy: req.user ? req.user._id : null,
-      order: orderId,
+      order: primaryOrderId,
+      orders: linkedOrderIds,
+      leadOwner: leadOwnerId || undefined,
+      branchNames: formattedBranchNames,
       paymentType,
     });
 
     // Create payment if details provided
-    if (orderId && paymentType && paymentAmount && utrNumber) {
+    if (primaryOrderId && paymentType && paymentAmount && utrNumber) {
       const payment = await Payment.create({
-        orderId,
+        orderId: primaryOrderId,
         totalAmount: grandTotalFromFrontend,
         paymentAmount,
         paymentType,
@@ -1766,22 +1815,35 @@ const createInvoice = asyncHandler(async (req, res) => {
   }
 });
 
+const isHexObjectId = (value) => /^[a-fA-F0-9]{24}$/.test(String(value || "").trim());
+
+const normalizeBranchName = (value) => {
+  const name = String(value || "").trim();
+  return name || "N/A";
+};
+
 const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
   try {
     const [dealers, manufacturers] = await Promise.all([
-      Dealer.find({}, "_id name").lean(),
-      Manufacturer.find({}, "_id name").lean(),
+      Dealer.find({}, "_id name address city state branch").lean(),
+      Manufacturer.find({}, "_id name address city state branch travelCost cost").lean(),
     ]);
 
-    const dealerIdSet = new Set(dealers.map((d) => d._id.toString()));
     const manufacturerIdSet = new Set(manufacturers.map((m) => m._id.toString()));
-    const leadOwnerNameById = new Map(
-      [...dealers, ...manufacturers].map((user) => [user._id.toString(), user.name || "N/A"])
-    );
+    const owners = [...dealers, ...manufacturers];
+    const ownerById = new Map(owners.map((user) => [user._id.toString(), user]));
+    const ownersByName = new Map();
+    for (const user of owners) {
+      const key = String(user.name || "").trim().toLowerCase();
+      if (!key) continue;
+      if (!ownersByName.has(key)) ownersByName.set(key, []);
+      ownersByName.get(key).push(user);
+    }
 
-    const leadOwnerIds = [...new Set([...dealerIdSet, ...manufacturerIdSet])];
+    const leadOwnerIds = [...ownerById.keys()];
+    const leadOwnerNames = owners.map((user) => user.name).filter(Boolean);
 
-    if (leadOwnerIds.length === 0) {
+    if (leadOwnerIds.length === 0 && leadOwnerNames.length === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
@@ -1790,24 +1852,84 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
     }
 
     const orders = await Order.find(
-      { leadOwner: { $in: leadOwnerIds } },
+      {
+        $or: [
+          leadOwnerIds.length ? { leadOwner: { $in: leadOwnerIds } } : null,
+          leadOwnerNames.length ? { leadOwner: { $in: leadOwnerNames } } : null,
+        ].filter(Boolean),
+      },
       { _id: 1, srfNumber: 1, leadOwner: 1, branchName: 1 }
     )
       .sort({ createdAt: -1 })
       .lean();
 
-    const data = orders.map((order) => {
-      const leadOwnerId = order.leadOwner?.toString();
-      const leadType = manufacturerIdSet.has(leadOwnerId) ? "Manufacturer" : "Dealer";
-
+    const resolveOwner = (leadOwner) => {
+      const raw = String(leadOwner || "").trim();
+      if (isHexObjectId(raw) && ownerById.has(raw)) {
+        const user = ownerById.get(raw);
+        return {
+          user,
+          leadOwnerId: raw,
+          leadType: manufacturerIdSet.has(raw) ? "Manufacturer" : "Dealer",
+        };
+      }
+      const matches = ownersByName.get(raw.toLowerCase()) || [];
+      if (!matches.length) return null;
+      const user = matches[0];
+      const id = user._id.toString();
       return {
-        orderId: order._id,
-        branchName: order.branchName || "",
-        srfNumber: order.srfNumber,
-        leadOwner: leadOwnerNameById.get(leadOwnerId) || "N/A",
-        leadType,
+        user,
+        leadOwnerId: id,
+        leadType: manufacturerIdSet.has(id) ? "Manufacturer" : "Dealer",
       };
-    });
+    };
+
+    const grouped = new Map();
+    for (const order of orders) {
+      const resolved = resolveOwner(order.leadOwner);
+      if (!resolved) continue;
+      const { user, leadOwnerId, leadType } = resolved;
+      if (!grouped.has(leadOwnerId)) {
+        grouped.set(leadOwnerId, {
+          leadOwnerId,
+          leadOwner: user.name || "N/A",
+          leadType,
+          address: user.address || "",
+          city: user.city || "",
+          state: user.state || "",
+          branch: user.branch || "",
+          travelCost: user.travelCost || "",
+          cost: user.cost ?? 0,
+          srfNumbers: [],
+          branchMap: new Map(),
+        });
+      }
+      const group = grouped.get(leadOwnerId);
+      if (order.srfNumber && !group.srfNumbers.includes(order.srfNumber)) {
+        group.srfNumbers.push(order.srfNumber);
+      }
+      const branchName = normalizeBranchName(order.branchName);
+      if (!group.branchMap.has(branchName)) {
+        group.branchMap.set(branchName, { branchName, orderIds: [], srfNumbers: [] });
+      }
+      const branch = group.branchMap.get(branchName);
+      branch.orderIds.push(order._id);
+      if (order.srfNumber) branch.srfNumbers.push(order.srfNumber);
+    }
+
+    const data = [...grouped.values()].map((group) => ({
+      leadOwnerId: group.leadOwnerId,
+      leadOwner: group.leadOwner,
+      leadType: group.leadType,
+      address: group.address,
+      city: group.city,
+      state: group.state,
+      branch: group.branch,
+      travelCost: group.travelCost,
+      cost: group.cost,
+      srfNumbers: group.srfNumbers,
+      branches: [...group.branchMap.values()],
+    }));
 
     res.status(200).json({
       success: true,
@@ -1819,6 +1941,76 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch dealer/manufacturer branches",
+    });
+  }
+});
+
+const getHospitalsByLeadOwnerBranches = asyncHandler(async (req, res) => {
+  try {
+    const leadOwnerId = String(req.query.leadOwnerId || "").trim();
+    const branchNames = String(req.query.branchNames || "")
+      .split(",")
+      .map((name) => name.trim())
+      .filter(Boolean)
+      .map((name) => normalizeBranchName(name));
+
+    if (!leadOwnerId) {
+      return res.status(400).json({
+        success: false,
+        message: "leadOwnerId is required",
+      });
+    }
+    if (!branchNames.length) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one branchName is required",
+      });
+    }
+
+    const owner = await User.findById(leadOwnerId).select("name address city state role travelCost cost").lean();
+    const ownerName = owner?.name ? String(owner.name).trim() : "";
+    const leadOwnerValues = [leadOwnerId, ownerName].filter(Boolean);
+
+    const orders = await Order.find(
+      { leadOwner: { $in: leadOwnerValues } },
+      { _id: 1, branchName: 1, srfNumber: 1 }
+    )
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const selectedBranches = new Set(branchNames.map(normalizeBranchName));
+    const matchedOrders = orders.filter((order) =>
+      selectedBranches.has(normalizeBranchName(order.branchName))
+    );
+
+    const hospitals = [];
+    for (const order of matchedOrders) {
+      const details = await fetchOrderInvoicePayload(order._id);
+      if (details) hospitals.push(details);
+    }
+
+    res.status(200).json({
+      success: true,
+      count: hospitals.length,
+      leadOwner: owner
+        ? {
+            _id: owner._id,
+            name: owner.name || "",
+            address: owner.address || "",
+            city: owner.city || "",
+            state: owner.state || "",
+            leadType: owner.role === "Manufacturer" ? "Manufacturer" : "Dealer",
+            travelCost: owner.travelCost || "",
+            cost: owner.cost ?? 0,
+          }
+        : null,
+      data: hospitals,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching hospitals by lead owner branches:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch hospital details for selected branches",
     });
   }
 });
@@ -1960,8 +2152,12 @@ export const getInvoiceById = asyncHandler(async (req, res) => {
         populate: [
           { path: "services", model: "Service" },
           { path: "additionalServices", model: "AdditionalService" },
-          { path: "hospital", model: "Hospital" }, // ✅ populate hospital details too
+          { path: "hospital", model: "Hospital" },
         ],
+      })
+      .populate({
+        path: "orders",
+        populate: [{ path: "services", model: "Service" }],
       });
 
     console.log("🚀 ~ invoice:", invoice);
@@ -2342,4 +2538,4 @@ const getInvoicePdf = asyncHandler(async (req, res) => {
 
 
 
-export default { getAllOrdersWithType, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders, getDealerManufacturerBranches }
+export default { getAllOrdersWithType, getAllDetailsWithOrderId, createInvoice, getInvoiceById, getAllInvoices, deleteInvoice, uploadInvoicePdf, getInvoicePdf, getDealerOrders, getDealerManufacturerBranches, getHospitalsByLeadOwnerBranches }

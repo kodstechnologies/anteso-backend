@@ -15,4 +15,5 @@ router.post("/upload-pdf/:orderId", Upload.single("invoicePdf"), InvoiceControll
 router.get("/get-invoice-pdf/:orderId", InvoiceController.getInvoicePdf)
 router.get('/get-dealer-orders', invoiceController.getDealerOrders)
 router.get('/get-dealer-manufacturer-branches', invoiceController.getDealerManufacturerBranches)
+router.get('/get-hospitals-by-lead-owner-branches', invoiceController.getHospitalsByLeadOwnerBranches)
 export default router

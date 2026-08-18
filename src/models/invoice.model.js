@@ -274,6 +274,7 @@ const serviceSchema = new Schema({
     /** Line total for the machine row (preferred over quantity × rate when set). */
     totalAmount: { type: Number, min: [0, "Total amount cannot be negative"], default: 0 },
     hsnno: { type: String, trim: true },
+    serialNumber: { type: String, trim: true },
 });
 
 const additionalServiceSchema = new Schema({
@@ -286,9 +287,16 @@ const dealerHospitalSchema = new Schema({
     partyCode: { type: String, trim: true },
     hospitalName: { type: String, trim: true },
     city: { type: String, trim: true }, // Changed from location to city
+    district: { type: String, trim: true },
     dealerState: { type: String, trim: true },
     modelNo: { type: String, trim: true },
+    serialNo: { type: String, trim: true },
     amount: { type: Number, min: [0, "Amount cannot be negative"], default: 0 },
+    orderId: { type: Schema.Types.ObjectId, ref: "Order" },
+    srfNumber: { type: String, trim: true },
+    branchName: { type: String, trim: true },
+    travelCostType: { type: String, trim: true },
+    travelCostPrice: { type: Number, min: [0, "Travel cost cannot be negative"], default: 0 },
     services: [serviceSchema], // Nested services for each dealer hospital
     additionalServices: [additionalServiceSchema], // Nested additional services
 });
@@ -335,6 +343,15 @@ const invoiceSchema = new Schema(
             ref: "Order",
             required: [true, "Order reference is required"],
         },
+        orders: [{
+            type: Schema.Types.ObjectId,
+            ref: "Order",
+        }],
+        leadOwner: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+        },
+        branchNames: [{ type: String, trim: true }],
         invoicePdf: {
             type: String,
             trim: true,
