@@ -3850,6 +3850,20 @@ const getAllOrdersForTechnician = asyncHandler(async (req, res) => {
         };
     });
 
+    const isPendingOrder = (order) =>
+        (order.services || []).some((svc) =>
+            (svc.workTypeDetails || []).some(
+                (wt) => String(wt.status || "pending").toLowerCase().trim() === "pending"
+            )
+        );
+
+    filteredOrders.sort((a, b) => {
+        const aPending = isPendingOrder(a);
+        const bPending = isPendingOrder(b);
+        if (aPending !== bPending) return aPending ? -1 : 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
     res.status(200).json({
         message: "Orders fetched successfully",
         count: filteredOrders.length,
