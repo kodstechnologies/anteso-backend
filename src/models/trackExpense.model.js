@@ -32,15 +32,7 @@ const trackExpenseItemSchema = new Schema(
         type: Number,
         default: 1,
     },
-    noOfMachines: {
-        type: Number,
-        default: 1,
-    },
         cost: {
-            type: Number,
-            default: 0,
-        },
-        revenue: {
             type: Number,
             default: 0,
         },
@@ -88,10 +80,6 @@ const trackExpenseSchema = new Schema(
             default: 0,
         },
         cost: {
-            type: Number,
-            default: 0,
-        },
-        revenue: {
             type: Number,
             default: 0,
         },

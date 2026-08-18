@@ -19,9 +19,8 @@ import Elora from "../../models/elora.model.js";
 import ServiceReport from "../../models/serviceReports/serviceReport.model.js";
 import Attendance from "../../models/attendanceSchema.model.js"
 import Invoice from "../../models/invoice.model.js";
-import expenseModel from "../../models/expense.model.js";
-import tripModel from "../../models/trip.model.js";
 import TrackExpense from "../../models/trackExpense.model.js";
+import { rebuildTrackExpenseForTechnicianDate } from "../../utils/rebuildTrackExpense.js";
 
 // const getAllOrders = asyncHandler(async (req, res) => {
 //     try {
@@ -1989,141 +1988,6 @@ const getMachineDetails = asyncHandler(async (req, res) => {
 //     });
 // });
 
-const isQaWorkType = (workType = "", serviceName = "") => {
-    const wt = String(workType || "").trim().toLowerCase();
-    const sn = String(serviceName || "").trim().toLowerCase();
-    return (
-        wt === "quality assurance test" ||
-        wt === "qa test" ||
-        sn === "qa test"
-    );
-};
-
-const startAndEndOfDay = (date) => {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
-    return { startOfDay, endOfDay };
-};
-
-const resolveServiceRevenue = (service, workTypeDetail) => {
-    const fromWorkType = Number(workTypeDetail?.price) || 0;
-    const fromTotal = Number(service?.totalAmount) || 0;
-    const fromPrice = Number(service?.price) || 0;
-    return fromWorkType || fromTotal || fromPrice || 0;
-};
-
-const trackQaExpenseForSubmission = async ({
-    orderId,
-    service,
-    serviceId,
-    technicianId,
-    machineType,
-    workType,
-    workTypeDetail,
-}) => {
-    if (!isQaWorkType(workType, workTypeDetail?.serviceName)) return null;
-
-    const qaTestDoneAt = new Date();
-    const { startOfDay, endOfDay } = startAndEndOfDay(qaTestDoneAt);
-
-    const trips = await tripModel.find({ technician: technicianId }).select("_id").lean();
-    if (!trips.length) return null;
-
-    const tripIds = trips.map((trip) => trip._id);
-    const dayExpenses = await expenseModel.find({
-        trip: { $in: tripIds },
-        date: { $gte: startOfDay, $lte: endOfDay },
-    }).lean();
-
-    if (!dayExpenses.length) return null;
-
-    const totalRequiredAmount = dayExpenses.reduce(
-        (sum, exp) => sum + (Number(exp.requiredAmount) || 0),
-        0
-    );
-    const expenseIds = dayExpenses.map((exp) => exp._id);
-    const uniqueTripIds = [...new Set(dayExpenses.map((exp) => String(exp.trip)))];
-    const currentMachines = Math.max(Number(service?.quantity) || 1, 1);
-    const currentRevenue = resolveServiceRevenue(service, workTypeDetail);
-
-    let trackDoc = await TrackExpense.findOne({
-        technician: technicianId,
-        date: { $gte: startOfDay, $lte: endOfDay },
-    });
-
-    if (!trackDoc) {
-        trackDoc = new TrackExpense({
-            technician: technicianId,
-            date: startOfDay,
-            expenses: expenseIds,
-            trips: uniqueTripIds,
-            items: [],
-        });
-    }
-
-    const alreadyTracked = trackDoc.items.some(
-        (item) => String(item.serviceId) === String(serviceId)
-    );
-
-    if (!alreadyTracked) {
-        trackDoc.items.push({
-            orderId,
-            expenses: expenseIds,
-            trip: uniqueTripIds[0] || null,
-            serviceId,
-            machineType,
-            technician: technicianId,
-            machineCount: currentMachines,
-            noOfMachines: currentMachines,
-            cost: 0,
-            revenue: currentRevenue,
-            qaTestDoneAt,
-            totalRequiredAmount,
-        });
-    } else {
-        trackDoc.items = trackDoc.items.map((item) => {
-            if (String(item.serviceId) !== String(serviceId)) return item;
-            item.expenses = expenseIds;
-            item.trip = uniqueTripIds[0] || item.trip;
-            item.machineType = machineType || item.machineType;
-            item.machineCount = currentMachines;
-            item.revenue = currentRevenue;
-            item.qaTestDoneAt = item.qaTestDoneAt || qaTestDoneAt;
-            item.totalRequiredAmount = totalRequiredAmount;
-            return item;
-        });
-    }
-
-    const noOfMachines = trackDoc.items.reduce(
-        (sum, item) => sum + (Number(item.machineCount) || 1),
-        0
-    );
-    const cost = noOfMachines > 0 ? Number((totalRequiredAmount / noOfMachines).toFixed(2)) : 0;
-    const revenue = trackDoc.items.reduce(
-        (sum, item) => sum + (Number(item.revenue) || 0),
-        0
-    );
-
-    trackDoc.expenses = expenseIds;
-    trackDoc.trips = uniqueTripIds;
-    trackDoc.noOfMachines = noOfMachines;
-    trackDoc.totalRequiredAmount = totalRequiredAmount;
-    trackDoc.cost = cost;
-    trackDoc.revenue = Number(revenue.toFixed(2));
-    trackDoc.items = trackDoc.items.map((item) => {
-        item.cost = cost;
-        item.noOfMachines = noOfMachines;
-        item.totalRequiredAmount = totalRequiredAmount;
-        item.expenses = expenseIds;
-        return item;
-    });
-
-    await trackDoc.save();
-    return trackDoc;
-};
-
 const updateServiceWorkType = asyncHandler(async (req, res) => {
     const { orderId, serviceId, technicianId, machineType, workType } = req.params;
     const { machineModel, serialNumber, remark, isSubmitted } = req.body;
@@ -2260,17 +2124,9 @@ const updateServiceWorkType = asyncHandler(async (req, res) => {
 
     if (workTypeDetail.isSubmitted) {
         try {
-            await trackQaExpenseForSubmission({
-                orderId,
-                service,
-                serviceId,
-                technicianId,
-                machineType,
-                workType,
-                workTypeDetail,
-            });
+            await rebuildTrackExpenseForTechnicianDate(technicianId, new Date());
         } catch (trackError) {
-            console.error("🚀 ~ trackQaExpenseForSubmission ~ error:", trackError);
+            console.error("🚀 ~ rebuildTrackExpenseForTechnicianDate ~ error:", trackError);
         }
     }
 
@@ -8059,22 +7915,47 @@ const getTrackExpensesByOrderId = asyncHandler(async (req, res) => {
             return res.status(400).json({ success: false, message: "Invalid order ID" });
         }
 
-        const docs = await TrackExpense.find({ "items.orderId": orderId })
-            .populate({ path: "technician", select: "name email phone empId" })
-            .populate({ path: "expenses", select: "typeOfExpense requiredAmount date remarks screenshot" })
-            .populate({ path: "trips", select: "tripName startDate endDate tripstatus tripTotalExpense" })
-            .populate({ path: "items.technician", select: "name empId" })
-            .populate({ path: "items.expenses", select: "typeOfExpense requiredAmount date remarks screenshot" })
-            .populate({ path: "items.trip", select: "tripName startDate endDate" })
-            .sort({ date: -1 })
-            .lean();
+        const oid = new mongoose.Types.ObjectId(orderId);
+        const order = await orderModel.findById(oid).select("services").lean();
+        const serviceIds = Array.isArray(order?.services) ? order.services : [];
 
-        const data = docs.map((doc) => ({
-            ...doc,
-            items: (doc.items || []).filter(
-                (item) => String(item.orderId) === String(orderId)
-            ),
-        }));
+        const query = {
+            $or: [
+                { "items.orderId": oid },
+                { "items.orderId": orderId },
+                ...(serviceIds.length ? [{ "items.serviceId": { $in: serviceIds } }] : []),
+            ],
+        };
+
+        let docs = [];
+        try {
+            docs = await TrackExpense.find(query)
+                .populate({ path: "technician", model: "User", select: "name email phone empId" })
+                .populate({ path: "expenses", select: "typeOfExpense requiredAmount date remarks screenshot" })
+                .populate({ path: "trips", select: "tripName startDate endDate tripstatus tripTotalExpense" })
+                .populate({ path: "items.technician", model: "User", select: "name empId" })
+                .populate({ path: "items.expenses", select: "typeOfExpense requiredAmount date remarks screenshot" })
+                .populate({ path: "items.trip", select: "tripName startDate endDate" })
+                .sort({ date: -1 })
+                .lean();
+        } catch (populateError) {
+            console.error("🚀 ~ getTrackExpensesByOrderId populate fallback:", populateError);
+            docs = await TrackExpense.find(query).sort({ date: -1 }).lean();
+        }
+
+        const matchesOrder = (item) => {
+            const itemOrder = item?.orderId?._id || item?.orderId;
+            const itemService = item?.serviceId?._id || item?.serviceId;
+            if (itemOrder && String(itemOrder) === String(orderId)) return true;
+            return serviceIds.some((id) => String(id) === String(itemService));
+        };
+
+        const data = docs
+            .map((doc) => ({
+                ...doc,
+                items: (doc.items || []).filter(matchesOrder),
+            }))
+            .filter((doc) => (doc.items || []).length > 0 || Number(doc.cost) > 0 || Number(doc.totalRequiredAmount) > 0);
 
         return res.status(200).json({
             success: true,

@@ -14,6 +14,7 @@ import Attendance from "../../models/attendanceSchema.model.js"
 import bcrypt from "bcrypt";
 import Leave from "../../models/leave.model.js";
 import Salary from "../../models/salary.model.js"
+import { rebuildTrackExpenseForTechnicianDate } from "../../utils/rebuildTrackExpense.js";
 
 
 // const add = asyncHandler(async (req, res) => {
@@ -1604,9 +1605,18 @@ const addTripExpense = asyncHandler(async (req, res) => {
     trip.expenses.push(expense._id);
     await trip.save();
 
+    try {
+        await rebuildTrackExpenseForTechnicianDate(technicianId, expenseDate);
+    } catch (trackError) {
+        console.error("🚀 ~ rebuildTrackExpenseForTechnicianDate ~ error:", trackError);
+    }
+
     // ✅ Mark technician as present on expense date
-    const startOfDay = new Date(expenseDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(expenseDate.setHours(23, 59, 59, 999));
+    const attendanceDate = new Date(expenseDate);
+    const startOfDay = new Date(attendanceDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(attendanceDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     let attendance = await Attendance.findOne({
         employee: technicianId,
