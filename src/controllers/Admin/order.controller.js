@@ -5144,14 +5144,15 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
             payload = req.body;
         }
 
-        // 🔒 File validation
-        if (!req.file && ["completed", "generated"].includes(status.toLowerCase())) {
-            return res.status(400).json({ message: "File is required" });
-        }
-
         const requestedStatusEarly = String(status || "").toLowerCase().trim();
         const isCompleteStatus = ["complete", "completed"].includes(requestedStatusEarly);
-        const isLicenseWorkTypeParam = String(workType || "").toLowerCase().trim() === "license for operation";
+        const licenseWorkTypeNames = [
+            "license for operation",
+            "licence of operation",
+            "license of operation",
+            "licence for operation",
+        ];
+        const isLicenseWorkTypeParam = licenseWorkTypeNames.includes(String(workType || "").toLowerCase().trim());
 
         if (isLicenseWorkTypeParam && isCompleteStatus) {
             if (!payload.licenseValidFrom || !payload.licenseValidTill) {
@@ -5184,6 +5185,26 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
         const service = await Services.findById(serviceId);
         if (!service) return res.status(404).json({ message: "Service not found" });
+
+        const matchingWork = (service.workTypeDetails || []).find(
+            (work) => String(work.workType || "").toLowerCase().trim() === String(workType || "").toLowerCase().trim()
+        );
+        let hasExistingReportFile = false;
+        if (normalizedReportType === "qatest" && matchingWork?.QAtest) {
+            const existingQa = await QATest.findById(matchingWork.QAtest).select("report").lean();
+            hasExistingReportFile = Boolean(existingQa?.report);
+        }
+        if (normalizedReportType === "elora" && matchingWork?.elora) {
+            const existingElora = await Elora.findById(matchingWork.elora).select("report").lean();
+            hasExistingReportFile = Boolean(existingElora?.report);
+        }
+        if (
+            !req.file &&
+            ["complete", "completed", "generated"].includes(String(status || "").toLowerCase()) &&
+            !hasExistingReportFile
+        ) {
+            return res.status(400).json({ message: "File is required" });
+        }
 
         let updated = false;
         let newReportDoc = null;
@@ -5252,7 +5273,7 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
                     work.completedAt = new Date();
                 }
 
-                if (work.workType?.toLowerCase() === "license for operation") {
+                if (licenseWorkTypeNames.includes(String(work.workType || "").toLowerCase().trim())) {
                     if (payload.licenseValidFrom) {
                         work.licenseValidFrom = new Date(payload.licenseValidFrom);
                     }
