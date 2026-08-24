@@ -24,6 +24,7 @@ import DashboardRouter from "../Admin/dashboard.router.js"
 import CustomMachineRouter from "../Admin/customMachine.router.js"
 import AuthorizedSignatoryRouter from "../Admin/authorizedSignatory.router.js"
 import ServiceReportRouter from "./serviceReport/serviceReport.router.js"
+import ExpiryReminderRouter from "../Admin/expiryReminder.router.js"
 import { authenticate, refreshAccessToken } from '../../../middlewares/authMiddleware.js'
 
 // https://anteso-backend.onrender.com
@@ -63,6 +64,7 @@ router.use('/payment', PaymentRouter)
 router.use('/invoice', InvoiceRouter)
 router.use('/courier', CourierRouter)
 router.use('/service-report', ServiceReportRouter)
+router.use('/expiry-reminders', ExpiryReminderRouter)
 router.use('/dashboard', DashboardRouter)
 router.use('/custom-machines', CustomMachineRouter)
 router.use('/authorized-signatory', AuthorizedSignatoryRouter)
