@@ -6415,6 +6415,13 @@ const assignStaffByElora = asyncHandler(async (req, res) => {
                 .json({ message: `WorkType '${workType}' not found in this service` });
         }
 
+        const requestedStatus = String(status || "").toLowerCase().trim();
+        if (["complete", "completed", "generated", "paid"].includes(requestedStatus)) {
+            return res.status(400).json({
+                message: "Cannot set complete status without uploading the report PDF. Assign as pending or in progress first, then complete with the file.",
+            });
+        }
+
         // 5️⃣ Create or update Elora subdocument
         if (!workDetail.elora) {
             // create a new Elora document
@@ -6469,7 +6476,7 @@ const getAllOrdersByHospitalId = asyncHandler(async (req, res) => {
         // ✅ Use hospital ObjectId instead of hospitalName
         const orders = await orderModel.find({ hospital: hospitalId })
             .sort({ createdAt: -1 })
-            .populate("services", "machineType equipmentNo machineModel serialNumber remark workTypeDetails")
+            .populate("services", "machineType equipmentNo machineModel serialNumber remark workTypeDetails workOrderCopy partyCodeOrSysId procNoOrPoNo procExpiryDate")
             .populate("additionalServices", "name description totalAmount")
             .populate("customer", "name email role")
             .populate("quotation", "quotationNumber status")
@@ -6893,6 +6900,13 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
         );
 
         // ✅ Map services: include QA/Elora reports + service report header fields
+        const licenseWorkTypeNames = [
+            "license for operation",
+            "licence of operation",
+            "license of operation",
+            "licence for operation",
+        ];
+
         const servicesWithReports = order.services.map((service) => {
             const serviceReport = serviceReportByServiceId[service._id.toString()] || null;
 
@@ -6922,17 +6936,40 @@ const getOrderByHospitalIdOrderId = asyncHandler(async (req, res) => {
                 return wtObj;
             });
 
+            const isLicenseOnlyService = (service.workTypeDetails || []).length > 0 &&
+                (service.workTypeDetails || []).every((wt) =>
+                    licenseWorkTypeNames.includes(String(wt.workType || "").toLowerCase().trim())
+                );
+
             const serviceObj = service.toObject();
-            return {
+            const base = {
                 ...serviceObj,
                 equipmentNo: serviceObj.equipmentNo || null,
+                workTypeDetails: workDetails,
+            };
+
+            // License for Operation: omit QA/service-report machine header fields entirely
+            if (isLicenseOnlyService) {
+                const {
+                    serialNumber,
+                    make,
+                    model,
+                    slNumber,
+                    testDate,
+                    testDueDate,
+                    ...licenseService
+                } = base;
+                return licenseService;
+            }
+
+            return {
+                ...base,
                 serialNumber: serviceObj.serialNumber || null,
                 make: serviceReport?.make || null,
                 model: serviceReport?.model || null,
                 slNumber: serviceReport?.slNumber || null,
                 testDate: serviceReport?.testDate || null,
                 testDueDate: serviceReport?.testDueDate || null,
-                workTypeDetails: workDetails,
             };
         });
 
@@ -7520,7 +7557,11 @@ const getEloraReport = asyncHandler(async (req, res) => {
 
         // Validate IDs
         if (!orderId || !serviceId || !eloraId) {
-            throw new ApiError(400, "orderId, serviceId and eloraId are required");
+            return res.status(200).json({
+                success: false,
+                message: "orderId, serviceId and eloraId are required",
+                data: null,
+            });
         }
 
         // Find the Elora report
@@ -7529,7 +7570,11 @@ const getEloraReport = asyncHandler(async (req, res) => {
             .lean();
 
         if (!eloraReport) {
-            throw new ApiError(404, "Elora report not found");
+            return res.status(200).json({
+                success: false,
+                message: "Elora report not found",
+                data: null,
+            });
         }
 
         // Optional: check if the report belongs to the given order & service
@@ -7538,7 +7583,11 @@ const getEloraReport = asyncHandler(async (req, res) => {
             .lean();
 
         if (!order) {
-            throw new ApiError(404, "Order not found");
+            return res.status(200).json({
+                success: false,
+                message: "Order not found",
+                data: null,
+            });
         }
 
         const serviceExists = order.services.some(
@@ -7546,7 +7595,11 @@ const getEloraReport = asyncHandler(async (req, res) => {
         );
 
         if (!serviceExists) {
-            throw new ApiError(400, "Service does not belong to this order");
+            return res.status(200).json({
+                success: false,
+                message: "Service does not belong to this order",
+                data: null,
+            });
         }
 
         // Return the Elora report
@@ -7555,17 +7608,10 @@ const getEloraReport = asyncHandler(async (req, res) => {
         );
     } catch (error) {
         console.error("Get Elora Report Error:", error);
-        if (error instanceof ApiError) {
-            return res.status(error.statusCode).json({
-                statusCode: error.statusCode,
-                message: error.message,
-                errors: error.errors || [],
-            });
-        }
-        return res.status(500).json({
-            statusCode: 500,
-            message: "Failed to fetch Elora report",
-            errors: [error.message],
+        return res.status(200).json({
+            success: false,
+            message: error.message || "Failed to fetch Elora report",
+            data: null,
         });
     }
 });
