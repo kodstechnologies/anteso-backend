@@ -263,9 +263,29 @@ const shapeReminder = (doc, today) => {
 };
 
 /**
+ * Once expiryDate is before today, mark those reminder docs as expired
+ * so they no longer appear in the active list.
+ */
+const markPastRemindersExpired = async (today) => {
+    await ExpiryReminder.updateMany(
+        {
+            expiryDate: { $lt: today },
+            status: { $ne: "expired" },
+        },
+        { $set: { status: "expired" } }
+    );
+};
+
+const isStillActive = (expiryDate, today) => {
+    if (!expiryDate) return false;
+    return startOfDay(expiryDate).getTime() >= startOfDay(today).getTime();
+};
+
+/**
  * GET /expiry-reminders?type=qa|license|all
  * QA: QATest.reportPdf when ServiceReport.testDueDate is within 1 month
  * License: Elora.report when licenseValidTill is within 1 month
+ * Records automatically leave the list the day after expiryDate.
  */
 export const getExpiryReminders = asyncHandler(async (req, res) => {
     try {
@@ -281,6 +301,9 @@ export const getExpiryReminders = asyncHandler(async (req, res) => {
         const includeQa = type === "all" || type === "qa";
         const includeLicense = type === "all" || type === "license";
 
+        // Drop past-due rows from the active list automatically
+        await markPastRemindersExpired(today);
+
         const [qaDocs, licenseDocs] = await Promise.all([
             includeQa ? collectQaReminders({ today, until }) : [],
             includeLicense ? collectLicenseReminders({ today, until }) : [],
@@ -290,8 +313,10 @@ export const getExpiryReminders = asyncHandler(async (req, res) => {
             [...qaDocs, ...licenseDocs].map((doc) => upsertReminder(doc))
         );
 
+        // Never return rows whose expiry date has already passed
         const data = saved
             .map((doc) => shapeReminder(doc.toObject ? doc.toObject() : doc, today))
+            .filter((item) => isStillActive(item.expiryDate, today) && item.status !== "expired")
             .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
 
         return res.status(200).json({
