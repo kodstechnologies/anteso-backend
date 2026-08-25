@@ -95,7 +95,7 @@ const upsertReminder = async (doc) => {
 };
 
 const collectQaReminders = async ({ today, until }) => {
-    const [qaReports, leadApronReports] = await Promise.all([
+    const [qaReports, leadApronReports, dueQaTests] = await Promise.all([
         ServiceReport.find({
             testDueDate: { $gte: today, $lte: until },
             serviceId: { $ne: null },
@@ -108,6 +108,16 @@ const collectQaReminders = async ({ today, until }) => {
         })
             .select("serviceId testDueDate testDate testReportNumber srfNumber customerName")
             .lean(),
+        // Direct PDF uploads store due date on QATest (may have no ServiceReport yet)
+        QATest.find({
+            testDueDate: { $gte: today, $lte: until },
+            $or: [
+                { reportPdf: { $nin: [null, ""] } },
+                { report: { $nin: [null, ""] } },
+            ],
+        })
+            .select("reportPdf report qaTestReportNumber reportULRNumber testDueDate testDate")
+            .lean(),
     ]);
 
     const reportRows = [
@@ -115,7 +125,19 @@ const collectQaReminders = async ({ today, until }) => {
         ...leadApronReports.map((row) => ({ ...row, serviceReportModel: "LeadApronServiceReport" })),
     ];
 
-    const serviceIds = [...new Set(reportRows.map((row) => String(row.serviceId)).filter(Boolean))];
+    const servicesFromReports = reportRows.map((row) => String(row.serviceId)).filter(Boolean);
+    const dueQaTestIds = dueQaTests.map((qa) => String(qa._id));
+
+    const servicesLinkedToDueQa = dueQaTestIds.length
+        ? await Services.find({ "workTypeDetails.QAtest": { $in: dueQaTestIds } }).lean()
+        : [];
+
+    const serviceIds = [
+        ...new Set([
+            ...servicesFromReports,
+            ...servicesLinkedToDueQa.map((service) => String(service._id)),
+        ]),
+    ];
     if (!serviceIds.length) return [];
 
     const [services, orderMap] = await Promise.all([
@@ -133,13 +155,21 @@ const collectQaReminders = async ({ today, until }) => {
     }
 
     const qaTests = qaTestIds.length
-        ? await QATest.find({ _id: { $in: qaTestIds }, reportPdf: { $nin: [null, ""] } })
-            .select("reportPdf qaTestReportNumber reportULRNumber")
+        ? await QATest.find({
+            _id: { $in: qaTestIds },
+            $or: [
+                { reportPdf: { $nin: [null, ""] } },
+                { report: { $nin: [null, ""] } },
+            ],
+        })
+            .select("reportPdf report qaTestReportNumber reportULRNumber testDueDate testDate")
             .lean()
         : [];
     const qaTestMap = new Map(qaTests.map((qa) => [String(qa._id), qa]));
 
     const reminders = [];
+    const seenServiceQa = new Set();
+
     for (const report of reportRows) {
         const service = serviceMap.get(String(report.serviceId));
         if (!service) continue;
@@ -147,7 +177,12 @@ const collectQaReminders = async ({ today, until }) => {
         const qaWork = (service.workTypeDetails || []).find((work) => work.QAtest);
         const qaId = toObjectId(qaWork?.QAtest);
         const qaTest = qaId ? qaTestMap.get(qaId) : null;
-        if (!qaTest?.reportPdf) continue;
+        const pdfUrl = qaTest?.reportPdf || qaTest?.report;
+        if (!pdfUrl) continue;
+
+        const key = `${service._id}:${qaId || "none"}`;
+        if (seenServiceQa.has(key)) continue;
+        seenServiceQa.add(key);
 
         const order = orderMap.get(String(service._id));
         reminders.push({
@@ -163,11 +198,50 @@ const collectQaReminders = async ({ today, until }) => {
             contactNumber: order?.contactNumber || "",
             machineType: service.machineType || "",
             workType: qaWork?.workType || "Quality Assurance Test",
-            expiryDate: report.testDueDate,
-            reportPdf: qaTest.reportPdf,
+            expiryDate: report.testDueDate || qaTest.testDueDate,
+            reportPdf: pdfUrl,
             report: null,
         });
     }
+
+    // QATest-only due dates (direct upload without ServiceReport header)
+    for (const service of services) {
+        for (const work of service.workTypeDetails || []) {
+            const qaId = toObjectId(work.QAtest);
+            if (!qaId) continue;
+            const key = `${service._id}:${qaId}`;
+            if (seenServiceQa.has(key)) continue;
+
+            const qaTest = qaTestMap.get(qaId);
+            if (!qaTest?.testDueDate) continue;
+            const till = new Date(qaTest.testDueDate);
+            if (till < today || till > until) continue;
+
+            const pdfUrl = qaTest.reportPdf || qaTest.report;
+            if (!pdfUrl) continue;
+
+            seenServiceQa.add(key);
+            const order = orderMap.get(String(service._id));
+            reminders.push({
+                type: "qa",
+                order: order?._id || null,
+                service: service._id,
+                qaTest: qaTest._id,
+                elora: null,
+                serviceReport: null,
+                serviceReportModel: undefined,
+                srfNumber: order?.srfNumber || "",
+                hospitalName: order?.hospitalName || "",
+                contactNumber: order?.contactNumber || "",
+                machineType: service.machineType || "",
+                workType: work.workType || "Quality Assurance Test",
+                expiryDate: qaTest.testDueDate,
+                reportPdf: pdfUrl,
+                report: null,
+            });
+        }
+    }
+
     return reminders;
 };
 

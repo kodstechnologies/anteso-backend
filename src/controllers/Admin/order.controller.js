@@ -971,7 +971,7 @@ const getMachineDetailsByOrderId = asyncHandler(async (req, res) => {
                     {
                         path: "workTypeDetails.QAtest",
                         model: "QATest",
-                        select: "reportULRNumber qaTestReportNumber reportStatus report remark assignedAt qatestSubmittedAt officeStaff",
+                        select: "reportULRNumber qaTestReportNumber reportStatus report remark assignedAt qatestSubmittedAt officeStaff testDate testDueDate reportPdf",
                         populate: {
                             path: "officeStaff",
                             model: "Employee",
@@ -5183,6 +5183,24 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
             normalizedReportType = "elora";
         }
 
+        const getQaDueYearsForMachine = (machineType) => {
+            const name = String(machineType || "").toLowerCase();
+            const fiveYear =
+                name.includes("dental") ||
+                name.includes("opg") ||
+                name.includes("ortho pantomography") ||
+                name.includes("cone beam") ||
+                name.includes("cbct");
+            return fiveYear ? 5 : 2;
+        };
+
+        const computeTestDueDate = (baseDate, years) => {
+            const due = new Date(baseDate);
+            due.setFullYear(due.getFullYear() + years);
+            due.setDate(due.getDate() - 1);
+            return due;
+        };
+
         const service = await Services.findById(serviceId);
         if (!service) return res.status(404).json({ message: "Service not found" });
 
@@ -5311,6 +5329,18 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
 
                 // 📄 QA TEST
                 if (normalizedReportType === "qatest") {
+                    const dueYears = getQaDueYearsForMachine(service.machineType);
+                    const baseTestDate = existingReport?.qatestSubmittedAt
+                        || work.completedAt
+                        || (payload.testDate ? new Date(payload.testDate) : null)
+                        || new Date();
+                    const resolvedTestDate = Number.isNaN(new Date(baseTestDate).getTime())
+                        ? new Date()
+                        : new Date(baseTestDate);
+                    const resolvedTestDueDate = payload.testDueDate
+                        ? new Date(payload.testDueDate)
+                        : computeTestDueDate(resolvedTestDate, dueYears);
+
                     if (existingReport) {
                         const updateData = {};
                         if (fileUrl) updateData.report = fileUrl;
@@ -5319,6 +5349,12 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
                             updateData.reportStatus = "reuploaded";
                         } else if (normalizedStatus === "completed") {
                             updateData.reportStatus = "pending";
+                        }
+
+                        // Persist due date when a report file is uploaded (or payload provides it)
+                        if (fileUrl || payload.testDueDate || !existingReport.testDueDate) {
+                            updateData.testDate = existingReport.testDate || resolvedTestDate;
+                            updateData.testDueDate = resolvedTestDueDate;
                         }
 
                         newReportDoc = await QATest.findByIdAndUpdate(
@@ -5331,8 +5367,24 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
                             officeStaff: staffId,
                             report: fileUrl,
                             reportStatus: "pending",
+                            testDate: resolvedTestDate,
+                            testDueDate: resolvedTestDueDate,
                         });
                         work.QAtest = newReportDoc._id;
+                    }
+
+                    // Keep ServiceReport header in sync for expiry reminders when it already exists
+                    if (newReportDoc?.testDueDate) {
+                        await ServiceReport.findOneAndUpdate(
+                            { serviceId: service._id },
+                            {
+                                $set: {
+                                    testDate: newReportDoc.testDate || resolvedTestDate,
+                                    testDueDate: newReportDoc.testDueDate,
+                                },
+                            },
+                            { upsert: false }
+                        );
                     }
                     reportFor = "qatest";
                 }

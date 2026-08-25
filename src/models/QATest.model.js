@@ -25,6 +25,12 @@ const qaTestSchema = new Schema({
     reportPdf: {
         type: String
     },
+    testDate: {
+        type: Date,
+    },
+    testDueDate: {
+        type: Date,
+    },
     assignedAt: Date,
     qatestSubmittedAt: { type: Date },
 }, { timestamps: true });
