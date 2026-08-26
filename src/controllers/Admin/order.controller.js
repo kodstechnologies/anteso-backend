@@ -176,14 +176,14 @@ const buildOrdersListFilter = async (query = {}) => {
     addExactFilter("contactNumber", contactNumber);
 
     if (String(leadOwner || "").trim()) {
-        const matchingUsers = await User.find({ name: String(leadOwner).trim() }).select("_id");
+        const leadOwnerName = String(leadOwner).trim();
+        const matchingUsers = await User.find({ name: leadOwnerName }).select("_id");
         const userIds = matchingUsers.map((user) => user._id);
-        if (userIds.length) {
-            filter.$or = [
-                { leadOwner: { $in: userIds } },
-                { customer: { $in: userIds } },
-            ];
-        } else {
+        filter.$or = [
+            ...(userIds.length ? [{ leadOwner: { $in: userIds } }] : []),
+            { leadOwner: leadOwnerName },
+        ];
+        if (!filter.$or.length) {
             filter._id = null;
         }
     }
@@ -230,29 +230,30 @@ const buildOrdersListFilter = async (query = {}) => {
     return filter;
 };
 
+const isMongoObjectId = (value) =>
+    mongoose.Types.ObjectId.isValid(value) && /^[a-fA-F0-9]{24}$/.test(String(value));
+
 const enrichOrdersList = async (orders = []) =>
     Promise.all(
         orders.map(async (order) => {
             let leadOwnerName = "N/A";
             let leadOwnerType = "N/A";
+            const rawLeadOwner = order.leadOwner;
 
-            if (order.leadOwner && mongoose.Types.ObjectId.isValid(order.leadOwner)) {
-                const user = await User.findById(order.leadOwner).select("name role");
+            // Resolve lead owner entity name — never fall back to customer/contact person.
+            if (rawLeadOwner && isMongoObjectId(rawLeadOwner)) {
+                const user = await User.findById(rawLeadOwner).select("name role");
                 if (user) {
-                    leadOwnerName = user.name;
-                    leadOwnerType = user.role;
+                    leadOwnerName = user.name || "N/A";
+                    leadOwnerType = user.role || "N/A";
                 }
-            }
-
-            if (
-                (leadOwnerName === "N/A" || leadOwnerType === "N/A") &&
-                order.customer &&
-                mongoose.Types.ObjectId.isValid(order.customer)
-            ) {
-                const customer = await User.findById(order.customer).select("name role");
-                if (customer) {
-                    leadOwnerName = customer.name;
-                    leadOwnerType = customer.role;
+            } else if (rawLeadOwner && String(rawLeadOwner).trim()) {
+                // Legacy/seeded orders may store lead owner as a name string.
+                leadOwnerName = String(rawLeadOwner).trim();
+                const userByName = await User.findOne({ name: leadOwnerName }).select("role name");
+                if (userByName) {
+                    leadOwnerName = userByName.name || leadOwnerName;
+                    leadOwnerType = userByName.role || "N/A";
                 }
             }
 
@@ -269,7 +270,7 @@ const enrichOrdersList = async (orders = []) =>
     );
 
 const fetchOrdersFilterOptions = async () => {
-    const [branchNames, cities, districts, emailAddresses, contactNumbers, leadOwnerIds, customerIds] =
+    const [branchNames, cities, districts, emailAddresses, contactNumbers, leadOwnerIds] =
         await Promise.all([
             orderModel.distinct("branchName"),
             orderModel.distinct("city"),
@@ -277,18 +278,15 @@ const fetchOrdersFilterOptions = async () => {
             orderModel.distinct("emailAddress"),
             orderModel.distinct("contactNumber"),
             orderModel.distinct("leadOwner"),
-            orderModel.distinct("customer"),
         ]);
 
-    const leadOwnerFilterIds = [
-        ...new Set(
-            [...leadOwnerIds, ...customerIds].filter(
-                (id) => id && mongoose.Types.ObjectId.isValid(id)
-            )
-        ),
-    ];
-    const leadOwnerUsers = leadOwnerFilterIds.length
-        ? await User.find({ _id: { $in: leadOwnerFilterIds } }).select("name")
+    const objectIdLeadOwners = leadOwnerIds.filter((id) => isMongoObjectId(id));
+    const stringLeadOwners = leadOwnerIds
+        .filter((id) => id && !isMongoObjectId(id))
+        .map((id) => String(id).trim());
+
+    const leadOwnerUsers = objectIdLeadOwners.length
+        ? await User.find({ _id: { $in: objectIdLeadOwners } }).select("name")
         : [];
 
     return {
@@ -297,7 +295,10 @@ const fetchOrdersFilterOptions = async () => {
         districts: sortFilterValues(districts),
         emailAddresses: sortFilterValues(emailAddresses),
         contactNumbers: sortFilterValues(contactNumbers),
-        leadOwners: sortFilterValues(leadOwnerUsers.map((user) => user.name)),
+        leadOwners: sortFilterValues([
+            ...leadOwnerUsers.map((user) => user.name),
+            ...stringLeadOwners,
+        ]),
     };
 };
 
@@ -388,9 +389,6 @@ const getAllOrdersWeb = asyncHandler(async (req, res) => {
     }
 });
 
-
-const isMongoObjectId = (value) =>
-    mongoose.Types.ObjectId.isValid(value) && /^[a-fA-F0-9]{24}$/.test(String(value));
 
 const getBasicDetailsByOrderId = asyncHandler(async (req, res) => {
     try {

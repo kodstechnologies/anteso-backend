@@ -1825,8 +1825,8 @@ const normalizeBranchName = (value) => {
 const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
   try {
     const [dealers, manufacturers] = await Promise.all([
-      Dealer.find({}, "_id name address city state branch").lean(),
-      Manufacturer.find({}, "_id name address city state branch travelCost cost").lean(),
+      Dealer.find({}, "_id name address city state branch createdAt").lean(),
+      Manufacturer.find({}, "_id name address city state branch travelCost cost createdAt").lean(),
     ]);
 
     const manufacturerIdSet = new Set(manufacturers.map((m) => m._id.toString()));
@@ -1851,6 +1851,49 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
       });
     }
 
+    const toTime = (value) => {
+      const time = value ? new Date(value).getTime() : 0;
+      return Number.isNaN(time) ? 0 : time;
+    };
+
+    const createOwnerGroup = (user, leadOwnerId, leadType) => {
+      const createdAtMs = toTime(user.createdAt);
+      const group = {
+        leadOwnerId,
+        leadOwner: user.name || "N/A",
+        leadType,
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        branch: user.branch || "",
+        travelCost: user.travelCost || "",
+        cost: user.cost ?? 0,
+        createdAt: user.createdAt || null,
+        latestActivityAt: createdAtMs,
+        srfNumbers: [],
+        branchMap: new Map(),
+      };
+
+      const masterBranch = normalizeBranchName(user.branch);
+      if (masterBranch && masterBranch !== "N/A") {
+        group.branchMap.set(masterBranch, {
+          branchName: masterBranch,
+          orderIds: [],
+          srfNumbers: [],
+        });
+      }
+
+      return group;
+    };
+
+    // Include ALL dealers + manufacturers (not only those with orders).
+    const grouped = new Map();
+    for (const user of owners) {
+      const leadOwnerId = user._id.toString();
+      const leadType = manufacturerIdSet.has(leadOwnerId) ? "Manufacturer" : "Dealer";
+      grouped.set(leadOwnerId, createOwnerGroup(user, leadOwnerId, leadType));
+    }
+
     const orders = await Order.find(
       {
         $or: [
@@ -1858,7 +1901,7 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
           leadOwnerNames.length ? { leadOwner: { $in: leadOwnerNames } } : null,
         ].filter(Boolean),
       },
-      { _id: 1, srfNumber: 1, leadOwner: 1, branchName: 1 }
+      { _id: 1, srfNumber: 1, leadOwner: 1, branchName: 1, createdAt: 1 }
     )
       .sort({ createdAt: -1 })
       .lean();
@@ -1884,27 +1927,19 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
       };
     };
 
-    const grouped = new Map();
     for (const order of orders) {
       const resolved = resolveOwner(order.leadOwner);
       if (!resolved) continue;
       const { user, leadOwnerId, leadType } = resolved;
       if (!grouped.has(leadOwnerId)) {
-        grouped.set(leadOwnerId, {
-          leadOwnerId,
-          leadOwner: user.name || "N/A",
-          leadType,
-          address: user.address || "",
-          city: user.city || "",
-          state: user.state || "",
-          branch: user.branch || "",
-          travelCost: user.travelCost || "",
-          cost: user.cost ?? 0,
-          srfNumbers: [],
-          branchMap: new Map(),
-        });
+        grouped.set(leadOwnerId, createOwnerGroup(user, leadOwnerId, leadType));
       }
       const group = grouped.get(leadOwnerId);
+      const orderTime = toTime(order.createdAt);
+      if (orderTime > group.latestActivityAt) {
+        group.latestActivityAt = orderTime;
+      }
+      // Orders are newest-first, so first-seen SRF is the latest.
       if (order.srfNumber && !group.srfNumbers.includes(order.srfNumber)) {
         group.srfNumbers.push(order.srfNumber);
       }
@@ -1914,22 +1949,28 @@ const getDealerManufacturerBranches = asyncHandler(async (req, res) => {
       }
       const branch = group.branchMap.get(branchName);
       branch.orderIds.push(order._id);
-      if (order.srfNumber) branch.srfNumbers.push(order.srfNumber);
+      if (order.srfNumber && !branch.srfNumbers.includes(order.srfNumber)) {
+        branch.srfNumbers.push(order.srfNumber);
+      }
     }
 
-    const data = [...grouped.values()].map((group) => ({
-      leadOwnerId: group.leadOwnerId,
-      leadOwner: group.leadOwner,
-      leadType: group.leadType,
-      address: group.address,
-      city: group.city,
-      state: group.state,
-      branch: group.branch,
-      travelCost: group.travelCost,
-      cost: group.cost,
-      srfNumbers: group.srfNumbers,
-      branches: [...group.branchMap.values()],
-    }));
+    const data = [...grouped.values()]
+      .map((group) => ({
+        leadOwnerId: group.leadOwnerId,
+        leadOwner: group.leadOwner,
+        leadType: group.leadType,
+        address: group.address,
+        city: group.city,
+        state: group.state,
+        branch: group.branch,
+        travelCost: group.travelCost,
+        cost: group.cost,
+        createdAt: group.createdAt,
+        latestActivityAt: group.latestActivityAt,
+        srfNumbers: group.srfNumbers,
+        branches: [...group.branchMap.values()],
+      }))
+      .sort((a, b) => (b.latestActivityAt || 0) - (a.latestActivityAt || 0));
 
     res.status(200).json({
       success: true,
