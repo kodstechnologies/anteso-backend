@@ -52,7 +52,7 @@ const expiryReminderSchema = new Schema(
         report: { type: String },
         status: {
             type: String,
-            enum: ["pending", "acknowledged"],
+            enum: ["pending", "acknowledged", "expired"],
             default: "pending",
         },
     },

@@ -21,6 +21,7 @@ import Attendance from "../../models/attendanceSchema.model.js"
 import Invoice from "../../models/invoice.model.js";
 import TrackExpense from "../../models/trackExpense.model.js";
 import { rebuildTrackExpenseForTechnicianDate } from "../../utils/rebuildTrackExpense.js";
+import ExpiryReminder from "../../models/expiryReminders/expiryReminder.model.js";
 
 // const getAllOrders = asyncHandler(async (req, res) => {
 //     try {
@@ -5418,6 +5419,39 @@ export const completedStatusAndReport = asyncHandler(async (req, res) => {
         }
 
         await service.save();
+
+        // Keep License Expiring Records in sync when Valid Till is edited
+        // (including when moved to a past date — otherwise the list keeps the old future date)
+        if (isLicenseWorkTypeParam && payload.licenseValidTill) {
+            const tillDate = new Date(payload.licenseValidTill);
+            if (!Number.isNaN(tillDate.getTime())) {
+                const dayStart = new Date();
+                dayStart.setHours(0, 0, 0, 0);
+                const expired = tillDate.getTime() < dayStart.getTime();
+                const reminderDate = new Date(tillDate);
+                reminderDate.setMonth(reminderDate.getMonth() - 1);
+
+                const licenseWork = (service.workTypeDetails || []).find((w) =>
+                    licenseWorkTypeNames.includes(String(w.workType || "").toLowerCase().trim())
+                );
+                const eloraId = licenseWork?.elora || null;
+
+                await ExpiryReminder.updateMany(
+                    {
+                        type: "license",
+                        service: service._id,
+                        ...(eloraId ? { elora: eloraId } : {}),
+                    },
+                    {
+                        $set: {
+                            expiryDate: tillDate,
+                            reminderDate,
+                            status: expired ? "expired" : "pending",
+                        },
+                    }
+                );
+            }
+        }
 
         if (status.toLowerCase() === "paid") {
             await orderModel.findByIdAndUpdate(orderId, { status: "paid" });

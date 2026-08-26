@@ -39,9 +39,55 @@ const subtractMonths = (date, months) => {
     return d;
 };
 
+/**
+ * Calendar day stamp (YYYYMMDD).
+ * HTML date inputs are stored as UTC midnight — use UTC parts for those
+ * so IST/other timezones do not shift the day and expire licenses early.
+ */
+const toDayStamp = (date) => {
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return null;
+    const utcDateOnly =
+        d.getUTCHours() === 0 &&
+        d.getUTCMinutes() === 0 &&
+        d.getUTCSeconds() === 0 &&
+        d.getUTCMilliseconds() === 0;
+    if (utcDateOnly) {
+        return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+    }
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+};
+
+const todayDayStamp = () => {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+};
+
+const hasExplicitTime = (value) => {
+    if (!value) return false;
+    const raw = typeof value === "string" ? value : "";
+    if (raw.includes("T")) {
+        const timePart = raw.split("T")[1]?.replace("Z", "") || "";
+        return !/^00:00(?::00(?:\.000)?)?$/.test(timePart);
+    }
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return false;
+    return !(
+        d.getUTCHours() === 0 &&
+        d.getUTCMinutes() === 0 &&
+        d.getUTCSeconds() === 0 &&
+        d.getUTCMilliseconds() === 0
+    );
+};
+
 const daysUntil = (expiryDate, fromDate) => {
-    const ms = startOfDay(expiryDate).getTime() - startOfDay(fromDate).getTime();
-    return Math.ceil(ms / (1000 * 60 * 60 * 24));
+    const exp = toDayStamp(expiryDate);
+    const from = toDayStamp(fromDate);
+    if (exp == null || from == null) return null;
+    // Approximate day diff from stamps
+    const expDate = new Date(Math.floor(exp / 10000), Math.floor((exp % 10000) / 100) - 1, exp % 100);
+    const fromD = new Date(Math.floor(from / 10000), Math.floor((from % 10000) / 100) - 1, from % 100);
+    return Math.round((expDate.getTime() - fromD.getTime()) / (1000 * 60 * 60 * 24));
 };
 
 const getExpiryWindow = () => {
@@ -74,6 +120,19 @@ const buildOrderMap = async (serviceIds) => {
     return map;
 };
 
+const isPastDue = (expiryDate) => {
+    if (!expiryDate) return false;
+    if (hasExplicitTime(expiryDate)) {
+        const dt = new Date(expiryDate);
+        if (Number.isNaN(dt.getTime())) return false;
+        return dt.getTime() < Date.now();
+    }
+    const exp = toDayStamp(expiryDate);
+    const today = todayDayStamp();
+    if (exp == null) return false;
+    return exp < today;
+};
+
 const upsertReminder = async (doc) => {
     const filter = {
         type: doc.type,
@@ -81,16 +140,33 @@ const upsertReminder = async (doc) => {
         qaTest: doc.qaTest || null,
         elora: doc.elora || null,
     };
+    const expired = isPastDue(doc.expiryDate);
+    // Avoid writing undefined fields (can break validators / wipe values)
+    const payload = {
+        type: doc.type,
+        order: doc.order || null,
+        service: doc.service,
+        qaTest: doc.qaTest || null,
+        elora: doc.elora || null,
+        srfNumber: doc.srfNumber || "",
+        hospitalName: doc.hospitalName || "",
+        contactNumber: doc.contactNumber || "",
+        machineType: doc.machineType || "",
+        workType: doc.workType || "",
+        expiryDate: doc.expiryDate,
+        reminderDate: subtractMonths(doc.expiryDate, 1),
+        reportPdf: doc.reportPdf || null,
+        report: doc.report || null,
+        // Only expire after the due date has passed; keep on list through due date
+        status: expired ? "expired" : "pending",
+    };
+    if (doc.serviceReport) payload.serviceReport = doc.serviceReport;
+    if (doc.serviceReportModel) payload.serviceReportModel = doc.serviceReportModel;
+
     return ExpiryReminder.findOneAndUpdate(
         filter,
-        {
-            $set: {
-                ...doc,
-                reminderDate: subtractMonths(doc.expiryDate, 1),
-                status: doc.expiryDate < startOfDay(new Date()) ? "expired" : "pending",
-            },
-        },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { $set: payload },
+        { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
 };
 
@@ -215,7 +291,7 @@ const collectQaReminders = async ({ today, until }) => {
             const qaTest = qaTestMap.get(qaId);
             if (!qaTest?.testDueDate) continue;
             const till = new Date(qaTest.testDueDate);
-            if (till < today || till > until) continue;
+            if (isPastDue(till) || till > until) continue;
 
             const pdfUrl = qaTest.reportPdf || qaTest.report;
             if (!pdfUrl) continue;
@@ -285,7 +361,7 @@ const collectLicenseReminders = async ({ today, until }) => {
             if (!isLicense || !work.licenseValidTill) continue;
 
             const till = new Date(work.licenseValidTill);
-            if (till < today || till > until) continue;
+            if (isPastDue(till) || till > until) continue;
 
             const eloraId = toObjectId(work.elora);
             const elora = eloraId ? eloraMap.get(eloraId) : null;
@@ -337,29 +413,106 @@ const shapeReminder = (doc, today) => {
 };
 
 /**
- * Once expiryDate is before today, mark those reminder docs as expired
- * so they no longer appear in the active list.
+ * Once expiryDate calendar day is before today, mark QA and license reminder
+ * docs as expired so they leave the active list.
+ * Also reinstate any still-valid rows that were wrongly marked expired.
  */
-const markPastRemindersExpired = async (today) => {
+const syncReminderExpiryStatus = async (today) => {
+    const dayStart = startOfDay(today);
     await ExpiryReminder.updateMany(
         {
-            expiryDate: { $lt: today },
+            type: { $in: ["qa", "license"] },
+            expiryDate: { $lt: dayStart },
             status: { $ne: "expired" },
         },
         { $set: { status: "expired" } }
     );
+    // Keep still-valid License/QA reminders on the list
+    await ExpiryReminder.updateMany(
+        {
+            type: { $in: ["qa", "license"] },
+            expiryDate: { $gte: dayStart },
+            status: "expired",
+        },
+        { $set: { status: "pending" } }
+    );
 };
 
-const isStillActive = (expiryDate, today) => {
-    if (!expiryDate) return false;
-    return startOfDay(expiryDate).getTime() >= startOfDay(today).getTime();
+/**
+ * When License Valid Till is changed in ServiceDetails (including to a past date),
+ * collect() no longer finds that service (outside today..+1month window), so the
+ * stored ExpiryReminder would keep the old future date. Sync live dates here.
+ */
+const reconcileLicenseRemindersFromServices = async () => {
+    const reminders = await ExpiryReminder.find({ type: "license" }).lean();
+    if (!reminders.length) return;
+
+    const serviceIds = [...new Set(reminders.map((r) => String(r.service)).filter(Boolean))];
+    const services = await Services.find({ _id: { $in: serviceIds } })
+        .select("workTypeDetails machineType")
+        .lean();
+    const serviceMap = new Map(services.map((s) => [String(s._id), s]));
+
+    await Promise.all(
+        reminders.map(async (reminder) => {
+            const service = serviceMap.get(String(reminder.service));
+            if (!service) {
+                await ExpiryReminder.updateOne(
+                    { _id: reminder._id },
+                    { $set: { status: "expired" } }
+                );
+                return;
+            }
+
+            const eloraId = toObjectId(reminder.elora);
+            const work = (service.workTypeDetails || []).find((w) => {
+                const workName = String(w.workType || "").toLowerCase().trim();
+                const isLicense = !w.workType || LICENSE_WORK_TYPES.includes(workName);
+                if (!isLicense) return false;
+                if (eloraId) return toObjectId(w.elora) === eloraId;
+                return !!w.licenseValidTill;
+            });
+
+            const liveTill = work?.licenseValidTill;
+            if (!liveTill) {
+                await ExpiryReminder.updateOne(
+                    { _id: reminder._id },
+                    { $set: { status: "expired" } }
+                );
+                return;
+            }
+
+            const expired = isPastDue(liveTill);
+            await ExpiryReminder.updateOne(
+                { _id: reminder._id },
+                {
+                    $set: {
+                        expiryDate: new Date(liveTill),
+                        reminderDate: subtractMonths(liveTill, 1),
+                        machineType: service.machineType || reminder.machineType || "",
+                        workType: work.workType || reminder.workType || "License for Operation",
+                        status: expired ? "expired" : "pending",
+                    },
+                }
+            );
+        })
+    );
 };
+
+const isStillActive = (expiryDate) => {
+    if (!expiryDate) return false;
+    return !isPastDue(expiryDate);
+};
+
+const reminderKey = (doc) =>
+    `${doc.type}|${doc.service}|${doc.qaTest || "null"}|${doc.elora || "null"}`;
 
 /**
  * GET /expiry-reminders?type=qa|license|all
  * QA: QATest.reportPdf when ServiceReport.testDueDate is within 1 month
  * License: Elora.report when licenseValidTill is within 1 month
- * Records automatically leave the list the day after expiryDate.
+ * After due date (expiryDate day < today), status → expired and row leaves this list.
+ * Through the due date itself, License / QA rows stay visible.
  */
 export const getExpiryReminders = asyncHandler(async (req, res) => {
     try {
@@ -374,9 +527,15 @@ export const getExpiryReminders = asyncHandler(async (req, res) => {
         const { today, until } = getExpiryWindow();
         const includeQa = type === "all" || type === "qa";
         const includeLicense = type === "all" || type === "license";
+        const types = [
+            ...(includeQa ? ["qa"] : []),
+            ...(includeLicense ? ["license"] : []),
+        ];
 
-        // Drop past-due rows from the active list automatically
-        await markPastRemindersExpired(today);
+        await syncReminderExpiryStatus(today);
+        if (includeLicense) {
+            await reconcileLicenseRemindersFromServices();
+        }
 
         const [qaDocs, licenseDocs] = await Promise.all([
             includeQa ? collectQaReminders({ today, until }) : [],
@@ -387,10 +546,26 @@ export const getExpiryReminders = asyncHandler(async (req, res) => {
             [...qaDocs, ...licenseDocs].map((doc) => upsertReminder(doc))
         );
 
-        // Never return rows whose expiry date has already passed
-        const data = saved
-            .map((doc) => shapeReminder(doc.toObject ? doc.toObject() : doc, today))
-            .filter((item) => isStillActive(item.expiryDate, today) && item.status !== "expired")
+        // Also keep any still-active reminders already stored (avoids licenses
+        // vanishing if collect briefly misses a row)
+        const fromDb = await ExpiryReminder.find({
+            type: { $in: types },
+            status: { $ne: "expired" },
+            expiryDate: { $gte: today, $lte: until },
+        }).lean();
+
+        const byKey = new Map();
+        for (const doc of fromDb) {
+            byKey.set(reminderKey(doc), doc);
+        }
+        for (const doc of saved) {
+            const plain = doc.toObject ? doc.toObject() : doc;
+            byKey.set(reminderKey(plain), plain);
+        }
+
+        const data = [...byKey.values()]
+            .map((doc) => shapeReminder(doc, today))
+            .filter((item) => isStillActive(item.expiryDate) && item.status !== "expired")
             .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
 
         return res.status(200).json({
