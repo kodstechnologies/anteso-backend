@@ -10,7 +10,6 @@ export const createToolSchema = Joi.object({
   calibrationCertificateNo: Joi.string().required(),
   // calibrationDate: Joi.date().required(),
   calibrationValidTill: Joi.date().required(),
-  range: Joi.string().required(),
   certificate: Joi.string().allow(''),
   submitDate: Joi.date(),
  applicableMachines: Joi.array()

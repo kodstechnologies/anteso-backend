@@ -282,7 +282,6 @@ const updateById = asyncHandler(async (req, res) => {
             "model",
             "calibrationCertificateNo",
             "calibrationValidTill",
-            "range",
             "certificate",
             "toolStatus",
             "technician",
@@ -546,7 +545,7 @@ const getAllToolsByTechnicianId = asyncHandler(async (req, res) => {
 
         // Find employee/technician by ID and populate tool details
         const technician = await Employee.findById(technicianId)
-            .populate("tools.toolId", "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill range toolStatus certificate");
+            .populate("tools.toolId", "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill toolStatus certificate");
 
         if (!technician) {
             return res.status(404).json({
@@ -598,7 +597,7 @@ const getToolByTechnicianAndTool = asyncHandler(async (req, res) => {
         const technician = await Employee.findById(technicianId)
             .populate(
                 "tools.toolId",
-                "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill range toolStatus"
+                "toolId SrNo nomenclature manufacturer model calibrationCertificateNo calibrationValidTill toolStatus"
             );
 
         if (!technician) {

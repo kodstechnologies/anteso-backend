@@ -45,11 +45,7 @@ const toolsSchema = new Schema(
             type: Date,
             required: true,
         },
-        range: {
-            type: String,
-            required: true,
-            trim: true,
-        },
+
         certificate: {
             type: String,
         },
