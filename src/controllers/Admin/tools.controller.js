@@ -265,7 +265,6 @@ const updateById = asyncHandler(async (req, res) => {
             });
         }
 
-        // Find tool by ID
         const tool = await Tools.findById(toolId);
         if (!tool) {
             return res.status(404).json({
@@ -273,6 +272,8 @@ const updateById = asyncHandler(async (req, res) => {
                 message: "Tool not found.",
             });
         }
+
+        const previousTechnicianId = tool.technician?.toString() || null;
 
         const allowedFields = [
             "SrNo",
@@ -286,6 +287,7 @@ const updateById = asyncHandler(async (req, res) => {
             "toolStatus",
             "technician",
             "submitDate",
+            "applicableMachines",
         ];
 
         Object.keys(updateData).forEach((key) => {
@@ -294,29 +296,62 @@ const updateById = asyncHandler(async (req, res) => {
             }
         });
 
-        // ✅ If technician assigned
+        if (!tool.assignmentHistory) {
+            tool.assignmentHistory = [];
+        }
+
+        const issueDate = updateData.issueDate ? new Date(updateData.issueDate) : null;
+        const submitDate = updateData.submitDate ? new Date(updateData.submitDate) : null;
+
+        const findLastOpenHistoryIndex = () => {
+            for (let i = tool.assignmentHistory.length - 1; i >= 0; i--) {
+                if (!tool.assignmentHistory[i].submitDate) return i;
+            }
+            return -1;
+        };
+
         if (updateData.technician) {
             const technicianId = updateData.technician;
-            const issueDate = updateData.issueDate ? new Date(updateData.issueDate) : new Date();
+            const prevTechnicianId = previousTechnicianId;
+            const newTechnicianId = technicianId.toString();
+            const resolvedIssueDate = issueDate || new Date();
+            const lastOpenIdx = findLastOpenHistoryIndex();
 
-            // Mark tool as assigned
+            if (prevTechnicianId === newTechnicianId && lastOpenIdx >= 0) {
+                tool.assignmentHistory[lastOpenIdx].issueDate = resolvedIssueDate;
+                if (submitDate) {
+                    tool.assignmentHistory[lastOpenIdx].submitDate = submitDate;
+                    tool.submitDate = submitDate;
+                }
+            } else {
+                if (lastOpenIdx >= 0 && prevTechnicianId !== newTechnicianId && submitDate) {
+                    tool.assignmentHistory[lastOpenIdx].submitDate = submitDate;
+                }
+
+                tool.assignmentHistory.push({
+                    technician: technicianId,
+                    issueDate: resolvedIssueDate,
+                    submitDate: null,
+                });
+
+                tool.submitDate = null;
+            }
+
             tool.toolStatus = 'assigned';
             tool.technician = technicianId;
 
-            // ✅ Remove this tool from any other employees who might have it
             await Employee.updateMany(
                 { "tools.toolId": tool._id },
                 { $pull: { tools: { toolId: tool._id } } }
             );
 
-            // ✅ Add or update tool inside the assigned employee’s record
             await Employee.findByIdAndUpdate(
                 technicianId,
                 {
                     $addToSet: {
                         tools: {
                             toolId: tool._id,
-                            issueDate,
+                            issueDate: resolvedIssueDate,
                             toolName: tool.nomenclature,
                             serialNumber: tool.SrNo,
                         },
@@ -324,11 +359,26 @@ const updateById = asyncHandler(async (req, res) => {
                 },
                 { new: true }
             );
+        } else if (submitDate && tool.technician) {
+            const lastOpenIdx = findLastOpenHistoryIndex();
+            if (lastOpenIdx >= 0) {
+                tool.assignmentHistory[lastOpenIdx].submitDate = submitDate;
+            } else {
+                tool.assignmentHistory.push({
+                    technician: tool.technician,
+                    issueDate: issueDate || new Date(),
+                    submitDate,
+                });
+            }
+            tool.submitDate = submitDate;
         }
 
-        // ✅ If technician is removed (unassigned)
         if (updateData.toolStatus === 'unassigned' && tool.technician) {
-            // Remove from old employee
+            const lastOpenIdx = findLastOpenHistoryIndex();
+            if (lastOpenIdx >= 0 && submitDate) {
+                tool.assignmentHistory[lastOpenIdx].submitDate = submitDate;
+            }
+
             await Employee.updateOne(
                 { _id: tool.technician },
                 { $pull: { tools: { toolId: tool._id } } }
@@ -482,7 +532,7 @@ const getEngineerByTool = asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     // Step 1: Find tool and populate engineer
-    const tool = await Tools.findById(id).populate("technician");
+    const tool = await Tools.findById(id).populate("technician", "name email tools technicianType designation department");
 
     if (!tool) {
         return res.status(404).json({ message: "Tool not found" });
@@ -501,8 +551,21 @@ const getEngineerByTool = asyncHandler(async (req, res) => {
         });
     }
 
-    // Step 2: Find issue/submit date from technician's tools array
-    const toolHistory = tool.technician.tools.find(t => t.toolId.toString() === tool._id.toString());
+    // Step 2: Find issue/submit date from assignment history or technician's tools array
+    let issueDate = null;
+    let submitDate = tool.submitDate || null;
+
+    if (tool.assignmentHistory?.length) {
+        const lastOpen = [...tool.assignmentHistory].reverse().find((entry) => !entry.submitDate);
+        const currentEntry = lastOpen || tool.assignmentHistory[tool.assignmentHistory.length - 1];
+        issueDate = currentEntry?.issueDate || null;
+        submitDate = lastOpen ? null : (currentEntry?.submitDate || null);
+    } else if (tool.technician) {
+        const toolHistoryEntry = tool.technician.tools?.find(
+            (t) => t.toolId.toString() === tool._id.toString()
+        );
+        issueDate = toolHistoryEntry?.issueDate || null;
+    }
 
     return res.status(200).json({
         engineer: {
@@ -517,8 +580,8 @@ const getEngineerByTool = asyncHandler(async (req, res) => {
             toolId: tool.toolId,
             toolName: tool.nomenclature,
             serialNumber: tool.SrNo,
-            issueDate: toolHistory?.issueDate || null,
-            submitDate: toolHistory?.submitDate || null,
+            issueDate,
+            submitDate,
         },
     });
 });
@@ -734,29 +797,39 @@ const toolHistory = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Find tool and populate technician
-        const tool = await Tools.findById(toolId).populate({
-            path: "technician",
-            select: "name email tools", // includes tools array for issue date
-        });
+        const tool = await Tools.findById(toolId)
+            .populate("technician", "name email")
+            .populate("assignmentHistory.technician", "name email");
 
         if (!tool) {
             return res.status(404).json({ success: false, message: "Tool not found" });
         }
 
-        let issueDate = null;
-        let submitDate = tool.submitDate || null; // ✅ get submitDate directly from tool model
+        let history = [];
 
-        if (tool.technician) {
-            // Find matching tool in technician's tools array
-            const techTool = tool.technician.tools.find(
+        if (tool.assignmentHistory?.length) {
+            history = tool.assignmentHistory.map((entry) => ({
+                engineerName: entry.technician?.name || "-",
+                engineerId: entry.technician?._id || entry.technician,
+                issueDate: entry.issueDate || null,
+                submitDate: entry.submitDate || null,
+            }));
+        } else if (tool.technician) {
+            const employee = await Employee.findById(tool.technician).select("name email tools");
+            const techTool = employee?.tools?.find(
                 (t) => t.toolId?.toString() === tool._id.toString()
             );
 
-            if (techTool) {
-                issueDate = techTool.issueDate; // ✅ get issueDate from technician
-            }
+            history = [{
+                engineerName: employee?.name || tool.technician?.name || "-",
+                engineerId: tool.technician._id || tool.technician,
+                issueDate: techTool?.issueDate || null,
+                submitDate: tool.submitDate || null,
+            }];
         }
+
+        const lastOpenEntry = [...history].reverse().find((entry) => !entry.submitDate);
+        const currentEntry = lastOpenEntry || (history.length ? history[history.length - 1] : null);
 
         res.status(200).json({
             success: true,
@@ -767,8 +840,10 @@ const toolHistory = asyncHandler(async (req, res) => {
                     email: tool.technician.email,
                 }
                 : null,
-            issueDate,
-            submitDate,
+            issueDate: currentEntry?.issueDate || null,
+            submitDate: lastOpenEntry ? null : (currentEntry?.submitDate || null),
+            isSubmitted: lastOpenEntry ? false : Boolean(currentEntry?.submitDate),
+            history,
         });
     } catch (error) {
         console.error("❌ Error fetching tool history:", error);

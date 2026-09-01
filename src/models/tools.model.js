@@ -62,6 +62,20 @@ const toolsSchema = new Schema(
             type: Date,
 
         },
+        assignmentHistory: [
+            {
+                technician: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: 'Employee',
+                },
+                issueDate: {
+                    type: Date,
+                },
+                submitDate: {
+                    type: Date,
+                },
+            },
+        ],
         applicableMachines: [String],
 
     },
