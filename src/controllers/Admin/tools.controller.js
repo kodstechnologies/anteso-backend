@@ -276,6 +276,7 @@ const updateById = asyncHandler(async (req, res) => {
         const previousTechnicianId = tool.technician?.toString() || null;
 
         const allowedFields = [
+            "toolId",
             "SrNo",
             "nomenclature",
             "manufacturer",
@@ -289,6 +290,19 @@ const updateById = asyncHandler(async (req, res) => {
             "submitDate",
             "applicableMachines",
         ];
+
+        if (updateData.toolId && updateData.toolId !== tool.toolId) {
+            const duplicateTool = await Tools.findOne({
+                toolId: updateData.toolId,
+                _id: { $ne: tool._id },
+            });
+            if (duplicateTool) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Tool with this ID already exists.",
+                });
+            }
+        }
 
         Object.keys(updateData).forEach((key) => {
             if (allowedFields.includes(key)) {
