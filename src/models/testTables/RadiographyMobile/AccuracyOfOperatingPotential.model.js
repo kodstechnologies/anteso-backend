@@ -26,6 +26,13 @@ const Table2RowSchema = new Schema({
   mAStations: [{ type: String }],
 });
 
+const MeasurementRowSchema = new Schema({
+  appliedKvp: { type: String, default: '', trim: true },
+  measuredValues: [{ type: String, trim: true }],
+  averageKvp: { type: String, default: '', trim: true },
+  remarks: { type: String, default: '', trim: true },
+}, { _id: false });
+
 const TotalFiltrationSchema = new Schema({
   measured: { type: String, default: '', trim: true },
   required: { type: String, default: '', trim: true },
@@ -45,6 +52,7 @@ const MeasurementOfOperatingPotentialSchema = new Schema(
     table1: [Table1RowSchema],
     table2: [Table2RowSchema],
     mAStations: [{ type: String }],
+    measurements: [MeasurementRowSchema],
     tolerance: { type: ToleranceSchema, required: true },
     totalFiltration: { type: TotalFiltrationSchema, default: () => ({}) },
     filtrationTolerance: { type: FiltrationToleranceSchema, default: () => ({}) },

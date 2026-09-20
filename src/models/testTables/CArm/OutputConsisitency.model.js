@@ -45,11 +45,10 @@ const outputConsistencySchema = new mongoose.Schema(
       default: ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
     },
 
-    // Tolerance value (e.g., "2.0")
+    // Tolerance (e.g. operator "<=", value "0.02")
     tolerance: {
-      type: String,
-      trim: true,
-      default: "",
+      operator: { type: String, trim: true, default: "<=" },
+      value: { type: String, trim: true, default: "0.02" },
     },
 
     // Optional: store final remark

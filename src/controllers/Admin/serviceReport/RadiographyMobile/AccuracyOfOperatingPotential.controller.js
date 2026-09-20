@@ -10,7 +10,7 @@ const MACHINE_TYPE = "Radiography (Mobile)";
 // CREATE or UPDATE (Upsert) by serviceId with transaction
 const create = asyncHandler(async (req, res) => {
   const { serviceId } = req.params;
-  const { table1, table2, tolerance, totalFiltration, filtrationTolerance, mAStations } = req.body;
+  const { table1, table2, measurements, tolerance, totalFiltration, filtrationTolerance, mAStations } = req.body;
 
   if (!serviceId || !mongoose.Types.ObjectId.isValid(serviceId)) {
     return res.status(400).json({ success: false, message: "Valid serviceId is required" });
@@ -48,6 +48,7 @@ const create = asyncHandler(async (req, res) => {
     if (testRecord) {
       if (table1 !== undefined) testRecord.table1 = table1;
       if (table2 !== undefined) testRecord.table2 = table2;
+      if (measurements !== undefined) testRecord.measurements = measurements;
       if (tolerance !== undefined) testRecord.tolerance = tolerance;
       if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
       if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;
@@ -59,6 +60,7 @@ const create = asyncHandler(async (req, res) => {
         table1: table1 || [],
         table2: table2 || [],
         mAStations: mAStations || [],
+        measurements: measurements || [],
         tolerance: tolerance || { value: "", type: "percent", sign: "both" },
         totalFiltration: totalFiltration || {},
         filtrationTolerance: filtrationTolerance || {},
@@ -130,7 +132,7 @@ const getById = asyncHandler(async (req, res) => {
 // UPDATE by testId
 const update = asyncHandler(async (req, res) => {
   const { testId } = req.params;
-  const { table1, table2, tolerance, totalFiltration, filtrationTolerance, mAStations } = req.body;
+  const { table1, table2, measurements, tolerance, totalFiltration, filtrationTolerance, mAStations } = req.body;
 
   if (!testId || !mongoose.Types.ObjectId.isValid(testId)) {
     return res.status(400).json({ success: false, message: "Valid testId is required" });
@@ -159,6 +161,7 @@ const update = asyncHandler(async (req, res) => {
 
     if (table1 !== undefined) testRecord.table1 = table1;
     if (table2 !== undefined) testRecord.table2 = table2;
+    if (measurements !== undefined) testRecord.measurements = measurements;
     if (tolerance !== undefined) testRecord.tolerance = tolerance;
     if (totalFiltration !== undefined) testRecord.totalFiltration = totalFiltration;
     if (filtrationTolerance !== undefined) testRecord.filtrationTolerance = filtrationTolerance;

@@ -7,6 +7,19 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "C-Arm";
 
+const normalizeTolerance = (tolerance) => {
+    if (tolerance && typeof tolerance === "object") {
+        return {
+            operator: tolerance.operator?.toString().trim() || "<=",
+            value: tolerance.value?.toString().trim() || "0.02",
+        };
+    }
+    if (typeof tolerance === "string" && tolerance.trim()) {
+        return { operator: "<=", value: tolerance.trim() };
+    }
+    return { operator: "<=", value: "0.02" };
+};
+
 // CREATE - With Transaction
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -141,9 +154,12 @@ const getById = asyncHandler(async (req, res) => {
         });
     }
 
+    const payload = test.toObject();
+    payload.tolerance = normalizeTolerance(payload.tolerance);
+
     return res.status(200).json({
         success: true,
-        data: test,
+        data: payload,
     });
 });
 
@@ -162,9 +178,11 @@ const getByServiceId = asyncHandler(async (req, res) => {
         .populate("serviceId", "machineName serialNumber manufacturer model")
         .populate("reportId", "reportNumber");
 
+    const payload = test ? { ...test.toObject(), tolerance: normalizeTolerance(test.tolerance) } : null;
+
     return res.status(200).json({
         success: true,
-        data: test || null, // Explicitly return null when not found
+        data: payload, // Explicitly return null when not found
     });
 });
 
@@ -218,7 +236,7 @@ const update = asyncHandler(async (req, res) => {
                 measurementHeaders: Array.isArray(measurementHeaders) && measurementHeaders.length > 0
                     ? measurementHeaders
                     : ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-                tolerance: tolerance?.toString().trim() || "2.0",
+                tolerance: normalizeTolerance(tolerance),
                 finalRemark: finalRemark || "",
                 updatedAt: Date.now(),
             },
