@@ -4106,6 +4106,7 @@ export const getReportHeaderInventionalRadiology = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,
