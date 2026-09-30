@@ -29,7 +29,7 @@ const ReproducibilityOfOutputSchema = new mongoose.Schema(
 
         // Tolerance (e.g. "5.0" %)
         tolerance: {
-            operator: { type: String, trim: true, default: "<=" },
+            operator: { type: String, trim: true, default: "<" },
             value: { type: String, trim: true }
         },
 

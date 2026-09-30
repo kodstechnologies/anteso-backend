@@ -2925,7 +2925,9 @@ const getReportNumbers = asyncHandler(async (req, res) => {
 // });
 
 export const createOrder = asyncHandler(async (req, res) => {
+    let step = "start";
     try {
+        console.log("📥 [createOrder] step=start");
         console.log("📥 req.body:", req.body);
         console.log("📎 req.files:", req.files?.map(f => ({
             fieldname: f.fieldname,
@@ -2958,6 +2960,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         } = req.body;
 
         // 1. Validate Required Fields
+        step = "1-validate-required-fields";
         if (
             !leadOwner ||
             !hospitalName ||
@@ -2969,18 +2972,38 @@ export const createOrder = asyncHandler(async (req, res) => {
             !emailAddress ||
             !contactNumber
         ) {
+            console.log("❌ [createOrder] STOPPED at", step, {
+                leadOwner: !!leadOwner,
+                hospitalName: !!hospitalName,
+                fullAddress: !!fullAddress,
+                city: !!city,
+                state: !!state,
+                pinCode: !!pinCode,
+                contactPersonName: !!contactPersonName,
+                emailAddress: !!emailAddress,
+                contactNumber: !!contactNumber,
+            });
             throw new ApiError(400, "Missing required fields");
         }
+        console.log("✅ [createOrder] passed", step);
 
         // 2. Validate Lead Owner
+        step = "2-validate-lead-owner";
         const leadOwnerUser = await User.findById(leadOwner).select("name role");
         if (!leadOwnerUser) {
+            console.log("❌ [createOrder] STOPPED at", step, { leadOwner });
             throw new ApiError(404, "Lead owner not found");
         }
+        console.log("✅ [createOrder] passed", step, { leadOwnerId: String(leadOwnerUser._id) });
 
         // 3. Check Duplicate Client Email
+        step = "3-duplicate-client-email";
         const existingClient = await Client.findOne({ email: emailAddress });
         if (existingClient) {
+            console.log("❌ [createOrder] STOPPED at", step, {
+                emailAddress,
+                existingClientId: String(existingClient._id),
+            });
             return res.status(400).json(
                 new ApiResponse(
                     400,
@@ -2991,6 +3014,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         }
 
         // 4. Find or Create Client
+        step = "4-find-or-create-client";
         let client = await Client.findOne({ phone: contactNumber });
         if (!client) {
             client = await Client.create({
@@ -3000,9 +3024,13 @@ export const createOrder = asyncHandler(async (req, res) => {
                 address: fullAddress,
                 role: "Customer",
             });
+            console.log("✅ [createOrder] passed", step, { action: "created", clientId: String(client._id) });
+        } else {
+            console.log("✅ [createOrder] passed", step, { action: "reused", clientId: String(client._id) });
         }
 
         // 5. Create Hospital
+        step = "5-create-hospital";
         const hospital = await Hospital.create({
             name: hospitalName,
             email: emailAddress,
@@ -3014,6 +3042,7 @@ export const createOrder = asyncHandler(async (req, res) => {
             state,
             pinCode,
         });
+        console.log("✅ [createOrder] passed", step, { hospitalId: String(hospital._id) });
 
         if (!client.hospitals.includes(hospital._id)) {
             client.hospitals.push(hospital._id);
@@ -3023,6 +3052,7 @@ export const createOrder = asyncHandler(async (req, res) => {
         // ───────────────────────────────────────────────────────────────
         // 6. Handle multiple work order file uploads
         // ───────────────────────────────────────────────────────────────
+        step = "6-upload-work-order-files";
         const files = Array.isArray(req.files) ? req.files : req.file ? [req.file] : [];
         const fileUrlsByIndex = {};
 
@@ -3044,8 +3074,10 @@ export const createOrder = asyncHandler(async (req, res) => {
                 console.log(`→ Legacy file attached to service #0: ${file.originalname} → ${url}`);
             }
         }
+        console.log("✅ [createOrder] passed", step, { fileCount: files.length });
 
         // 7. Parse Services
+        step = "7-parse-services";
         let parsedServices = [];
         if (services) {
             parsedServices =
@@ -3053,8 +3085,10 @@ export const createOrder = asyncHandler(async (req, res) => {
         }
 
         if (!Array.isArray(parsedServices) || parsedServices.length === 0) {
+            console.log("❌ [createOrder] STOPPED at", step);
             throw new ApiError(400, "At least one service is required");
         }
+        console.log("✅ [createOrder] passed", step, { count: parsedServices.length });
 
         const customMachineCodeFromName = (name) => {
             const slug = String(name)
@@ -3107,9 +3141,15 @@ export const createOrder = asyncHandler(async (req, res) => {
             };
         });
 
+        step = "8-save-services";
         const serviceDocs = await Services.insertMany(transformedServices);
+        console.log("✅ [createOrder] passed", step, {
+            count: serviceDocs.length,
+            ids: serviceDocs.map((s) => String(s._id)),
+        });
 
         // 9. Parse Additional Services
+        step = "9-save-additional-services";
         let parsedAdditional = [];
         if (additionalServices) {
             parsedAdditional =
@@ -3131,8 +3171,11 @@ export const createOrder = asyncHandler(async (req, res) => {
                 })
             );
         }
+        console.log("✅ [createOrder] passed", step, { count: additionalServiceDocs.length });
 
-        // 10. Create Order
+        // 10. Create Order — this is the only place the order document is saved
+        step = "10-create-order";
+        console.log("⏳ [createOrder] saving order at", step);
         const order = await orderModel.create({
             leadOwner,
             hospitalName,
@@ -3160,13 +3203,20 @@ export const createOrder = asyncHandler(async (req, res) => {
             hospital: hospital._id,
         });
 
-        console.log("✅ Order created:", order._id, order.srfNumber);
+        console.log("✅ [createOrder] ORDER CREATED at step=10-create-order", {
+            orderId: String(order._id),
+            srfNumber: order.srfNumber,
+            hospitalId: String(order.hospital),
+            customerId: String(order.customer),
+            serviceCount: order.services?.length || 0,
+        });
 
         return res.status(201).json(
             new ApiResponse(201, order, "Order created successfully")
         );
 
     } catch (error) {
+        console.error("❌ [createOrder] ORDER NOT CREATED. Stopped at", step, "—", error?.message || error);
         console.error("❌ Error creating order:", error);
 
         if (error.code === 11000 && error.keyPattern?.email) {

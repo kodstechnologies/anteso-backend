@@ -53,7 +53,7 @@ const create = asyncHandler(async (req, res) => {
         ffd: ffd || { value: "" },
         outputRows: outputRows || [],
         measurementHeaders: measurementHeaders || [],
-        tolerance: tolerance || { operator: "<=", value: "" },
+        tolerance: tolerance || { operator: "<", value: "" },
       });
     }
 
