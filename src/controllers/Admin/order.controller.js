@@ -3216,17 +3216,43 @@ export const createOrder = asyncHandler(async (req, res) => {
         );
 
     } catch (error) {
-        console.error("❌ [createOrder] ORDER NOT CREATED. Stopped at", step, "—", error?.message || error);
-        console.error("❌ Error creating order:", error);
+        const fieldErrors = error?.errors
+            ? Object.entries(error.errors).map(([field, detail]) => ({
+                field,
+                message: detail?.message || String(detail),
+            }))
+            : [];
 
-        if (error.code === 11000 && error.keyPattern?.email) {
-            throw new ApiError(
-                400,
-                `A client with email "${error.keyValue.email}" already exists`
-            );
+        let reason = error?.message || "Unknown error";
+        if (error?.code === 11000) {
+            const field = Object.keys(error.keyPattern || error.keyValue || {})[0] || "field";
+            const value = error.keyValue?.[field];
+            reason = `Duplicate value for "${field}"${value !== undefined ? `: ${value}` : ""}`;
+        } else if (fieldErrors.length) {
+            reason = fieldErrors.map((item) => `${item.field}: ${item.message}`).join("; ");
         }
 
-        throw new ApiError(500, "Failed to create order", [error.message]);
+        const statusCode = error instanceof ApiError
+            ? error.statusCode
+            : error?.code === 11000 || error?.name === "ValidationError" || error?.name === "CastError"
+                ? 400
+                : 500;
+
+        console.error("❌ [createOrder] ORDER NOT CREATED");
+        console.error("❌ [createOrder] stopped at:", step);
+        console.error("❌ [createOrder] reason:", reason);
+        if (fieldErrors.length) {
+            console.error("❌ [createOrder] field errors:", fieldErrors);
+        }
+        console.error("❌ Error creating order:", error);
+
+        return res.status(statusCode).json(
+            new ApiResponse(
+                statusCode,
+                { step, reason, fieldErrors },
+                `Failed to create order at ${step}: ${reason}`
+            )
+        );
     }
 });
 
