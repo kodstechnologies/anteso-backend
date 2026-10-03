@@ -2927,15 +2927,6 @@ const getReportNumbers = asyncHandler(async (req, res) => {
 export const createOrder = asyncHandler(async (req, res) => {
     let step = "start";
     try {
-        console.log("📥 [createOrder] step=start");
-        console.log("📥 req.body:", req.body);
-        console.log("📎 req.files:", req.files?.map(f => ({
-            fieldname: f.fieldname,
-            originalname: f.originalname,
-            size: f.size
-        })) || "no files");
-        console.log("📎 req.file:", req.file);
-
         const {
             leadOwner,
             hospitalName,
@@ -2972,38 +2963,20 @@ export const createOrder = asyncHandler(async (req, res) => {
             !emailAddress ||
             !contactNumber
         ) {
-            console.log("❌ [createOrder] STOPPED at", step, {
-                leadOwner: !!leadOwner,
-                hospitalName: !!hospitalName,
-                fullAddress: !!fullAddress,
-                city: !!city,
-                state: !!state,
-                pinCode: !!pinCode,
-                contactPersonName: !!contactPersonName,
-                emailAddress: !!emailAddress,
-                contactNumber: !!contactNumber,
-            });
             throw new ApiError(400, "Missing required fields");
         }
-        console.log("✅ [createOrder] passed", step);
 
         // 2. Validate Lead Owner
         step = "2-validate-lead-owner";
         const leadOwnerUser = await User.findById(leadOwner).select("name role");
         if (!leadOwnerUser) {
-            console.log("❌ [createOrder] STOPPED at", step, { leadOwner });
             throw new ApiError(404, "Lead owner not found");
         }
-        console.log("✅ [createOrder] passed", step, { leadOwnerId: String(leadOwnerUser._id) });
 
         // 3. Check Duplicate Client Email
         step = "3-duplicate-client-email";
         const existingClient = await Client.findOne({ email: emailAddress });
         if (existingClient) {
-            console.log("❌ [createOrder] STOPPED at", step, {
-                emailAddress,
-                existingClientId: String(existingClient._id),
-            });
             return res.status(400).json(
                 new ApiResponse(
                     400,
@@ -3024,9 +2997,6 @@ export const createOrder = asyncHandler(async (req, res) => {
                 address: fullAddress,
                 role: "Customer",
             });
-            console.log("✅ [createOrder] passed", step, { action: "created", clientId: String(client._id) });
-        } else {
-            console.log("✅ [createOrder] passed", step, { action: "reused", clientId: String(client._id) });
         }
 
         // 5. Create Hospital
@@ -3042,7 +3012,6 @@ export const createOrder = asyncHandler(async (req, res) => {
             state,
             pinCode,
         });
-        console.log("✅ [createOrder] passed", step, { hospitalId: String(hospital._id) });
 
         if (!client.hospitals.includes(hospital._id)) {
             client.hospitals.push(hospital._id);
@@ -3066,15 +3035,12 @@ export const createOrder = asyncHandler(async (req, res) => {
             if (serviceIndexMatch) {
                 const index = serviceIndexMatch[1];
                 fileUrlsByIndex[index] = url;
-                console.log(`→ Attached file to service #${index}: ${file.originalname} → ${url}`);
             }
             // Legacy fallback (single file sent as "workOrderCopy")
             else if (file.fieldname === "workOrderCopy" || file.fieldname === "workOrderCopy[]") {
                 fileUrlsByIndex["0"] = url; // attach to first service
-                console.log(`→ Legacy file attached to service #0: ${file.originalname} → ${url}`);
             }
         }
-        console.log("✅ [createOrder] passed", step, { fileCount: files.length });
 
         // 7. Parse Services
         step = "7-parse-services";
@@ -3085,10 +3051,8 @@ export const createOrder = asyncHandler(async (req, res) => {
         }
 
         if (!Array.isArray(parsedServices) || parsedServices.length === 0) {
-            console.log("❌ [createOrder] STOPPED at", step);
             throw new ApiError(400, "At least one service is required");
         }
-        console.log("✅ [createOrder] passed", step, { count: parsedServices.length });
 
         const customMachineCodeFromName = (name) => {
             const slug = String(name)
@@ -3143,10 +3107,6 @@ export const createOrder = asyncHandler(async (req, res) => {
 
         step = "8-save-services";
         const serviceDocs = await Services.insertMany(transformedServices);
-        console.log("✅ [createOrder] passed", step, {
-            count: serviceDocs.length,
-            ids: serviceDocs.map((s) => String(s._id)),
-        });
 
         // 9. Parse Additional Services
         step = "9-save-additional-services";
@@ -3171,11 +3131,9 @@ export const createOrder = asyncHandler(async (req, res) => {
                 })
             );
         }
-        console.log("✅ [createOrder] passed", step, { count: additionalServiceDocs.length });
 
         // 10. Create Order — this is the only place the order document is saved
         step = "10-create-order";
-        console.log("⏳ [createOrder] saving order at", step);
         const order = await orderModel.create({
             leadOwner,
             hospitalName,
@@ -3201,14 +3159,6 @@ export const createOrder = asyncHandler(async (req, res) => {
             rawPhoto,
 
             hospital: hospital._id,
-        });
-
-        console.log("✅ [createOrder] ORDER CREATED at step=10-create-order", {
-            orderId: String(order._id),
-            srfNumber: order.srfNumber,
-            hospitalId: String(order.hospital),
-            customerId: String(order.customer),
-            serviceCount: order.services?.length || 0,
         });
 
         return res.status(201).json(
@@ -3237,14 +3187,6 @@ export const createOrder = asyncHandler(async (req, res) => {
             : error?.code === 11000 || error?.name === "ValidationError" || error?.name === "CastError"
                 ? 400
                 : 500;
-
-        console.error("❌ [createOrder] ORDER NOT CREATED");
-        console.error("❌ [createOrder] stopped at:", step);
-        console.error("❌ [createOrder] reason:", reason);
-        if (fieldErrors.length) {
-            console.error("❌ [createOrder] field errors:", fieldErrors);
-        }
-        console.error("❌ Error creating order:", error);
 
         return res.status(statusCode).json(
             new ApiResponse(
