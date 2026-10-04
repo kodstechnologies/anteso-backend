@@ -48,7 +48,7 @@ const tubeHousingLeakageSchema = new Schema(
     // === Tolerance ===
     tolerance: {
       value: { type: String, required: true },        // e.g., "1.0"
-      operator: { type: String, enum: ["less than or equal to", "greater than or equal to", "="], default: "less than or equal to" },
+      operator: { type: String,},
       time: { type: String, default: "1" },           // usually "1" hour
     },
 
