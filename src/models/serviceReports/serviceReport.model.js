@@ -395,6 +395,10 @@ const serviceReportSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfTimeDentalIntra"
     },
+    LinearityOfMaLoadingDentalIntra: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "LinearityOfMaLoadingDentalIntra"
+    },
     LinearityOfmAsLoadingDentalIntra: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "LinearityOfMasLoadingDentalIntra"

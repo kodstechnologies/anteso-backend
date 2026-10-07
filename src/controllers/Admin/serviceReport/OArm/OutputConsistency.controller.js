@@ -7,6 +7,19 @@ import { asyncHandler } from "../../../../utils/AsyncHandler.js";
 
 const MACHINE_TYPE = "O-Arm";
 
+const normalizeTolerance = (tolerance) => {
+    if (tolerance && typeof tolerance === "object") {
+        return {
+            operator: String(tolerance.operator || "<=").trim(),
+            value: String(tolerance.value ?? "0.02").trim(),
+        };
+    }
+    return {
+        operator: "<=",
+        value: String(tolerance ?? "0.02").trim(),
+    };
+};
+
 // CREATE - With Transaction (Upsert Logic)
 const create = asyncHandler(async (req, res) => {
     const { serviceId } = req.params;
@@ -85,7 +98,7 @@ const create = asyncHandler(async (req, res) => {
             measurementHeaders: Array.isArray(measurementHeaders) && measurementHeaders.length > 0
                 ? measurementHeaders
                 : ["Meas 1", "Meas 2", "Meas 3", "Meas 4", "Meas 5"],
-            tolerance: tolerance?.toString().trim() || "0.02",
+            tolerance: normalizeTolerance(tolerance),
             finalRemark: finalRemark || "",
             updatedAt: Date.now(),
         };
@@ -224,7 +237,7 @@ const update = asyncHandler(async (req, res) => {
             }));
         }
         if (measurementHeaders) testRecord.measurementHeaders = measurementHeaders;
-        if (tolerance) testRecord.tolerance = tolerance.toString().trim();
+        if (tolerance != null && tolerance !== "") testRecord.tolerance = normalizeTolerance(tolerance);
         if (finalRemark) testRecord.finalRemark = finalRemark;
         testRecord.updatedAt = Date.now();
 

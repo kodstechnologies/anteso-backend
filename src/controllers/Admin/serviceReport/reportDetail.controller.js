@@ -28,6 +28,7 @@ import GantryTiltCTScanModel from "../../../models/testTables/CTScan/GantryTilt.
 // import outputConsistencyForCtScanModel from "../../../models/testTables/CTScan/outputConsistencyForCtScan.model.js";
 import "../../../models/testTables/DentalIntra/AccuracyOfOperatingPotentialAndTime.model.js";
 import "../../../models/testTables/DentalIntra/LinearityOfTime.model.js";
+import "../../../models/testTables/DentalIntra/LinearityOfmALoading.model.js";
 import "../../../models/testTables/DentalIntra/LinearityOfMasLoading.model.js";
 import "../../../models/testTables/DentalIntra/ReproducibilityOfRadiationOutput.model.js";
 import "../../../models/testTables/DentalIntra/TubeHousingLeakage.model.js";
@@ -1814,11 +1815,11 @@ export const getReportHeaderDentalIntra = async (req, res) => {
         const dentalIntraFields = [
             "AccuracyOfOperatingPotentialAndTimeDentalIntra",
             "LinearityOfTimeDentalIntra",
+            "LinearityOfMaLoadingDentalIntra",
             "ReproducibilityOfRadiationOutputDentalIntra",
             "TubeHousingLeakageDentalIntra",
             "RadiationLeakageTestDentalIntra",
             "RadiationProtectionSurveyDentalIntra",
-            "LinearityOfmAsLoadingDentalIntra"
         ];
 
         let query = serviceReportModel
@@ -1899,7 +1900,7 @@ export const getReportHeaderDentalIntra = async (req, res) => {
                 LinearityOfTimeDentalIntra:
                     report.LinearityOfTimeDentalIntra || null,
                 LinearityOfMaLoadingDentalIntra:
-                    report.LinearityOfTimeDentalIntra || null,
+                    report.LinearityOfMaLoadingDentalIntra || null,
 
                 ReproducibilityOfRadiationOutputDentalIntra:
                     report.ReproducibilityOfRadiationOutputDentalIntra || null,
@@ -1916,9 +1917,6 @@ export const getReportHeaderDentalIntra = async (req, res) => {
 
                 RadiationProtectionSurveyDentalIntra:
                     report.RadiationProtectionSurveyDentalIntra || null,
-
-                LinearityOfmAsLoadingDentalIntra:
-                    report.LinearityOfmAsLoadingDentalIntra || null,
             },
         });
     } catch (error) {
@@ -2210,7 +2208,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
         const [
             accuracyOperatingAndTime,
             linearityOfTime,
-            linearityOfMasLoading,
+            linearityOfMaLoading,
             reproducibilityOutput,
             tubeHousingLeakage,
             radiationLeakage,
@@ -2218,7 +2216,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
         ] = await Promise.all([
             mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfTimeDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
-            mongoose.model("LinearityOfMasLoadingDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
+            mongoose.model("LinearityOfMaLoadingDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("ReproducibilityOfRadiationOutputDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("TubeHousingLeakageDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("RadiationLeakageTestDentalIntra").findOne({ serviceId }).sort({ createdAt: -1 }),
@@ -2263,7 +2261,7 @@ export const saveReportHeaderDentalIntra = async (req, res) => {
 
             AccuracyOfOperatingPotentialAndTimeDentalIntra: accuracyOperatingAndTime?._id || null,
             LinearityOfTimeDentalIntra: linearityOfTime?._id || null,
-            LinearityOfmAsLoadingDentalIntra: linearityOfMasLoading?._id || null,
+            LinearityOfMaLoadingDentalIntra: linearityOfMaLoading?._id || null,
             ReproducibilityOfRadiationOutputDentalIntra: reproducibilityOutput?._id || null,
             TubeHousingLeakageDentalIntra: tubeHousingLeakage?._id || null,
             RadiationLeakageTestDentalIntra: radiationLeakage?._id || null,
@@ -2307,7 +2305,6 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
             .populate("AccuracyOfOperatingPotentialAndTimeDentalHandHeld")
             .populate("LinearityOfTimeDentalHandHeld")
             .populate("LinearityOfMaLoadingDentalHandHeld")
-            .populate("LinearityOfmAsLoadingDentalHandHeld")
             .populate("ConsistencyOfRadiationOutputDentalHandHeld")
             .populate("ReproducibilityOfRadiationOutputDentalHandHeld")
             .populate("TubeHousingLeakageDentalHandHeld")
@@ -2380,8 +2377,6 @@ export const getReportHeaderDentalHandHeld = async (req, res) => {
 
                 LinearityOfTimeDentalHandHeld: report.LinearityOfTimeDentalHandHeld || null,
                 LinearityOfMaLoadingDentalHandHeld: report.LinearityOfMaLoadingDentalHandHeld || null,
-
-                LinearityOfmAsLoadingDentalHandHeld: report.LinearityOfmAsLoadingDentalHandHeld || null,
 
                 ConsistencyOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
                 ReproducibilityOfRadiationOutputDentalHandHeld: report.ReproducibilityOfRadiationOutputDentalHandHeld || null,
@@ -2476,13 +2471,12 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
 
         // Fetch latest test records for Dental Hand-held
         const [
-            accuracyOp, linearityTime, linearityMa, linearityMas, consistency,
+            accuracyOp, linearityTime, linearityMa, consistency,
             reproducibility, tubeLeakage, radiationLeakageTest, radiationProtection
         ] = await Promise.all([
             mongoose.model("AccuracyOfOperatingPotentialAndTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfTimeDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("LinearityOfmALoadingDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
-            mongoose.model("LinearityOfmAsLoadingDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("ConsistencyOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("ReproducibilityOfRadiationOutputDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
             mongoose.model("TubeHousingLeakageDentalHandHeld").findOne({ serviceId }).sort({ createdAt: -1 }),
@@ -2522,7 +2516,6 @@ export const saveReportHeaderDentalHandHeld = async (req, res) => {
             AccuracyOfOperatingPotentialAndTimeDentalHandHeld: accuracyOp?._id || null,
             LinearityOfTimeDentalHandHeld: linearityTime?._id || null,
             LinearityOfMaLoadingDentalHandHeld: linearityMa?._id || null,
-            LinearityOfmAsLoadingDentalHandHeld: linearityMas?._id || null,
             ConsistencyOfRadiationOutputDentalHandHeld: consistency?._id || null,
             ReproducibilityOfRadiationOutputDentalHandHeld: reproducibility?._id || null,
             TubeHousingLeakageDentalHandHeld: tubeLeakage?._id || null,
@@ -4620,6 +4613,7 @@ export const getReportHeaderOArm = async (req, res) => {
                 address: report.address,
                 srfNumber: report.srfNumber,
                 srfDate: format(report.srfDate),
+                reportULRNumber: report.reportULRNumber || "",
                 testReportNumber: report.testReportNumber,
                 issueDate: format(report.issueDate),
                 nomenclature: report.nomenclature,

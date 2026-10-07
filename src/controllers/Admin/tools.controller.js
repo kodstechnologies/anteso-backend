@@ -975,12 +975,12 @@ const getAssignedToolsForEngineerByMachine = asyncHandler(async (req, res) => {
             toolStatus: 'assigned'
         };
 
-        // Add applicableMachines filter if specified
-        // Case-insensitive match for machine type
+        // Exact machine-name match. Escape characters such as parentheses in "Radiography (Fixed)".
+        const escapedMachineType = machineType.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         query.applicableMachines = {
             $elemMatch: {
-                $regex: new RegExp(`^${machineType.trim()}$`, 'i')
-            }
+                $regex: new RegExp(`^${escapedMachineType}$`, "i"),
+            },
         };
 
         // Find tools and populate technician details
